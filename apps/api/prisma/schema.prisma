@@ -10,12 +10,308 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Sample {
-  id        Int      @id @default(autoincrement())
-  name      String
-  code      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model Role {
+  id    Int    @id @default(autoincrement())
+  name  String
+  users User[]
 
-  @@map("samples") // if you want to use snake_case format
+  @@map("roles")
+}
+
+model User {
+  id            Int           @id @default(autoincrement())
+  email         String        @unique
+  password      String?
+  first_name    String
+  last_name     String
+  phone_number  String
+  image         String
+  is_verified   Int
+  created_at    DateTime      @default(now())
+  updated_at    DateTime      @default(now())
+  UserDetails   UserDetail?
+  UserAddresses UserAddress[]
+  orders        Order[]
+  Role          Role?         @relation(fields: [roleId], references: [id])
+  roleId        Int?
+  AdminDetail   AdminDetail?
+  UserVoucher   UserVoucher[]
+
+  @@map("users")
+}
+
+model UserDetail {
+  id              Int     @id @default(autoincrement())
+  referral_code   String?
+  f_referral_code String?
+  User            User    @relation(fields: [userId], references: [id])
+  userId          Int     @unique
+
+  @@map("user_details")
+}
+
+model AdminDetail {
+  id       Int     @id @default(autoincrement())
+  userId   Int     @unique
+  User     User    @relation(fields: [userId], references: [id])
+  Branch   Branch? @relation(fields: [branchId], references: [id])
+  branchId Int?
+
+  @@map("admin_details")
+}
+
+model Province {
+  id   Int    @id @default(autoincrement())
+  name String
+  City City[]
+
+  @@map("provinces")
+}
+
+model City {
+  id         Int       @id @default(autoincrement())
+  provinceId Int
+  city       String
+  Province   Province  @relation(fields: [provinceId], references: [id])
+  Address    Address[]
+
+  @@map("cities")
+}
+
+model Address {
+  id            Int           @id @default(autoincrement())
+  cityId        Int
+  street        String
+  lon           Float
+  lat           Float
+  City          City          @relation(fields: [cityId], references: [id])
+  UserAddresses UserAddress[]
+  Branch        Branch[]
+  Order         Order[]
+
+  @@map("addresses")
+}
+
+model UserAddress {
+  id        Int     @id @default(autoincrement())
+  userId    Int
+  addressId Int
+  user      User    @relation(fields: [userId], references: [id])
+  address   Address @relation(fields: [addressId], references: [id])
+
+  @@map("user_addresses")
+}
+
+model Category {
+  id       Int       @id @default(autoincrement())
+  name     String
+  Products Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id            Int            @id @default(autoincrement())
+  categoryId    Int
+  product_name  String
+  description   String
+  price         Int
+  image         String
+  weight        Int
+  category      Category       @relation(fields: [categoryId], references: [id])
+  ProductStocks ProductStock[]
+  Discounts     Discount[]
+  OrderItems    OrderItem[]
+
+  @@map("products")
+}
+
+model Branch {
+  id            Int            @id @default(autoincrement())
+  branch_name   String
+  addressId     Int
+  address       Address        @relation(fields: [addressId], references: [id])
+  ProductStocks ProductStock[]
+  AdminDetails  AdminDetail[]
+  Discount      Discount[]
+  Order         Order[]
+
+  @@map("branches")
+}
+
+model ProductStock {
+  id           Int            @id @default(autoincrement())
+  productId    Int
+  branchId     Int
+  stock        Int
+  Product      Product        @relation(fields: [productId], references: [id])
+  Branch       Branch         @relation(fields: [branchId], references: [id])
+  StockHistory StockHistory[]
+
+  @@map("product_stocks")
+}
+
+enum Status {
+  in
+  out
+}
+
+model StockHistory {
+  id             Int           @id @default(autoincrement())
+  stock_id       Int
+  status         Status // 'in' or 'out'
+  reference      String
+  quantity       Int
+  stock_before   Int
+  stock_after    Int
+  created_at     DateTime      @default(now())
+  updated_at     DateTime      @updatedAt
+  ProductStock   ProductStock? @relation(fields: [productStockId], references: [id])
+  productStockId Int?
+
+  @@map("stock_histories")
+}
+
+enum DiscountType {
+  percentage
+  fixed
+  bogo
+}
+
+model Discount {
+  id             Int          @id @default(autoincrement())
+  branchId       Int
+  discount_type  DiscountType // ENUM('percentage', 'fixed', 'bogo')
+  discount_value Int
+  start_date     DateTime
+  end_date       DateTime
+  Product        Product?     @relation(fields: [productId], references: [id])
+  productId      Int?
+  Branch         Branch       @relation(fields: [branchId], references: [id])
+  OrderItem      OrderItem[]
+
+  @@map("discounts")
+}
+
+enum VoucherType {
+  percentage
+  fixed
+}
+
+model Voucher {
+  id           Int           @id @default(autoincrement())
+  code         String        @unique
+  type         VoucherType // ENUM('percentage', 'fixed')
+  value        Int
+  min_purchase Int
+  UserVouchers UserVoucher[]
+  Order        Order[]
+
+  @@map("vouchers")
+}
+
+model UserVoucher {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  voucherId  Int
+  expires_at DateTime
+  is_valid   Int
+  User       User     @relation(fields: [userId], references: [id])
+  Voucher    Voucher  @relation(fields: [voucherId], references: [id])
+
+  @@map("user_vouchers")
+}
+
+enum PaymentType {
+  bank_transfer
+  ovo
+  dana
+  qris
+}
+
+model Payment {
+  id     Int         @id @default(autoincrement())
+  type   PaymentType // ENUM('bank transfer', 'OVO', 'DANA', 'QRIS')
+  orders Order[]
+
+  @@map("payments")
+}
+
+model Expedition {
+  id               Int                @id @default(autoincrement())
+  name             String
+  ExpeditionDetail ExpeditionDetail[]
+
+  @@map("expeditions")
+}
+
+model ExpeditionDetail {
+  id             Int              @id @default(autoincrement())
+  expeditionId   Int
+  name           String
+  Expedition     Expedition       @relation(fields: [expeditionId], references: [id])
+  ShippingDetail ShippingDetail[]
+
+  @@map("expedition_details")
+}
+
+enum OrderStatus {
+  pending_payment
+  awaiting_confirmation
+  processing
+  shipped
+  confirmed
+  cancelled
+}
+
+model Order {
+  id               Int              @id @default(autoincrement())
+  discount_voucher Int
+  payment_proof    String?
+  invoice          String
+  total_price      Int
+  status           OrderStatus // ENUM('pending', 'paid', 'processed', 'shipped', 'confirmed', 'cancelled')
+  created_at       DateTime         @default(now())
+  updated_at       DateTime         @updatedAt
+  OrderItem        OrderItem[]
+  ShippingDetail   ShippingDetail[]
+  User             User?            @relation(fields: [userId], references: [id])
+  userId           Int?
+  Payment          Payment?         @relation(fields: [paymentId], references: [id])
+  paymentId        Int?
+  Branch           Branch?          @relation(fields: [branchId], references: [id])
+  branchId         Int?
+  Voucher          Voucher?         @relation(fields: [voucherId], references: [id])
+  voucherId        Int?
+  Address          Address?         @relation(fields: [addressId], references: [id])
+  addressId        Int
+
+  @@map("orders")
+}
+
+model ShippingDetail {
+  id                 Int               @id @default(autoincrement())
+  price              Int
+  total_weight       Int
+  Order              Order?            @relation(fields: [orderId], references: [id])
+  orderId            Int?
+  ExpeditionDetail   ExpeditionDetail? @relation(fields: [expeditionDetailId], references: [id])
+  expeditionDetailId Int?
+
+  @@map("shipping_details")
+}
+
+model OrderItem {
+  id         Int      @id @default(autoincrement())
+  orderId    Int
+  productId  Int
+  discountId Int
+  quantity   Int
+  price      Int
+  subtotal   Int
+  Order      Order    @relation(fields: [orderId], references: [id])
+  Product    Product  @relation(fields: [productId], references: [id])
+  Discount   Discount @relation(fields: [discountId], references: [id])
+
+  @@map("order_items")
 }
