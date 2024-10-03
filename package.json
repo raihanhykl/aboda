@@ -7,8 +7,7 @@
     "test": "turbo run test",
     "serve": "turbo run serve",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "prepare": "husky install",
-    "postprepare": "bash -c 'chmod ug+x .husky/*'"
+    "prepare": "husky install"
   },
   "devDependencies": {
     "@commitlint/cli": "^18.4.2",
@@ -34,6 +33,9 @@
   },
   "dependencies": {
     "@types/axios": "^0.14.0",
-    "axios": "^1.7.2"
+    "axios": "^1.7.5",
+    "jwt-decode": "^4.0.0",
+    "next-auth": "^4.24.7",
+    "zod": "^3.23.8"
   }
 }
