@@ -11,11 +11,10 @@ export const validateData =
       next();
     } catch (error) {
       if (error instanceof ZodError) {
-        const message = error.errors
-          .map((issue: any) => issue.message)
-          .join(', ');
+        const message = error.errors.map((err) => err.message).join(', ');
 
-        next(new ErrorHandler(message, 400));
+        throw new ErrorHandler(message, 400);
       }
+      throw new ErrorHandler('Invalid data', 400);
     }
   };

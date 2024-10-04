@@ -4,8 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { loginSchema } from '@/schemas/auth.schemas';
+import { ErrorMessage } from '@hookform/error-message';
+import { loginAction } from '@/action/auth.action';
 
-export default function SignUp() {
+export default function SignIn() {
   const [formData, setFormData] = useState({
     name: '',
     username: '',
@@ -14,6 +20,18 @@ export default function SignUp() {
     termsAgreed: false,
     notificationSettings: false,
   });
+
+  const form = useForm<z.infer<typeof loginSchema>>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {},
+  });
+
+  const {
+    register,
+    setError,
+    formState: { errors, isSubmitting },
+    handleSubmit,
+  } = form;
 
   const [isVisible, setIsVisible] = useState(false);
 
@@ -26,22 +44,20 @@ export default function SignUp() {
 
   const router = useRouter();
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Form submitted:', formData);
-    // Handle form submission logic here
-    setIsVisible(false);
-    setTimeout(() => {
-      router.push('/');
-    }, 500);
+  const onSubmit = (values: z.infer<typeof loginSchema>) => {
+    loginAction(values)
+      .then(() => {
+        setIsVisible(false);
+        setTimeout(() => {
+          router.push('/');
+        }, 500);
+      })
+      .catch((e) => {
+        setError('password', {
+          type: 'manual',
+          message: 'Email or password is incorrect',
+        });
+      });
   };
 
   return (
@@ -57,41 +73,23 @@ export default function SignUp() {
             <h2 className="text-2xl font-bold text-[#1B8057] mb-6">
               Sign up to Aboda
             </h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  type="text"
-                  name="name"
-                  placeholder="Name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  className="bg-green-50"
-                />
-                <Input
-                  type="text"
-                  name="username"
-                  placeholder="Username"
-                  value={formData.username}
-                  onChange={handleInputChange}
-                  className="bg-green-50"
-                />
-              </div>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <Input
                 type="email"
-                name="email"
                 placeholder="Email"
-                value={formData.email}
-                onChange={handleInputChange}
+                {...register('email')}
                 className="bg-green-50"
               />
+              <ErrorMessage errors={errors} name={'email'} />
+
               <Input
                 type="password"
-                name="password"
+                {...register('password')}
                 placeholder="Password"
-                value={formData.password}
-                onChange={handleInputChange}
                 className="bg-green-50"
               />
+              <ErrorMessage errors={errors} name={'password'} />
+
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="terms"
@@ -111,27 +109,8 @@ export default function SignUp() {
               </div>
               <div className="flex justify-between items-center">
                 <Button type="submit" className=" text-white">
-                  SIGN UP
+                  SIGN IN
                 </Button>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="notifications"
-                    name="notificationSettings"
-                    checked={formData.notificationSettings}
-                    onCheckedChange={(checked: any) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        notificationSettings: checked as boolean,
-                      }))
-                    }
-                  />
-                  <label
-                    htmlFor="notifications"
-                    className="text-xs text-gray-500"
-                  >
-                    I accept terms and policy
-                  </label>
-                </div>
               </div>
             </form>
           </div>

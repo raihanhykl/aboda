@@ -12,3 +12,5 @@ config({ path: resolve(__dirname, `../${envFile}.local`), override: true });
 
 export const PORT = process.env.PORT || 8000;
 export const DATABASE_URL = 'mysql://root:Raihanhykl123.@localhost:3306/aboda';
+export const verify_email_secret = process.env.VERIFY_EMAIL_SECRET || 'secret';
+export const JWT_SECRET = process.env.JWT_SECRET || 'secret';

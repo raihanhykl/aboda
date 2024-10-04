@@ -10,7 +10,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    "types": ["./src/interfaces/global.d.ts"]
   },
   // "include": ["src/**/*"],
   "include": ["**/*.ts"],

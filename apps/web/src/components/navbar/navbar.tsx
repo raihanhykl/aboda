@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { ShoppingCart, User, Search, ChevronDown, Menu } from 'lucide-react';
+import { actionLogout } from '@/action/auth.action';
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -36,7 +37,9 @@ export default function Navbar() {
           </div>
           <div className="flex items-center space-x-11">
             <ShoppingCart className="h-6 w-6" />
-            <User className="h-6 w-6" />
+            <button onClick={() => actionLogout()}>
+              <User className="h-6 w-6" />
+            </button>
             <button
               className="md:hidden"
               onClick={() => setIsMenuOpen(!isMenuOpen)}

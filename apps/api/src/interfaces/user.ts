@@ -4,8 +4,9 @@ export interface IUser {
   first_name: string;
   last_name: string;
   phone_number: string;
+  password?: string;
   image: String;
-  is_verified: boolean;
+  is_verified: number;
   roleId: number;
 }
 
