@@ -37,8 +37,9 @@ export default function Navbar() {
           </div>
           <div className="flex items-center space-x-11">
             <ShoppingCart className="h-6 w-6" />
-            <button onClick={() => actionLogout()}>
+            <button className=" flex gap-3" onClick={() => actionLogout()}>
               <User className="h-6 w-6" />
+              Logout
             </button>
             <button
               className="md:hidden"

@@ -1,4 +1,4 @@
-import { JWT_SECRET, verify_email_secret } from '@/config';
+import { JWT_SECRET, VERIFY_EMAIL_SECRET } from '@/config';
 import { sign } from 'jsonwebtoken';
 
 export const generateToken = (payload: any, expiresIn: string = '1hr') => {
@@ -9,7 +9,7 @@ export const generateTokeEmailVerification = (
   payload: any,
   expiresIn: string = '15m',
 ) => {
-  console.log(verify_email_secret);
+  console.log(VERIFY_EMAIL_SECRET, 'ini verify email secret');
 
-  return sign(payload, verify_email_secret, { expiresIn, algorithm: 'HS256' });
+  return sign(payload, VERIFY_EMAIL_SECRET, { expiresIn, algorithm: 'HS256' });
 };

@@ -33,9 +33,9 @@ export default function RootLayout({
           poppins.className + ' min-h-screen flex flex-col justify-between'
         }
       >
-        {!pathname.includes('/signup') && !pathname.includes('/signin') && (
-          <Navbar />
-        )}
+        {!pathname.includes('/signup') &&
+          !pathname.includes('/signin') &&
+          !pathname.includes('/verification') && <Navbar />}
         {children}
         <Footer />
       </body>

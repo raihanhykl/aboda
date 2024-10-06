@@ -20,6 +20,5 @@ export const registerSchema = z.object({
     }),
   f_referral_code: z
     .string()
-    .max(7, { message: 'Masukkan referral code yang valid.' })
-    .optional(),
+    .max(7, { message: 'Masukkan referral code yang valid.' }),
 });

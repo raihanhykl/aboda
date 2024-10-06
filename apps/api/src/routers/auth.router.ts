@@ -18,11 +18,15 @@ export class AuthRouter {
       this.authController.register,
     );
     this.router.get(
-      '/check-verify-email',
+      '/check-verify-email/:token',
       verifyEmail,
       this.authController.checkVerifyEmail,
     );
-    this.router.post('/set-password', this.authController.setPassword);
+    this.router.post(
+      '/set-password/:token',
+      verifyEmail,
+      this.authController.setPassword,
+    );
   }
   public getRouter() {
     return this.router;

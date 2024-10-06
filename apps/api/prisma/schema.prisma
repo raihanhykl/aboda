@@ -36,6 +36,7 @@ model User {
   roleId        Int?
   AdminDetail   AdminDetail?
   UserVoucher   UserVoucher[]
+  Cart          Cart[]
 
   @@map("users")
 }
@@ -147,8 +148,18 @@ model ProductStock {
   Product      Product        @relation(fields: [productId], references: [id])
   Branch       Branch         @relation(fields: [branchId], references: [id])
   StockHistory StockHistory[]
+  Cart         Cart[]
 
   @@map("product_stocks")
+}
+
+model Cart {
+  id Int @id @default(autoincrement())
+
+  ProductStock   ProductStock? @relation(fields: [productStockId], references: [id])
+  productStockId Int?
+  User           User?         @relation(fields: [userId], references: [id])
+  userId         Int?
 }
 
 enum Status {

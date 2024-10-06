@@ -12,15 +12,7 @@ import { ErrorMessage } from '@hookform/error-message';
 import { loginAction } from '@/action/auth.action';
 
 export default function SignIn() {
-  const [formData, setFormData] = useState({
-    name: '',
-    username: '',
-    email: '',
-    password: '',
-    termsAgreed: false,
-    notificationSettings: false,
-  });
-
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {},
@@ -29,7 +21,7 @@ export default function SignIn() {
   const {
     register,
     setError,
-    formState: { errors, isSubmitting },
+    formState: { errors },
     handleSubmit,
   } = form;
 
@@ -45,6 +37,7 @@ export default function SignIn() {
   const router = useRouter();
 
   const onSubmit = (values: z.infer<typeof loginSchema>) => {
+    setIsSubmitting(true);
     loginAction(values)
       .then(() => {
         setIsVisible(false);
@@ -57,6 +50,9 @@ export default function SignIn() {
           type: 'manual',
           message: 'Email or password is incorrect',
         });
+      })
+      .finally(() => {
+        setIsSubmitting(false);
       });
   };
 
@@ -91,24 +87,18 @@ export default function SignIn() {
               <ErrorMessage errors={errors} name={'password'} />
 
               <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="terms"
-                  name="termsAgreed"
-                  checked={formData.termsAgreed}
-                  onCheckedChange={(checked: any) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      termsAgreed: checked as boolean,
-                    }))
-                  }
-                />
+                <Checkbox />
                 <label htmlFor="terms" className="text-sm text-gray-600">
                   Creating an account you're okay with our Terms of Service,
                   Privacy Policy and our default notification settings
                 </label>
               </div>
               <div className="flex justify-between items-center">
-                <Button type="submit" className=" text-white">
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className=" text-white"
+                >
                   SIGN IN
                 </Button>
               </div>
@@ -146,7 +136,7 @@ export default function SignIn() {
                 }, 500);
               }}
             >
-              SIGN UP
+              {isSubmitting ? 'Signing in...' : 'SIGN UP'}
             </Button>
           </div>
         </div>

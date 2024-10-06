@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { verify } from 'jsonwebtoken';
-import { verify_email_secret } from '@/config';
+import { VERIFY_EMAIL_SECRET } from '@/config';
 import { IUser } from '@/interfaces/user';
 export const verifyEmail = (
   req: Request,
@@ -8,7 +8,7 @@ export const verifyEmail = (
   next: NextFunction,
 ) => {
   const { token } = req.params;
-  const user = verify(token, verify_email_secret) as IUser;
+  const user = verify(token, VERIFY_EMAIL_SECRET) as IUser;
   req.user = user;
   next();
 };

@@ -22,7 +22,7 @@ export class AuthController {
   async checkVerifyEmail(req: Request, res: Response, next: NextFunction) {
     try {
       const data = await AuthService.checkVerifyEmail(req);
-      return res.send(responseHandle('User Exist', data));
+      return res.send(responseHandle('User unverified', data));
     } catch (error) {
       next(error);
     }

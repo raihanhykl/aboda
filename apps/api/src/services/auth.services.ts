@@ -5,7 +5,9 @@ import { Request } from 'express';
 import { IUser, IUserDetail } from '@/interfaces/user';
 import { userDeletionQueue } from '@/lib/Deleteuser.lib';
 import { compare, hash } from 'bcrypt';
-import { generateToken } from '@/lib/jwt';
+import { generateTokeEmailVerification, generateToken } from '@/lib/jwt';
+import { sendVerificationEmail } from '@/lib/nodemailer';
+import { verification_url } from '@/config';
 
 export class AuthService {
   static async login(req: Request) {
@@ -99,6 +101,8 @@ export class AuthService {
           });
         }
 
+        const token = generateTokeEmailVerification({ email });
+
         userDeletionQueue.add(
           {
             userId: newUser.id,
@@ -107,6 +111,11 @@ export class AuthService {
             delay: 3600000,
           },
         );
+
+        return sendVerificationEmail(email, {
+          email,
+          verification_url: verification_url + token,
+        });
       } catch (error) {
         throw new ErrorHandler((error as Error).message, 400);
       }
@@ -127,7 +136,7 @@ export class AuthService {
   }
 
   static async setPassword(req: Request) {
-    const { id } = req.body;
+    const { email } = req.user;
     const { password } = req.body;
     const hashPassword = await hash(password, 10);
 
@@ -137,7 +146,7 @@ export class AuthService {
     };
     await prisma.user.update({
       where: {
-        id: Number(id),
+        email,
       },
       data,
     });

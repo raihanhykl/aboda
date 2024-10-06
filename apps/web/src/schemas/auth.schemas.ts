@@ -34,5 +34,22 @@ export const registerSchema = z.object({
   f_referral_code: z
     .string()
     .max(7, { message: 'Masukkan referral code yang valid.' }),
-  roleId: z.number(),
+});
+
+export const setFirstPassword = z.object({
+  password: z
+    .string({ message: 'Mohon masukan kata sandi Anda.' })
+    .min(6, {
+      message:
+        'Mohon masukan kata sandi anda como Kata sandi minimal harus 6 karakter, berisi huruf dan angka',
+    })
+    .regex(/[a-zA-Z]/, {
+      message:
+        'Mohon masukan kata sandi anda como Kata sandi minimal harus 6 karakter, berisi huruf dan angka',
+    })
+    .regex(/[0-9]/, {
+      message:
+        'Mohon masukan kata sandi anda como Kata sandi minimal harus 6 karakter, berisi huruf dan angka',
+    })
+    .trim(),
 });

@@ -1,19 +1,33 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { registerSchema } from '@/schemas/auth.schemas';
+import { registerAction } from '@/action/auth.action';
+import { ErrorMessage } from '@hookform/error-message';
+import { useToast } from '@/hooks/use-toast';
 
 export default function SignUp() {
-  const [formData, setFormData] = useState({
-    name: '',
-    username: '',
-    email: '',
-    password: '',
-    termsAgreed: false,
-    notificationSettings: false,
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { toast } = useToast();
+
+  const form = useForm<z.infer<typeof registerSchema>>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {},
   });
+
+  const {
+    register,
+    setError,
+    formState: { errors },
+    handleSubmit,
+  } = form;
 
   const [isVisible, setIsVisible] = useState(false);
 
@@ -26,22 +40,33 @@ export default function SignUp() {
 
   const router = useRouter();
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
-  };
+  const onSubmit = (value: z.infer<typeof registerSchema>) => {
+    setIsSubmitting(true);
+    registerAction(value)
+      .then((res: any) => {
+        console.log(isSubmitting, 'ini is submitting');
+        toast({
+          description: res.message,
+        });
+        setIsVisible(false);
+        setTimeout(() => {
+          router.push('/signin');
+        }, 500);
+      })
+      .catch((e) => {
+        setError('f_referral_code', {
+          type: 'manual',
+          message: e.message,
+        });
+        toast({
+          description: e.message,
+        });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Form submitted:', formData);
-    // Handle form submission logic here
-    setIsVisible(false);
-    setTimeout(() => {
-      router.push('/');
-    }, 500);
+        console.log(e);
+      })
+      .finally(() => {
+        setIsSubmitting(false);
+      });
   };
 
   return (
@@ -92,81 +117,56 @@ export default function SignUp() {
             <h2 className="text-2xl font-bold text-[#1B8057] mb-6">
               Sign up to Aboda
             </h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
                   type="text"
-                  name="name"
                   placeholder="Name"
-                  value={formData.name}
-                  onChange={handleInputChange}
+                  {...register('first_name')}
                   className="bg-green-50"
                 />
+                <ErrorMessage errors={errors} name={'first_name'} />
+
                 <Input
                   type="text"
-                  name="username"
                   placeholder="Username"
-                  value={formData.username}
-                  onChange={handleInputChange}
+                  {...register('last_name')}
                   className="bg-green-50"
                 />
+                <ErrorMessage errors={errors} name={'last_name'} />
               </div>
               <Input
                 type="email"
-                name="email"
+                {...register('email')}
                 placeholder="Email"
-                value={formData.email}
-                onChange={handleInputChange}
                 className="bg-green-50"
               />
+              <ErrorMessage errors={errors} name={'email'} />
+
               <Input
-                type="password"
-                name="password"
-                placeholder="Password"
-                value={formData.password}
-                onChange={handleInputChange}
+                type="text"
+                {...register('phone_number')}
+                placeholder="phone_number"
                 className="bg-green-50"
               />
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="terms"
-                  name="termsAgreed"
-                  checked={formData.termsAgreed}
-                  onCheckedChange={(checked: any) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      termsAgreed: checked as boolean,
-                    }))
-                  }
-                />
-                <label htmlFor="terms" className="text-sm text-gray-600">
-                  Creating an account you're okay with our Terms of Service,
-                  Privacy Policy and our default notification settings
-                </label>
-              </div>
-              <div className="flex justify-between items-center">
-                <Button type="submit" className=" text-white">
-                  SIGN UP
-                </Button>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="notifications"
-                    name="notificationSettings"
-                    checked={formData.notificationSettings}
-                    onCheckedChange={(checked: any) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        notificationSettings: checked as boolean,
-                      }))
-                    }
+              <ErrorMessage errors={errors} name={'phone_number'} />
+
+              <div className="flex flex-row-reverse justify-between items-center">
+                <div className="flex flex-col items-start justify-center">
+                  <Input
+                    type="text"
+                    {...register('f_referral_code')}
+                    placeholder="Referral Code (Optional)"
+                    className="bg-green-50"
                   />
-                  <label
-                    htmlFor="notifications"
-                    className="text-xs text-gray-500"
-                  >
-                    I accept terms and policy
-                  </label>
                 </div>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className=" text-white"
+                >
+                  {isSubmitting ? 'Loading...' : 'SIGN UP'}
+                </Button>
               </div>
             </form>
           </div>
