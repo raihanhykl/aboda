@@ -2,55 +2,68 @@ import { ErrorHandler } from '@/helpers/response';
 import prisma from '@/prisma';
 import { Prisma } from '@prisma/client';
 import { Request } from 'express';
-import { IUser, IUserDetail } from '@/interfaces/user';
-import { userDeletionQueue } from '@/lib/Deleteuser.lib';
-import { compare, hash } from 'bcrypt';
-import { generateTokeEmailVerification, generateToken } from '@/lib/jwt';
-import { sendVerificationEmail } from '@/lib/nodemailer';
-import { verification_url } from '@/config';
 
 export class CartService {
   static async addToCart(req: Request) {
     try {
       const { productStockId, quantityInput } = req.body;
 
-      const checkStock = await prisma.productStock.count({
+      if (!req.user || !req.user.is_verified) {
+        throw new ErrorHandler('User belum terverifikasi atau tidak teregistrasi', 403);
+      }
+
+      const productStock = await prisma.productStock.findUnique({
         where: {
           id: productStockId,
         },
       });
 
-      if (!checkStock) {
-        // throw new error
+      if (!productStock || productStock.stock < quantityInput) {
+        throw new ErrorHandler('Stok produk tidak tersedia atau jumlah melebihi stok', 400);
       }
-      const data: Prisma.CartCreateInput = {
-        quantity: quantityInput,
-        ProductStock: {
-          connect: {
-            id: productStockId,
-          },
-        },
-        User: {
-          connect: {
-            id: Number(req.user.id),
-          },
-        },
-      };
 
-      return await prisma.cart.upsert({
+      const existingCartItem = await prisma.cart.findFirst({
         where: {
-          productStockId: Number(productStockId),
-          userId: Number(req.user.id),
-        },
-        update: {
-          //   name: 'Viola the Magnificent',
-          quantity: quantityInput,
-        },
-        create: {
-          //   email: 'viola@prisma.io',
-          //   name: 'Viola the Magnificent',
+          userId: req.user.id,
+          productStockId,
         },
       });
-    } catch (error) {}
+
+      if (existingCartItem) {
+        const updatedQuantity = existingCartItem.quantity + quantityInput;
+
+        if (updatedQuantity > Number(productStock?.stock)) {
+          throw new ErrorHandler('Jumlah total melebihi stok yang tersedia', 400);
+        }
+
+        await prisma.cart.update({
+          where: {
+            id: existingCartItem.id,
+          },
+          data: {
+            quantity: updatedQuantity,
+          },
+        });
+      } else {
+        await prisma.cart.create({
+          data: {
+            quantity: quantityInput,
+            ProductStock: {
+              connect: {
+                id: productStockId,
+              },
+            },
+            User: {
+              connect: {
+                id: req.user.id,
+              },
+            },
+          },
+        });
+      }
+      return { message: 'Produk berhasil ditambahkan ke keranjang' };
+    } catch (error) {
+      throw new ErrorHandler('ERROR BGT KAK', 400);
+    }
   }
 }
