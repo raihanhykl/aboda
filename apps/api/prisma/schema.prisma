@@ -154,8 +154,8 @@ model ProductStock {
 }
 
 model Cart {
-  id Int @id @default(autoincrement())
-
+  id             Int           @id @default(autoincrement())
+  quantity       Int
   ProductStock   ProductStock? @relation(fields: [productStockId], references: [id])
   productStockId Int?
   User           User?         @relation(fields: [userId], references: [id])

@@ -130,9 +130,9 @@ export class AuthService {
         email,
       },
     })) as IUser;
+
     if (!user) throw new ErrorHandler('User not found', 400);
-    else if (user.is_verified)
-      throw new ErrorHandler('User already verified', 400);
+    return user;
   }
 
   static async setPassword(req: Request) {

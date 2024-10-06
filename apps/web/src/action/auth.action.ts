@@ -48,7 +48,11 @@ export const registerAction = async (values: {
 
 export const checkVerifyEmailAction = async (token: string) => {
   try {
-    await api.get('/auth/check-verify-email/' + token);
+    const res = await api.get('/auth/check-verify-email/' + token);
+    return {
+      message: 'Check Verify Email Berhasil',
+      data: res.data,
+    };
   } catch (error) {
     if (axios.isAxiosError(error)) {
       const errorMessage = error.response?.data.message;

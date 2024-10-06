@@ -13,6 +13,8 @@ import {
 } from '@/action/auth.action';
 import { ErrorMessage } from '@hookform/error-message';
 import Link from 'next/link';
+import VerificationError from './verifcationError';
+import VerificationVerified from './verificationVerified';
 
 type Props = {
   params: {
@@ -23,7 +25,6 @@ type Props = {
 export default function Page({ params }: Props) {
   const router = useRouter();
   const [verified, setVerified] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -58,68 +59,23 @@ export default function Page({ params }: Props) {
   useEffect(() => {
     const verifyEmail = async () => {
       try {
-        await checkVerifyEmailAction(params.token);
-        setVerified(true);
+        console.log('ini di verification page');
+        const res = await checkVerifyEmailAction(params.token);
+        if (res.data.data.is_verified == 1) setVerified(true);
       } catch (err) {
-        console.error('Verification error:', err);
         setError('Verification failed or already verified.');
-      } finally {
-        setLoading(false);
       }
     };
 
     verifyEmail();
   }, [params.token]);
 
-  if (loading) {
-    return <div>Loading...</div>;
+  if (error) {
+    return <VerificationError />;
   }
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-        <div className="sm:mx-auto sm:w-full sm:max-w-md">
-          <div className="flex justify-center">
-            <svg
-              className="h-12 w-12 text-green-600"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          </div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Already Verified
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">{error}</p>
-        </div>
-
-        <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-          <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-            <div className="space-y-6">
-              <p className="text-center text-sm text-gray-700">
-                You no longer need to verify your account. Please proceed to
-                login.
-              </p>
-              <div>
-                <Link
-                  href="/signin"
-                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                >
-                  Go to Login
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+  if (verified) {
+    return <VerificationVerified />;
   }
 
   return (
@@ -147,7 +103,7 @@ export default function Page({ params }: Props) {
                     type="password"
                     required
                     {...register('password')}
-                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[#1B8057] focus:border-[#1B8057] sm:text-sm"
                   />
                 </div>
               </div>
@@ -157,7 +113,7 @@ export default function Page({ params }: Props) {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#1B8057] hover:bg-[#12563b] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1B8057]"
                 >
                   {isSubmitting ? 'Verifying...' : 'Verify and Set Password'}
                 </button>
