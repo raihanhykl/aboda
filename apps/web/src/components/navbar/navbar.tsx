@@ -2,9 +2,11 @@
 import { useState } from 'react';
 import { ShoppingCart, User, Search, ChevronDown, Menu } from 'lucide-react';
 import { actionLogout } from '@/action/auth.action';
+import { useSession } from 'next-auth/react';
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const session = useSession();
 
   return (
     <nav className="bg-[#1B8057] text-white">
@@ -36,7 +38,17 @@ export default function Navbar() {
             </div>
           </div>
           <div className="flex items-center space-x-11">
-            <ShoppingCart className="h-6 w-6" />
+            {session.data?.user.image ? (
+              <>
+                <img
+                  src={session.data.user.image}
+                  className="h-10 w-10 rounded-full"
+                />
+                <p>{session.data.user.email}</p>
+              </>
+            ) : (
+              <ShoppingCart className="h-6 w-6" />
+            )}
             <button className=" flex gap-3" onClick={() => actionLogout()}>
               <User className="h-6 w-6" />
               Logout

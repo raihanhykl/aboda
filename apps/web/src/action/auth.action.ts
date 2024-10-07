@@ -2,6 +2,7 @@
 import { signIn, signOut } from '@/auth';
 import { api } from '@/config/axios.config';
 import axios from 'axios';
+import { AuthError } from 'next-auth';
 
 export const loginAction = async (values: {
   email: string;
@@ -24,10 +25,11 @@ export const actionLogout = async () => {
 
 export const registerAction = async (values: {
   first_name: string;
-  last_name: string;
+  last_name?: string;
   email: string;
-  phone_number: string;
+  phone_number?: string;
   f_referral_code?: string;
+  provider?: string;
 }) => {
   try {
     const data = { ...values };
@@ -75,5 +77,20 @@ export const setFirstPasswordAction = async (
     }
     // console.log('ini error', error);
     throw new Error('Set Password Gagal. ');
+  }
+};
+
+export const googleAuthenticate = async function () {
+  try {
+    console.log('sign in initiated');
+    await signIn('google', {
+      redirect: true,
+      redirectTo: '/',
+    });
+  } catch (error) {
+    if (error instanceof AuthError) {
+      throw new Error(error.message);
+    }
+    throw error;
   }
 };

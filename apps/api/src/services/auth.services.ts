@@ -1,4 +1,4 @@
-import { ErrorHandler } from '@/helpers/response';
+import { ErrorHandler, referralVoucher } from '@/helpers/response';
 import prisma from '@/prisma';
 import { Prisma } from '@prisma/client';
 import { Request } from 'express';
@@ -52,14 +52,20 @@ export class AuthService {
   static async register(req: Request) {
     return await prisma.$transaction(async (prisma) => {
       try {
-        const { first_name, last_name, email, phone_number, f_referral_code } =
-          req.body;
-
-        const data: Prisma.UserCreateInput = {
+        const {
           first_name,
           last_name,
           email,
           phone_number,
+          f_referral_code,
+          provider,
+        } = req.body;
+
+        const data: Prisma.UserCreateInput = {
+          first_name,
+          last_name: last_name || '',
+          email,
+          phone_number: phone_number || '',
           Role: {
             connect: {
               id: 1,
@@ -67,6 +73,7 @@ export class AuthService {
           },
           image: 'avatar.png',
           is_verified: 0,
+          provider,
         };
 
         const newUser = await prisma.user.create({
@@ -99,6 +106,8 @@ export class AuthService {
               f_referral_code,
             },
           });
+
+          await referralVoucher(f_referral_code, newUser.id);
         }
 
         const token = generateTokeEmailVerification({ email });

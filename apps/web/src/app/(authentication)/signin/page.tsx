@@ -9,7 +9,11 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema } from '@/schemas/auth.schemas';
 import { ErrorMessage } from '@hookform/error-message';
-import { loginAction } from '@/action/auth.action';
+import { googleAuthenticate, loginAction } from '@/action/auth.action';
+import Image from 'next/image';
+import { Loader2 } from 'lucide-react';
+import { post } from 'cypress/types/jquery';
+import google from '@/../public/Google.svg.png';
 
 export default function SignIn() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -56,6 +60,10 @@ export default function SignIn() {
       });
   };
 
+  const onGoogleSubmit = () => {
+    console.log('sign in initiated sign in page');
+    googleAuthenticate();
+  };
   return (
     <div
       className={`flex flex-col justify-center items-center flex-grow bg-gray-100 p-4`}
@@ -100,6 +108,26 @@ export default function SignIn() {
                   className=" text-white"
                 >
                   SIGN IN
+                </Button>
+
+                <Button
+                  onClick={onGoogleSubmit}
+                  disabled={form.formState.isSubmitting}
+                >
+                  {form.formState.isSubmitting ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <>
+                      <Image
+                        src={google}
+                        alt="Google"
+                        width={25}
+                        height={25}
+                        className=" mr-2 "
+                      />
+                      {' Masuk dengan Google'}
+                    </>
+                  )}
                 </Button>
               </div>
             </form>

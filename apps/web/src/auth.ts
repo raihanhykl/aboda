@@ -1,8 +1,10 @@
 // 'use server';
 import NextAuth, { User } from 'next-auth';
 import Credential from 'next-auth/providers/credentials';
+import google from 'next-auth/providers/google';
 import { api } from './config/axios.config';
 import { jwtDecode } from 'jwt-decode';
+import { registerAction } from './action/auth.action';
 
 export const { signIn, signOut, handlers, auth } = NextAuth({
   pages: {
@@ -12,6 +14,10 @@ export const { signIn, signOut, handlers, auth } = NextAuth({
     strategy: 'jwt',
   },
   providers: [
+    google({
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    }),
     Credential({
       authorize: async (credentials) => {
         try {

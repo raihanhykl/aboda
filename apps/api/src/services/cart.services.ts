@@ -4,12 +4,33 @@ import { Prisma } from '@prisma/client';
 import { Request } from 'express';
 
 export class CartService {
+  static async getCart(req: Request) {
+    try {
+      return await prisma.cart.findMany({
+        where: {
+          userId: Number(req.user.id),
+        },
+        include: {
+          ProductStock: {
+            include: {
+              Product: true,
+              Branch: true,
+            },
+          },
+        },
+      });
+    } catch (error) {}
+  }
+
   static async addToCart(req: Request) {
     try {
       const { productStockId, quantityInput } = req.body;
 
       if (!req.user || !req.user.is_verified) {
-        throw new ErrorHandler('User belum terverifikasi atau tidak teregistrasi', 403);
+        throw new ErrorHandler(
+          'User belum terverifikasi atau tidak teregistrasi',
+          403,
+        );
       }
 
       const productStock = await prisma.productStock.findUnique({
@@ -19,7 +40,10 @@ export class CartService {
       });
 
       if (!productStock || productStock.stock < quantityInput) {
-        throw new ErrorHandler('Stok produk tidak tersedia atau jumlah melebihi stok', 400);
+        throw new ErrorHandler(
+          'Stok produk tidak tersedia atau jumlah melebihi stok',
+          400,
+        );
       }
 
       const existingCartItem = await prisma.cart.findFirst({
@@ -33,7 +57,10 @@ export class CartService {
         const updatedQuantity = existingCartItem.quantity + quantityInput;
 
         if (updatedQuantity > Number(productStock?.stock)) {
-          throw new ErrorHandler('Jumlah total melebihi stok yang tersedia', 400);
+          throw new ErrorHandler(
+            'Jumlah total melebihi stok yang tersedia',
+            400,
+          );
         }
 
         await prisma.cart.update({
