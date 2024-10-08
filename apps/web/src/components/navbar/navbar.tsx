@@ -3,20 +3,25 @@ import { useState } from 'react';
 import { ShoppingCart, User, Search, ChevronDown, Menu } from 'lucide-react';
 import { actionLogout } from '@/action/auth.action';
 import { useSession } from 'next-auth/react';
+import { Button } from '../ui/button';
+import NavbarButton from './navbar.button';
+import Link from 'next/link';
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const session = useSession();
 
   return (
-    <nav className="bg-[#1B8057] text-white">
+    <nav className="sticky top-0 z-50 bg-[#1B8057] text-white">
       <div className="container mx-auto px-4">
         {/* Top bar */}
         <div className="flex items-center justify-between py-4">
-          <div className="flex items-center space-x-4">
-            <ShoppingCart className="h-8 w-8" />
-            <span className="text-2xl font-bold">aboda</span>
-          </div>
+          <Link href="/">
+            <div className="flex items-center space-x-4">
+              <ShoppingCart className="h-8 w-8" />
+              <span className="text-2xl font-bold">aboda</span>
+            </div>
+          </Link>
           <div className="hidden md:flex items-center space-x-4 flex-grow mx-8">
             <div className="flex flex-col">
               <span className="text-sm">Location</span>
@@ -38,21 +43,7 @@ export default function Navbar() {
             </div>
           </div>
           <div className="flex items-center space-x-11">
-            {session.data?.user.image ? (
-              <>
-                <img
-                  src={session.data.user.image}
-                  className="h-10 w-10 rounded-full"
-                />
-                <p>{session.data.user.email}</p>
-              </>
-            ) : (
-              <ShoppingCart className="h-6 w-6" />
-            )}
-            <button className=" flex gap-3" onClick={() => actionLogout()}>
-              <User className="h-6 w-6" />
-              Logout
-            </button>
+            <NavbarButton />
             <button
               className="md:hidden"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -73,9 +64,13 @@ export default function Navbar() {
             'About Us',
             'Blogs',
           ].map((item) => (
-            <a key={item} href="#" className="hover:text-green-200">
+            <Link
+              key={item}
+              href={`${item === 'Home' ? '/' : '/' + item.toLowerCase()}`}
+              className="hover:text-green-200"
+            >
               {item}
-            </a>
+            </Link>
           ))}
         </div>
 

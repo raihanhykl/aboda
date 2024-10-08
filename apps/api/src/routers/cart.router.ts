@@ -15,6 +15,13 @@ export class CartRouter {
   private routes() {
     this.router.get('/get', validateToken, this.cartController.getCart);
     this.router.post('/add', validateToken, this.cartController.addToCart);
+    this.router.patch('/update', validateToken, this.cartController.updateCart);
+    this.router.patch('/delete', validateToken, this.cartController.deleteCart);
+    this.router.patch(
+      '/delete-all',
+      validateToken,
+      this.cartController.deleteAllCart,
+    );
   }
   public getRouter() {
     return this.router;

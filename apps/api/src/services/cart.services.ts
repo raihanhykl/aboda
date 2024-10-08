@@ -93,4 +93,49 @@ export class CartService {
       throw new ErrorHandler('ERROR BGT KAK', 400);
     }
   }
+
+  static async updateCart(req: Request) {
+    try {
+      const { quantity, cartId } = req.body;
+
+      return await prisma.cart.update({
+        where: {
+          id: Number(cartId),
+          userId: req.user.id,
+        },
+        data: {
+          quantity: quantity,
+        },
+      });
+    } catch (error) {
+      throw new Error('Failed update cart!');
+    }
+  }
+
+  static async delete(req: Request) {
+    try {
+      const { cartId } = req.body;
+
+      return await prisma.cart.delete({
+        where: {
+          id: Number(cartId),
+          userId: req.user.id,
+        },
+      });
+    } catch (error) {
+      throw new Error('Failed to delete cart!');
+    }
+  }
+
+  static async deleteAll(req: Request) {
+    try {
+      return await prisma.cart.deleteMany({
+        where: {
+          userId: req.user.id,
+        },
+      });
+    } catch (error) {
+      throw new Error('Failed to delete all cart!');
+    }
+  }
 }

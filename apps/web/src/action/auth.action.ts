@@ -11,7 +11,8 @@ export const loginAction = async (values: {
   try {
     await signIn('credentials', {
       ...values,
-      redirect: false,
+      redirect: true,
+      redirectTo: '/',
     });
   } catch (e) {
     console.log(e);

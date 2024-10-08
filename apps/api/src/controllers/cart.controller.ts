@@ -20,4 +20,31 @@ export class CartController {
       next(error);
     }
   }
+
+  async updateCart(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await CartService.updateCart(req);
+      return res.send(responseHandle('Update Cart Success', data));
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async deleteCart(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await CartService.delete(req);
+      return res.send(responseHandle('Delete Cart Success', data));
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async deleteAllCart(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await CartService.deleteAll(req);
+      return res.send(responseHandle('Delete All Cart Success', data));
+    } catch (error) {
+      next(error);
+    }
+  }
 }

@@ -25,7 +25,7 @@ model User {
   first_name    String
   last_name     String?
   phone_number  String?
-  image         String
+  image         String?
   is_verified   Int
   created_at    DateTime      @default(now())
   updated_at    DateTime      @default(now())

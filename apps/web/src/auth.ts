@@ -61,6 +61,7 @@ export const { signIn, signOut, handlers, auth } = NextAuth({
         session.user.roleId = token.roleId as number;
         session.user.image = token.image as string;
         session.user.access_token = token.access_token as string;
+        session.user.name = session.user.name?.split(' ')[0] as string;
       }
       return session;
     },

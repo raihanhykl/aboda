@@ -71,7 +71,6 @@ export class AuthService {
               id: 1,
             },
           },
-          image: 'avatar.png',
           is_verified: 0,
           provider,
         };

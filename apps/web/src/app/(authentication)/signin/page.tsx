@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -12,8 +11,8 @@ import { ErrorMessage } from '@hookform/error-message';
 import { googleAuthenticate, loginAction } from '@/action/auth.action';
 import Image from 'next/image';
 import { Loader2 } from 'lucide-react';
-import { post } from 'cypress/types/jquery';
 import google from '@/../public/Google.svg.png';
+import { usePathname, useRouter } from 'next/navigation';
 
 export default function SignIn() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -22,6 +21,7 @@ export default function SignIn() {
     defaultValues: {},
   });
 
+  const router = useRouter();
   const {
     register,
     setError,
@@ -38,16 +38,11 @@ export default function SignIn() {
     };
   }, []);
 
-  const router = useRouter();
-
   const onSubmit = (values: z.infer<typeof loginSchema>) => {
     setIsSubmitting(true);
     loginAction(values)
       .then(() => {
         setIsVisible(false);
-        setTimeout(() => {
-          router.push('/');
-        }, 500);
       })
       .catch((e) => {
         setError('password', {
@@ -61,7 +56,6 @@ export default function SignIn() {
   };
 
   const onGoogleSubmit = () => {
-    console.log('sign in initiated sign in page');
     googleAuthenticate();
   };
   return (
