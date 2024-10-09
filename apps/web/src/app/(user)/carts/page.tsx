@@ -14,6 +14,7 @@ import {
 import { api } from '@/config/axios.config';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import AlertModal from '@/components/modal/modal';
 
 export default function page() {
   const [carts, setCarts] = useState<any[]>([]);
@@ -127,13 +128,12 @@ export default function page() {
                     className="py-4 grid grid-cols-4 gap-4 items-center"
                   >
                     <div className="col-span-2 flex items-center space-x-4">
-                      <Button
-                        variant="ghost"
-                        className="p-0"
-                        onClick={() => deleteCart(cart.id)}
-                      >
-                        ✕
-                      </Button>
+                      <AlertModal
+                        onConfirm={() => deleteCart(cart.id)}
+                        triggerText="✕"
+                        title="Are you sure?"
+                        description={`This action cannot be undone. This will delete ${cart.ProductStock.Product.product_name} from your cart.`}
+                      />
                       <div className="w-16 h-16 bg-gray-200" />
                       <span>{cart.ProductStock.Product.product_name}</span>
                     </div>
@@ -179,9 +179,12 @@ export default function page() {
                   Apply Voucher
                 </Button>
               </div>
-              <Button variant="link" onClick={() => deleteAll()}>
-                Clear Shopping Cart
-              </Button>
+              <AlertModal
+                onConfirm={deleteAll}
+                triggerText="Clear Shopping Cart"
+                title="Are you absolutely sure?"
+                description="This action cannot be undone. This will permanently delete all your cart items from our servers."
+              />
             </CardFooter>
           </Card>
 
