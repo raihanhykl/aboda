@@ -7,6 +7,7 @@ export const validateData =
   (schema: z.infer<any>) =>
   (req: Request, res: Response, next: NextFunction) => {
     try {
+      console.log(req.body, 'ini req body di validationMiddleware');
       schema.parse(req.body);
       next();
     } catch (error) {

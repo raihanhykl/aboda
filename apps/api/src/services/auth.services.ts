@@ -65,7 +65,6 @@ export class AuthService {
           first_name,
           last_name: last_name || '',
           email,
-          phone_number: phone_number || '',
           Role: {
             connect: {
               id: 1,
@@ -74,6 +73,10 @@ export class AuthService {
           is_verified: 0,
           provider,
         };
+
+        if (phone_number) {
+          data.phone_number = phone_number;
+        }
 
         const newUser = await prisma.user.create({
           data,

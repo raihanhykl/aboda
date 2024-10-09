@@ -28,7 +28,7 @@ export const registerAction = async (values: {
   first_name: string;
   last_name?: string;
   email: string;
-  phone_number?: string;
+  phone_number?: string | null;
   f_referral_code?: string;
   provider?: string;
 }) => {

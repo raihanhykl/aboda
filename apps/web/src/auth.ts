@@ -46,6 +46,27 @@ export const { signIn, signOut, handlers, auth } = NextAuth({
   ],
   callbacks: {
     async signIn({ user, account, profile, email, credentials }) {
+      if (account?.provider === 'google') {
+        console.log(profile, 'ini profile ygy');
+        await registerAction({
+          first_name: profile?.given_name!,
+          last_name: profile?.family_name || undefined,
+          email: profile?.email!,
+          phone_number:
+            (profile?.phone_number && String(profile?.phone_number)) || '',
+          f_referral_code: user?.f_referral_code || '',
+          provider: 'google',
+        })
+          .then((res) => {
+            console.log('success saving user info social login');
+          })
+          .catch((err) => {
+            console.log('error: ', err);
+          })
+          .finally(() => {
+            return true;
+          });
+      }
       return true;
     },
 

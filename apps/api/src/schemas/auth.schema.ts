@@ -11,13 +11,20 @@ export const registerSchema = z.object({
     message: 'Invalid email address',
   }),
   phone_number: z
-    .string({ message: 'Mohon masukan nomor telepon Anda.' })
-    .min(8, {
-      message: 'Mohon masukan nomor telepon yang valid.',
-    })
-    .refine(validator.isMobilePhone, {
-      message: 'Mohon masukan nomor telepon yang valid.',
-    }),
+    .string()
+    .optional() // Membuat phone_number bersifat opsional
+    .refine(
+      (value) => !value || value.length >= 8, // Validasi panjang minimal jika ada value
+      {
+        message: 'Mohon masukan nomor telepon yang valid (minimal 8 karakter).',
+      },
+    )
+    .refine(
+      (value) => !value || validator.isMobilePhone(value), // Validasi nomor telepon jika ada value
+      {
+        message: 'Mohon masukan nomor telepon yang valid.',
+      },
+    ),
   f_referral_code: z
     .string()
     .max(7, { message: 'Masukkan referral code yang valid.' }),
