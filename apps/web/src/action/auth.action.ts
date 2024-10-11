@@ -1,18 +1,21 @@
 'use server';
 import { signIn, signOut } from '@/auth';
 import { api } from '@/config/axios.config';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { AuthError } from 'next-auth';
+import { headers } from 'next/headers';
+import { useSearchParams } from 'next/navigation';
 
 export const loginAction = async (values: {
   email: string;
   password: string;
+  redirectTo: string;
 }) => {
   try {
     await signIn('credentials', {
       ...values,
       redirect: true,
-      redirectTo: '/',
+      redirectTo: values.redirectTo,
     });
   } catch (e) {
     console.log(e);
@@ -30,22 +33,21 @@ export const registerAction = async (values: {
   email: string;
   phone_number?: string | null;
   f_referral_code?: string;
-  provider?: string;
 }) => {
   try {
     const data = { ...values };
+
     await api.post('/auth/v2', data);
     return {
       message: 'Register Berhasil',
     };
-  } catch (error) {
-    // if (axios.isAxiosError(error)) {
-    //   const errorMessage = error.response?.data.message;
-    //   throw new Error(errorMessage);
-    // }
-    // console.log('ini error', error);
+  } catch (error: any) {
+    if (axios.isAxiosError(error)) {
+      const errorMessage = error.response?.data.message;
+      console.log(error.response?.data, 'ini error message register');
+      throw new Error(errorMessage);
+    }
     throw new Error('Register Gagal. ');
-    // throw error;
   }
 };
 
@@ -93,5 +95,26 @@ export const googleAuthenticate = async function () {
       throw new Error(error.message);
     }
     throw error;
+  }
+};
+
+export const socialRegister = async (values: {
+  email: string;
+  provider: string;
+  first_name: string;
+  last_name: string;
+  phone_number: string;
+}) => {
+  try {
+    const data = { ...values };
+    await api.post('/auth/v3', data);
+    return {
+      message: 'Register Berhasil',
+    };
+  } catch (error) {
+    if (error instanceof AxiosError) {
+      throw new Error(error.response?.data.message);
+    }
+    throw new Error('Gagal Register');
   }
 };

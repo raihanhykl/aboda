@@ -19,7 +19,6 @@ export const sendVerificationEmail = (
     verification_url: string;
   },
 ) => {
-  console.log('to: ', to, ' data: ', data);
   const templatePath = join(__dirname, '../templates/', 'verification.hbs'); //cari file hbs
   const templateSource = readFileSync(templatePath, 'utf-8'); // salin isi file
   const compiledTemplate = compile(templateSource); //diubah jadi handlebars supaya bisa diinput value ke dalam html(function)

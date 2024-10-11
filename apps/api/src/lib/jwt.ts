@@ -9,7 +9,5 @@ export const generateTokeEmailVerification = (
   payload: any,
   expiresIn: string = '15m',
 ) => {
-  console.log(VERIFY_EMAIL_SECRET, 'ini verify email secret');
-
   return sign(payload, VERIFY_EMAIL_SECRET, { expiresIn, algorithm: 'HS256' });
 };

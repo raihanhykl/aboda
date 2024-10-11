@@ -1,4 +1,8 @@
-import { ErrorHandler, referralVoucher } from '@/helpers/response';
+import {
+  ErrorHandler,
+  generateReferralCode,
+  referralVoucher,
+} from '@/helpers/response';
 import prisma from '@/prisma';
 import { Prisma } from '@prisma/client';
 import { Request } from 'express';
@@ -12,9 +16,6 @@ import { verification_url } from '@/config';
 export class AuthService {
   static async login(req: Request) {
     const { email, password } = req.body;
-
-    console.log(email + password + email, 'ini DI AUTH SERVICE');
-
     const user = (await prisma.user.findUnique({
       where: {
         email,
@@ -33,8 +34,6 @@ export class AuthService {
     });
 
     const data = { ...user, ...detail };
-
-    console.log(data);
 
     if (!data) {
       throw new ErrorHandler('User not found', 400);
@@ -61,6 +60,12 @@ export class AuthService {
           provider,
         } = req.body;
 
+        const user = await prisma.user.findUnique({
+          where: {
+            email: email,
+          },
+        });
+        if (user) throw new ErrorHandler('User already exists coy', 400);
         const data: Prisma.UserCreateInput = {
           first_name,
           last_name: last_name || '',
@@ -84,11 +89,7 @@ export class AuthService {
 
         const newUserDetail = await prisma.userDetail.create({
           data: {
-            referral_code: Math.random()
-              .toString(36)
-              .toLocaleUpperCase()
-              .slice(2, 9)
-              .padEnd(7, '0'),
+            referral_code: generateReferralCode(),
             userId: newUser.id,
           },
         });
@@ -127,6 +128,49 @@ export class AuthService {
           email,
           verification_url: verification_url + token,
         });
+      } catch (error) {
+        throw new ErrorHandler((error as Error).message, 400);
+      }
+    });
+  }
+
+  static async socialRegister(req: Request) {
+    return await prisma.$transaction(async (prisma) => {
+      try {
+        const { email, provider, first_name, last_name, phone_number } =
+          req.body;
+        const user = await prisma.user.findFirst({
+          where: {
+            email,
+          },
+        });
+        if (user) {
+          if (user.provider !== provider)
+            throw new ErrorHandler('User already exists', 400);
+        } else {
+          const newUser = await prisma.user.create({
+            data: {
+              email,
+              first_name,
+              last_name,
+              phone_number: phone_number || '',
+              Role: {
+                connect: {
+                  id: 1,
+                },
+              },
+              provider,
+              is_verified: 1,
+            },
+          });
+
+          await prisma.userDetail.create({
+            data: {
+              userId: newUser.id,
+              referral_code: generateReferralCode(),
+            },
+          });
+        }
       } catch (error) {
         throw new ErrorHandler((error as Error).message, 400);
       }

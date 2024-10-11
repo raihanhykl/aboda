@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { AuthController } from '../controllers/auth.controller';
 import { validateData } from '@/middlewares/validationMiddleware';
-import { registerSchema } from '@/schemas/auth.schema';
+import { registerSchema, socialRegister } from '@/schemas/auth.schema';
 import { verifyEmail } from '@/middlewares/verifyEmail';
 
 export class AuthRouter {
@@ -16,6 +16,11 @@ export class AuthRouter {
       '/v2',
       validateData(registerSchema),
       this.authController.register,
+    );
+    this.router.post(
+      '/v3',
+      validateData(socialRegister),
+      this.authController.socialRegister,
     );
     this.router.get(
       '/check-verify-email/:token',

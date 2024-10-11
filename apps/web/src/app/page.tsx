@@ -1,15 +1,66 @@
+'use client';
 import Image from 'next/image';
 import styles from './page.module.css';
 import { Button } from '@/components/ui/button';
 import { CarouselAboda } from './(main)/components/carousel';
+import FeaturedCategories from './(main)/components/categories';
+import { FeaturedProducts } from './(main)/components/featuredProduct';
+import { error } from 'console';
+import { useEffect, useState } from 'react';
 
 export default function Home() {
+  const [location, setLocation] = useState<{
+    lat: number;
+    long: number;
+  } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Meminta akses lokasi pengguna
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          console.log(position);
+          const { latitude, longitude } = position.coords;
+          setLocation({ lat: latitude, long: longitude });
+        },
+        (error) => {
+          console.log(error, 'ini error location permition');
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              setError('User denied the request for Geolocation.');
+              break;
+            case error.POSITION_UNAVAILABLE:
+              setError('Location information is unavailable.');
+              break;
+            case error.TIMEOUT:
+              setError('The request to get user location timed out.');
+              break;
+          }
+        },
+      );
+    } else {
+      setError('Geolocation is not supported by this browser.');
+    }
+  }, []);
+  // if (navigator.geolocation) {
+  //   navigator.geolocation.getCurrentPosition(
+  //     (position) => {
+  //       console.log(position);
+  //     },
+  //     (error) => {
+  //       console.log(typeof error, 'typeof error. Error: ', error);
+  //     },
+  //   );
+  // }
   return (
     <>
-      <div className=" mx-auto ">
+      <div className="container mx-auto py-5">
         <CarouselAboda />
+        <FeaturedCategories />
+        <FeaturedProducts />
       </div>
-      <p className=" leading-7">
+      {/* <p className=" leading-7">
         BOGELLL Lorem ipsum dolor sit amet consectetur adipisicing elit.
         Molestias, voluptatum, similique accusantium rerum facilis dolorum
         voluptate debitis deleniti blanditiis cupiditate quasi quibusdam,
@@ -342,7 +393,7 @@ export default function Home() {
         laudantium aliquid, minus reiciendis. Aut velit fugit dolore voluptas
         temporibus alias error facere ipsam autem odio reprehenderit culpa
         impedit voluptatibus, id delectus illum, vitae odit.
-      </p>
+      </p> */}
     </>
   );
 }

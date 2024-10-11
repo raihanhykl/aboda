@@ -51,7 +51,7 @@ export function CarouselAboda() {
   return (
     <Carousel
       plugins={[plugin.current]}
-      className="w-[95vw]"
+      className="w-full"
       onMouseEnter={plugin.current.stop}
       onMouseLeave={plugin.current.reset}
     >

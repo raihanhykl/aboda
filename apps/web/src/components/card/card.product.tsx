@@ -8,27 +8,29 @@ import {
 } from '@/components/ui/card';
 import Image from 'next/image';
 
-interface Product {
+export interface Product {
   id: number;
-  name: string;
+  product_name: string;
   image: string;
   category: string;
   price: number;
+  button: boolean;
 }
 
 export default function ProductCard({
   id,
-  name,
+  product_name,
   image,
   category,
   price,
+  button = true,
 }: Product) {
   return (
     <Card className="overflow-hidden" key={id}>
       <CardHeader className="p-0">
         <Image
-          src={image}
-          alt={name}
+          src={`/${image}`}
+          alt={product_name}
           width={400}
           height={200}
           className="w-full h-48 object-cover"
@@ -36,12 +38,14 @@ export default function ProductCard({
       </CardHeader>
       <CardContent className="p-4">
         <p className="text-sm text-gray-500">{category}</p>
-        <CardTitle className="text-lg">{name}</CardTitle>
+        <CardTitle className="text-lg">{product_name}</CardTitle>
         <p className="text-lg font-bold">Rp. {price.toLocaleString()}</p>
       </CardContent>
-      <CardFooter className="p-4 pt-0">
-        <Button className="w-full">Add To Cart</Button>
-      </CardFooter>
+      {button && (
+        <CardFooter className="p-4 pt-0">
+          <Button className="w-full">Add To Cart</Button>
+        </CardFooter>
+      )}
     </Card>
   );
 }

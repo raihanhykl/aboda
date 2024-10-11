@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -12,6 +12,8 @@ import {
 } from '@/components/ui/select';
 import ProductCard from '../../../components/card/card.product';
 import ProductCardSkeleton from '@/components/card/skeleton.product';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { api } from '@/config/axios.config';
 
 const categories = [
   'Vegetables',
@@ -23,119 +25,36 @@ const categories = [
   'Drinks',
 ];
 
-const products = [
-  {
-    id: 1,
-    name: 'Fresh Kiwi',
-    category: 'Fruits',
-    price: 20000,
-    image: '/hand-pick.jpg.webp',
-  },
-  {
-    id: 2,
-    name: 'Fresh Kiwi',
-    category: 'Fruits',
-    price: 20000,
-    image: '/hand-pick.jpg.webp',
-  },
-  {
-    id: 3,
-    name: 'Fresh Kiwi',
-    category: 'Fruits',
-    price: 20000,
-    image: '/hand-pick.jpg.webp',
-  },
-  {
-    id: 4,
-    name: 'Fresh Kiwi',
-    category: 'Fruits',
-    price: 20000,
-    image: '/hand-pick.jpg.webp',
-  },
-  {
-    id: 5,
-    name: 'Fresh Kiwi',
-    category: 'Fruits',
-    price: 20000,
-    image: '/hand-pick.jpg.webp',
-  },
-  {
-    id: 6,
-    name: 'Fresh Kiwi',
-    category: 'Fruits',
-    price: 20000,
-    image: '/hand-pick.jpg.webp',
-  },
-  {
-    id: 7,
-    name: 'Fresh Kiwi',
-    category: 'Fruits',
-    price: 20000,
-    image: '/hand-pick.jpg.webp',
-  },
-  {
-    id: 8,
-    name: 'Fresh Kiwi',
-    category: 'Fruits',
-    price: 20000,
-    image: '/hand-pick.jpg.webp',
-  },
-  {
-    id: 9,
-    name: 'Fresh Kiwi',
-    category: 'Fruits',
-    price: 20000,
-    image: '/hand-pick.jpg.webp',
-  },
-  {
-    id: 10,
-    name: 'Fresh Kiwi',
-    category: 'Fruits',
-    price: 20000,
-    image: '/hand-pick.jpg.webp',
-  },
-  {
-    id: 11,
-    name: 'Fresh Kiwi',
-    category: 'Fruits',
-    price: 20000,
-    image: '/hand-pick.jpg.webp',
-  },
-  {
-    id: 12,
-    name: 'Fresh Kiwi',
-    category: 'Fruits',
-    price: 20000,
-    image: '/hand-pick.jpg.webp',
-  },
-  {
-    id: 13,
-    name: 'Fresh Kiwi',
-    category: 'Fruits',
-    price: 20000,
-    image: '/hand-pick.jpg.webp',
-  },
-  {
-    id: 14,
-    name: 'Fresh Kiwi',
-    category: 'Fruits',
-    price: 20000,
-    image: '/hand-pick.jpg.webp',
-  },
-  {
-    id: 15,
-    name: 'Fresh Kiwi',
-    category: 'Fruits',
-    price: 20000,
-    image: '/hand-pick.jpg.webp',
-  },
-];
-
 export default function ShopPage() {
   const [isLoading, setIsLoading] = useState(true);
+  const [products, setProducts] = useState([]);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const itemsPerPage = 2;
 
-  // Simulate loading
-  setTimeout(() => setIsLoading(false), 2000);
+  const performSearch = async () => {
+    try {
+      const res = await api.get(
+        `/product?page=${currentPage}&limit=${itemsPerPage}`,
+      );
+      setProducts(res.data.data.data);
+      setTotalPages(Math.ceil(Number(res.data.data.total) / itemsPerPage)); // Set total pages based on API response
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    performSearch();
+  }, [currentPage]);
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage > 0 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -194,10 +113,86 @@ export default function ShopPage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {isLoading
-              ? Array.from({ length: 12 }).map((_, index) => (
+              ? Array.from({ length: 6 }).map((_, index) => (
                   <ProductCardSkeleton key={index} />
                 ))
-              : products.map((product) => <ProductCard {...product} />)}
+              : products.map((branch: any) =>
+                  branch.ProductStocks.map((product: any) => (
+                    <ProductCard key={product.id} {...product.Product} />
+                  )),
+                )}
+          </div>
+
+          {/* Pagination */}
+          <div className="flex justify-center items-center space-x-2 mt-5">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+
+            {/* Showing only first, last, and nearby pages */}
+            {currentPage > 1 && (
+              <>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => handlePageChange(1)}
+                >
+                  1
+                </Button>
+                {currentPage > 2 && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    disabled
+                  >
+                    ...
+                  </Button>
+                )}
+              </>
+            )}
+            <Button variant="default" size="icon" className="h-8 w-8">
+              {currentPage}
+            </Button>
+            {currentPage < totalPages && (
+              <>
+                {currentPage < totalPages - 1 && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    disabled
+                  >
+                    ...
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => handlePageChange(totalPages)}
+                >
+                  {totalPages}
+                </Button>
+              </>
+            )}
+
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
           </div>
         </main>
       </div>

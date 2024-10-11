@@ -38,3 +38,11 @@ export const referralVoucher = async (code: string, id: number) => {
     },
   });
 };
+
+export const generateReferralCode = () => {
+  return Math.random()
+    .toString(36)
+    .toLocaleUpperCase()
+    .slice(2, 9)
+    .padEnd(7, '0');
+};

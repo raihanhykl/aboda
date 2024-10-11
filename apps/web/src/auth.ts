@@ -4,7 +4,8 @@ import Credential from 'next-auth/providers/credentials';
 import google from 'next-auth/providers/google';
 import { api } from './config/axios.config';
 import { jwtDecode } from 'jwt-decode';
-import { registerAction } from './action/auth.action';
+import { registerAction, socialRegister } from './action/auth.action';
+import { redirect } from 'next/navigation';
 
 export const { signIn, signOut, handlers, auth } = NextAuth({
   pages: {
@@ -21,7 +22,6 @@ export const { signIn, signOut, handlers, auth } = NextAuth({
     Credential({
       authorize: async (credentials) => {
         try {
-          console.log('ini credentialll', credentials);
           if (!credentials || !credentials?.email || !credentials?.password)
             return null;
 
@@ -47,24 +47,22 @@ export const { signIn, signOut, handlers, auth } = NextAuth({
   callbacks: {
     async signIn({ user, account, profile, email, credentials }) {
       if (account?.provider === 'google') {
-        console.log(profile, 'ini profile ygy');
-        await registerAction({
-          first_name: profile?.given_name!,
-          last_name: profile?.family_name || undefined,
-          email: profile?.email!,
-          phone_number:
-            (profile?.phone_number && String(profile?.phone_number)) || '',
-          f_referral_code: user?.f_referral_code || '',
+        console.log('user: ', user);
+        return await socialRegister({
+          email: profile?.email as string,
           provider: 'google',
+          first_name: profile?.given_name as string,
+          last_name: (profile?.family_name as string) || '',
+          phone_number: (profile?.phone_number as string) || '',
         })
           .then((res) => {
             console.log('success saving user info social login');
+            return true;
           })
           .catch((err) => {
             console.log('error: ', err);
-          })
-          .finally(() => {
-            return true;
+
+            return '/signin';
           });
       }
       return true;

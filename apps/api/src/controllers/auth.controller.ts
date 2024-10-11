@@ -1,4 +1,4 @@
-import { responseHandle } from '@/helpers/response';
+import { ErrorHandler, responseHandle } from '@/helpers/response';
 import { AuthService } from '@/services/auth.services';
 import { NextFunction, Request, Response } from 'express';
 
@@ -15,6 +15,16 @@ export class AuthController {
     try {
       const data = await AuthService.register(req);
       return res.send(responseHandle('Register Success', data));
+    } catch (error) {
+      next(error);
+      // throw new ErrorHandler(error.message, error.statuscode);
+    }
+  }
+
+  async socialRegister(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await AuthService.socialRegister(req);
+      return res.send(responseHandle('Social Register Success', data));
     } catch (error) {
       next(error);
     }

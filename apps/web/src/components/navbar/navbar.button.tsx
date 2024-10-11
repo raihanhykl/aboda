@@ -34,13 +34,14 @@ export default function NavbarButton({}: Props) {
             className="flex gap-3 border items-center"
           >
             {session.data.user.image ? (
-              <Image
-                src={session.data.user.image}
-                alt="profile"
-                width={25}
-                height={25}
-                className="rounded-full"
-              />
+              // <Image
+              //   src={session.data.user.image}
+              //   alt="profile"
+              //   width={25}
+              //   height={25}
+              //   className="rounded-full"
+              // />
+              <p>test</p>
             ) : (
               <User className="h-6 w-6" />
             )}

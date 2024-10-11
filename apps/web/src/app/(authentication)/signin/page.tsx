@@ -12,10 +12,11 @@ import { googleAuthenticate, loginAction } from '@/action/auth.action';
 import Image from 'next/image';
 import { Loader2 } from 'lucide-react';
 import google from '@/../public/Google.svg.png';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 export default function SignIn() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const qparams = useSearchParams();
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {},
@@ -40,7 +41,10 @@ export default function SignIn() {
 
   const onSubmit = (values: z.infer<typeof loginSchema>) => {
     setIsSubmitting(true);
-    loginAction(values)
+    loginAction({
+      ...values,
+      redirectTo: qparams.get('redirect') || '/',
+    })
       .then(() => {
         setIsVisible(false);
       })
@@ -126,7 +130,6 @@ export default function SignIn() {
               </div>
             </form>
           </div>
-
           {/* Right side - green section */}
           <div
             className={` text-white p-8 md:w-2/5 flex flex-col justify-between  transition-transform duration-500 ${isVisible ? 'translate-x-0' : 'translate-x-full'}`}

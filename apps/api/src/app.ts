@@ -11,6 +11,9 @@ import cors from 'cors';
 import { PORT } from './config';
 import { AuthRouter } from './routers/auth.router';
 import { CartRouter } from './routers/cart.router';
+import { ErrorHandler, responseHandle } from './helpers/response';
+import { ProductRouter } from './routers/product.router';
+import { AddressRouter } from './routers/address.router';
 
 export default class App {
   private app: Express;
@@ -40,10 +43,11 @@ export default class App {
 
     // error
     this.app.use(
-      (err: Error, req: Request, res: Response, next: NextFunction) => {
+      (err: ErrorHandler, req: Request, res: Response, next: NextFunction) => {
         if (req.path.includes('/api/')) {
-          console.error('Error : ', err.stack);
-          res.status(500).send('Error !');
+          res
+            .status(err.statuscode || 500)
+            .send(responseHandle(err.message, null, false));
         } else {
           next();
         }
@@ -57,6 +61,8 @@ export default class App {
     });
     this.app.use('/api/auth', new AuthRouter().getRouter());
     this.app.use('/api/cart', new CartRouter().getRouter());
+    this.app.use('/api/product', new ProductRouter().getRouter());
+    this.app.use('/api/address', new AddressRouter().getRouter());
   }
 
   public start(): void {

@@ -54,7 +54,7 @@ export default function SignUp() {
         }, 500);
       })
       .catch((e) => {
-        setError('f_referral_code', {
+        setError('phone_number', {
           type: 'manual',
           message: e.message,
         });
