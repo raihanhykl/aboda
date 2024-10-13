@@ -18,7 +18,6 @@ export const loginAction = async (values: {
       redirectTo: values.redirectTo,
     });
   } catch (e) {
-    console.log(e);
     throw e;
   }
 };
@@ -44,7 +43,6 @@ export const registerAction = async (values: {
   } catch (error: any) {
     if (axios.isAxiosError(error)) {
       const errorMessage = error.response?.data.message;
-      console.log(error.response?.data, 'ini error message register');
       throw new Error(errorMessage);
     }
     throw new Error('Register Gagal. ');
@@ -63,7 +61,6 @@ export const checkVerifyEmailAction = async (token: string) => {
       const errorMessage = error.response?.data.message;
       throw new Error(errorMessage);
     }
-    // console.log('ini error', error);
     throw new Error('Check Verify Email Gagal. ');
   }
 };
@@ -78,14 +75,12 @@ export const setFirstPasswordAction = async (
       const errorMessage = error.response?.data.message;
       throw new Error(errorMessage);
     }
-    // console.log('ini error', error);
     throw new Error('Set Password Gagal. ');
   }
 };
 
 export const googleAuthenticate = async function () {
   try {
-    console.log('sign in initiated');
     await signIn('google', {
       redirect: true,
       redirectTo: '/',

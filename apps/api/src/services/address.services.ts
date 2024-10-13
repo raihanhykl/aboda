@@ -19,120 +19,66 @@ export class AddressService {
     }
   }
 
-  //   static async addToCart(req: Request) {
-  //     try {
-  //       const { productStockId, quantityInput } = req.body;
+  static async getProvinces(req: Request) {
+    try {
+      return await prisma.province.findMany({});
+    } catch (error) {
+      throw new ErrorHandler('Error getting province detail', 400);
+    }
+  }
 
-  //       if (!req.user || !req.user.is_verified) {
-  //         throw new ErrorHandler(
-  //           'User belum terverifikasi atau tidak teregistrasi',
-  //           403,
-  //         );
-  //       }
+  static async getCityByProvince(req: Request) {
+    try {
+      const { provinceId } = req.query;
+      return await prisma.city.findMany({
+        where: {
+          provinceId: Number(provinceId),
+        },
+      });
+    } catch (error) {
+      throw new ErrorHandler('Error getting city detail', 400);
+    }
+  }
 
-  //       const productStock = await prisma.productStock.findUnique({
-  //         where: {
-  //           id: productStockId,
-  //         },
-  //       });
+  static async createUserAddress(req: Request) {
+    try {
+      const { street, cityId, lon, lat } = req.body;
 
-  //       if (!productStock || productStock.stock < quantityInput) {
-  //         throw new ErrorHandler(
-  //           'Stok produk tidak tersedia atau jumlah melebihi stok',
-  //           400,
-  //         );
-  //       }
+      if (!street || !cityId || !lon || !lat) {
+        throw new ErrorHandler('All fields are required', 400);
+      }
 
-  //       const existingCartItem = await prisma.cart.findFirst({
-  //         where: {
-  //           userId: req.user.id,
-  //           productStockId,
-  //         },
-  //       });
+      const city = await prisma.city.findUnique({
+        where: { id: parseInt(cityId) },
+      });
 
-  //       if (existingCartItem) {
-  //         const updatedQuantity = existingCartItem.quantity + quantityInput;
+      if (!city) {
+        throw new ErrorHandler('City not found', 404);
+      }
 
-  //         if (updatedQuantity > Number(productStock?.stock)) {
-  //           throw new ErrorHandler(
-  //             'Jumlah total melebihi stok yang tersedia',
-  //             400,
-  //           );
-  //         }
+      if (!req.user.id) {
+        throw new ErrorHandler('User not authenticated', 401);
+      }
 
-  //         await prisma.cart.update({
-  //           where: {
-  //             id: existingCartItem.id,
-  //           },
-  //           data: {
-  //             quantity: updatedQuantity,
-  //           },
-  //         });
-  //       } else {
-  //         await prisma.cart.create({
-  //           data: {
-  //             quantity: quantityInput,
-  //             ProductStock: {
-  //               connect: {
-  //                 id: productStockId,
-  //               },
-  //             },
-  //             User: {
-  //               connect: {
-  //                 id: req.user.id,
-  //               },
-  //             },
-  //           },
-  //         });
-  //       }
-  //       return { message: 'Produk berhasil ditambahkan ke keranjang' };
-  //     } catch (error) {
-  //       throw new ErrorHandler('ERROR BGT KAK', 400);
-  //     }
-  //   }
+      const newAddress = await prisma.address.create({
+        data: {
+          street: street,
+          cityId: city.id,
+          lon: parseFloat(lon),
+          lat: parseFloat(lat),
+        },
+      });
 
-  //   static async updateCart(req: Request) {
-  //     try {
-  //       const { quantity, cartId } = req.body;
+      const userAddress = await prisma.userAddress.create({
+        data: {
+          userId: Number(req.user.id),
+          addressId: newAddress.id,
+        },
+      });
 
-  //       return await prisma.cart.update({
-  //         where: {
-  //           id: Number(cartId),
-  //           userId: req.user.id,
-  //         },
-  //         data: {
-  //           quantity: quantity,
-  //         },
-  //       });
-  //     } catch (error) {
-  //       throw new Error('Failed update cart!');
-  //     }
-  //   }
-
-  //   static async delete(req: Request) {
-  //     try {
-  //       const { cartId } = req.body;
-
-  //       return await prisma.cart.delete({
-  //         where: {
-  //           id: Number(cartId),
-  //           userId: req.user.id,
-  //         },
-  //       });
-  //     } catch (error) {
-  //       throw new Error('Failed to delete cart!');
-  //     }
-  //   }
-
-  //   static async deleteAll(req: Request) {
-  //     try {
-  //       return await prisma.cart.deleteMany({
-  //         where: {
-  //           userId: req.user.id,
-  //         },
-  //       });
-  //     } catch (error) {
-  //       throw new Error('Failed to delete all cart!');
-  //     }
-  //   }
+      return { message: 'Address added successfully' };
+    } catch (error) {
+      throw new ErrorHandler('Terjadi kesalahan saat menambahkan address', 400);
+    }
+  }
 }

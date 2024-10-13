@@ -1,15 +1,98 @@
 'use client';
-import { useState } from 'react';
-import { ShoppingCart, User, Search, ChevronDown, Menu } from 'lucide-react';
-import { actionLogout } from '@/action/auth.action';
+import React, { useEffect, useState } from 'react';
+import {
+  ShoppingCart,
+  User,
+  Search,
+  ChevronDown,
+  Menu,
+  MapPin,
+} from 'lucide-react';
 import { useSession } from 'next-auth/react';
-import { Button } from '../ui/button';
 import NavbarButton from './navbar.button';
 import Link from 'next/link';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '../ui/dropdown-menu';
+import { Button } from '../ui/button';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '@/state/store';
+import { api } from '@/config/axios.config';
+import { setPosition } from '@/state/position/positionSlice';
+
+interface Address {
+  longitude: number;
+  latitude: number;
+  city: string;
+  street: string;
+}
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [address, setAddress] = useState<Address[] | null>(null);
+  const dispatch = useDispatch();
+  const { city, street } = useSelector((state: RootState) => state.position);
   const session = useSession();
+  const [currentLocation, setCurrentLocation] = useState<{
+    longitude: number;
+    latitude: number;
+    city: string;
+    street: string;
+  } | null>(null);
+  const getCurrentPosition = () =>
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setCurrentLocation({
+          longitude: position.coords.longitude,
+          latitude: position.coords.latitude,
+          city: 'current',
+          street: '',
+        });
+      },
+      (error) => {
+        console.error('Error getting current location:', error);
+      },
+    );
+
+  useEffect(() => {
+    const fetchAddresses = async () => {
+      api
+        .get('/user/get-all-user-addresses', {
+          headers: {
+            Authorization: 'Bearer ' + session?.data?.user.access_token,
+          },
+        })
+        .then((response) => {
+          const initialPosition = response.data.data[0];
+          if (!initialPosition) {
+            return;
+          }
+          dispatch(
+            setPosition({
+              longitude: initialPosition.address.lon,
+              latitude: initialPosition.address.lat,
+              city: initialPosition.address.City.city,
+              street: initialPosition.address.street,
+            }),
+          );
+          const formattedAddresses = response.data.data.map((item: any) => ({
+            longitude: item.address.lon,
+            latitude: item.address.lat,
+            city: item.address.City.city,
+            street: item.address.street,
+          }));
+          setAddress(formattedAddresses);
+        });
+    };
+
+    if (session.status === 'authenticated') {
+      fetchAddresses();
+    }
+    getCurrentPosition();
+  }, [session]);
 
   return (
     <nav className="sticky top-0 z-50 bg-[#1B8057] text-white">
@@ -25,11 +108,40 @@ export default function Navbar() {
           <div className="hidden md:flex items-center space-x-4 flex-grow mx-8">
             <div className="flex flex-col">
               <span className="text-sm">Location</span>
-              <div className="flex items-center">
-                <span className="text-[#F8C519] mr-1">●</span>
-                <span>Karawang, Indonesia</span>
-                <ChevronDown className="h-4 w-4 ml-1" />
-              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="flex items-center space-x-2 text-white hover:bg-[#39906D] w-full justify-start"
+                  >
+                    <MapPin className="h-4 w-4 text-[#F8C519]" />
+                    <div>
+                      {city != 'current'
+                        ? `${street}, ${city}`
+                        : 'Current location'}
+                    </div>
+                    <ChevronDown className="h-4 w-4 ml-auto" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-full">
+                  {currentLocation && (
+                    <DropdownMenuItem
+                      onSelect={() => dispatch(setPosition(currentLocation))}
+                    >
+                      Use current location
+                    </DropdownMenuItem>
+                  )}
+                  {address &&
+                    address.map((address, index) => (
+                      <DropdownMenuItem
+                        key={index}
+                        onSelect={() => dispatch(setPosition(address))}
+                      >
+                        {`${address.street}, ${address.city}`}
+                      </DropdownMenuItem>
+                    ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
             <div className="flex-grow">
               <div className="relative w-[80%]">

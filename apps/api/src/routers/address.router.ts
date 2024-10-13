@@ -19,6 +19,17 @@ export class AddressRouter {
       validateToken,
       this.addressController.getUserAddress,
     );
+    this.router.get('/get-provinces', this.addressController.getProvinces);
+    this.router.get(
+      '/get-city-by-province',
+      this.addressController.getCityByProvince,
+    );
+    this.router.post(
+      '/add-user-address',
+      validateToken,
+      this.addressController.createUserAddress,
+    );
+
     // this.router.post('/add', validateToken, this.cartController.addToCart);
     // this.router.patch('/update', validateToken, this.cartController.updateCart);
     // this.router.patch('/delete', validateToken, this.cartController.deleteCart);

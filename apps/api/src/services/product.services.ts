@@ -5,6 +5,7 @@ import { Branch, Prisma } from '@prisma/client';
 import { Request } from 'express';
 
 export class ProductService {
+  // Untuk Search
   static async getAllProducts(req: Request) {
     try {
       const page = Number(req.query.page) || 1;
@@ -22,6 +23,8 @@ export class ProductService {
             },
           },
         },
+        skip: skip,
+        take: limit,
       });
 
       const shortest: { branch: Branch | undefined; distance: number } = {
@@ -36,7 +39,6 @@ export class ProductService {
           branch.address.lat,
           branch.address.lon,
         );
-        console.log(distance, branch.branch_name, 'ini distance');
 
         if (distance <= maxDistance) {
           if (shortest?.distance > distance) {
@@ -128,4 +130,5 @@ export class ProductService {
       throw new ErrorHandler('Failed to fetch product', 500);
     }
   }
+  // Untuk CRUD
 }

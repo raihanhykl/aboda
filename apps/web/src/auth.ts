@@ -47,7 +47,6 @@ export const { signIn, signOut, handlers, auth } = NextAuth({
   callbacks: {
     async signIn({ user, account, profile, email, credentials }) {
       if (account?.provider === 'google') {
-        console.log('user: ', user);
         return await socialRegister({
           email: profile?.email as string,
           provider: 'google',
@@ -56,12 +55,9 @@ export const { signIn, signOut, handlers, auth } = NextAuth({
           phone_number: (profile?.phone_number as string) || '',
         })
           .then((res) => {
-            console.log('success saving user info social login');
             return true;
           })
           .catch((err) => {
-            console.log('error: ', err);
-
             return '/signin';
           });
       }

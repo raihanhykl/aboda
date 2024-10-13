@@ -10,6 +10,7 @@ export const validateToken = (
   next: NextFunction,
 ) => {
   const token = req.headers.authorization?.split('Bearer ')[1];
+  console.log(token, 'ini token');
 
   if (!token) {
     return res.status(401).send({ message: 'Unauthorized' });

@@ -44,7 +44,6 @@ export default function SignUp() {
     setIsSubmitting(true);
     registerAction(value)
       .then((res: any) => {
-        console.log(isSubmitting, 'ini is submitting');
         toast({
           description: res.message,
         });
@@ -61,8 +60,6 @@ export default function SignUp() {
         toast({
           description: e.message,
         });
-
-        console.log(e);
       })
       .finally(() => {
         setIsSubmitting(false);

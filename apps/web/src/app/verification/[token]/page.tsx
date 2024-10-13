@@ -59,7 +59,6 @@ export default function Page({ params }: Props) {
   useEffect(() => {
     const verifyEmail = async () => {
       try {
-        console.log('ini di verification page');
         const res = await checkVerifyEmailAction(params.token);
         if (res.data.data.is_verified == 1) setVerified(true);
       } catch (err) {

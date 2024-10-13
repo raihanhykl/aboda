@@ -3,6 +3,7 @@ import { NextFunction, Request, Response } from 'express';
 import { ProductService } from '../services/product.services';
 
 export class ProductController {
+  // Search
   async getAllProducts(req: Request, res: Response, next: NextFunction) {
     try {
       const data = await ProductService.getAllProducts(req);
@@ -29,4 +30,5 @@ export class ProductController {
       next(error);
     }
   }
+  // CRUD
 }

@@ -28,6 +28,7 @@ export default function page() {
             Authorization: 'Bearer ' + session?.data?.user.access_token,
           },
         });
+
         setCarts(res.data.data);
       } catch (error) {
         console.error('Error fetching carts:', error);
@@ -40,8 +41,6 @@ export default function page() {
   }, [session]);
 
   const updateQuantity = async (id: number, change: number) => {
-    // console.log(change, 'ini change');
-
     const update = await api.patch(
       '/cart/update',
       { quantity: change, cartId: id },
@@ -51,11 +50,10 @@ export default function page() {
         },
       },
     );
-    console.log(update.data);
 
     setCarts((prevCarts) =>
       prevCarts.map((cart) =>
-        cart.id === id ? { ...cart, quantity: Math.max(0, change) } : cart,
+        cart.id === id ? { ...cart, quantity: Math.max(1, change) } : cart,
       ),
     );
   };
@@ -70,7 +68,6 @@ export default function page() {
         },
       },
     );
-    console.log(deleteCart.data);
 
     setCarts((prevCarts) => prevCarts.filter((cart) => cart.id !== id));
   };
@@ -85,7 +82,6 @@ export default function page() {
         },
       },
     );
-    console.log(deleteAll.data);
 
     setCarts([]);
   };
@@ -172,13 +168,13 @@ export default function page() {
                 </p>
               )}
             </CardContent>
-            <CardFooter className="flex justify-between items-center">
-              <div className="flex space-x-2">
+            <CardFooter className="flex justify-end items-center">
+              {/* <div className="flex space-x-2">
                 <Input placeholder="Voucher Code" className="w-40" />
                 <Button className="text-white" variant="secondary">
                   Apply Voucher
                 </Button>
-              </div>
+              </div> */}
               <AlertModal
                 onConfirm={deleteAll}
                 triggerText="Clear Shopping Cart"
@@ -203,14 +199,14 @@ export default function page() {
                 <span>Sub Total</span>
                 <span>Rp. {subtotal.toLocaleString()}</span>
               </div>
-              <div className="flex justify-between">
+              {/* <div className="flex justify-between">
                 <span>Shipping</span>
                 <span>Rp. {shipping.toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
                 <span>Voucher Discount</span>
                 <span>-Rp. {discount.toLocaleString()}</span>
-              </div>
+              </div> */}
               <div className="flex justify-between font-bold">
                 <span>Total</span>
                 <span>Rp. {total.toLocaleString()}</span>

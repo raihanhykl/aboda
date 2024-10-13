@@ -14,6 +14,8 @@ import ProductCard from '../../../components/card/card.product';
 import ProductCardSkeleton from '@/components/card/skeleton.product';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { api } from '@/config/axios.config';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/state/store';
 
 const categories = [
   'Vegetables',

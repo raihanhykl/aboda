@@ -37,6 +37,9 @@ export class CartService {
         where: {
           id: productStockId,
         },
+        include: {
+          Branch: true,
+        },
       });
 
       if (!productStock || productStock.stock < quantityInput) {
@@ -44,6 +47,32 @@ export class CartService {
           'Stok produk tidak tersedia atau jumlah melebihi stok',
           400,
         );
+      }
+
+      const userCartItems = await prisma.cart.findMany({
+        where: {
+          userId: req.user.id,
+        },
+        include: {
+          ProductStock: {
+            include: {
+              Branch: true,
+            },
+          },
+        },
+      });
+
+      const hasDifferentBranch = userCartItems.some(
+        (cartItem) =>
+          cartItem.ProductStock?.Branch?.id !== productStock?.Branch?.id,
+      );
+
+      if (hasDifferentBranch) {
+        await prisma.cart.deleteMany({
+          where: {
+            userId: req.user.id,
+          },
+        });
       }
 
       const existingCartItem = await prisma.cart.findFirst({
@@ -88,9 +117,13 @@ export class CartService {
           },
         });
       }
+
       return { message: 'Produk berhasil ditambahkan ke keranjang' };
     } catch (error) {
-      throw new ErrorHandler('ERROR BGT KAK', 400);
+      throw new ErrorHandler(
+        'Terjadi kesalahan saat menambahkan ke keranjang',
+        400,
+      );
     }
   }
 
@@ -98,15 +131,17 @@ export class CartService {
     try {
       const { quantity, cartId } = req.body;
 
-      return await prisma.cart.update({
-        where: {
-          id: Number(cartId),
-          userId: req.user.id,
-        },
-        data: {
-          quantity: quantity,
-        },
-      });
+      if (quantity > 0) {
+        return await prisma.cart.update({
+          where: {
+            id: Number(cartId),
+            userId: req.user.id,
+          },
+          data: {
+            quantity: quantity,
+          },
+        });
+      }
     } catch (error) {
       throw new Error('Failed update cart!');
     }

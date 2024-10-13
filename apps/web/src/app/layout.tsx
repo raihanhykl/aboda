@@ -9,6 +9,8 @@ import Navbar from '@/components/navbar/navbar';
 import Footer from '@/components/footer/footer';
 import { usePathname } from 'next/navigation';
 import { SessionProvider } from 'next-auth/react';
+import { Provider } from 'react-redux';
+import { store } from '@/state/store';
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -34,13 +36,15 @@ export default function RootLayout({
           poppins.className + ' min-h-screen flex flex-col justify-between'
         }
       >
-        <SessionProvider>
-          {!pathname.includes('/signup') &&
-            !pathname.includes('/signin') &&
-            !pathname.includes('/verification') && <Navbar />}
-          {children}
-          <Footer />
-        </SessionProvider>
+        <Provider store={store}>
+          <SessionProvider>
+            {!pathname.includes('/signup') &&
+              !pathname.includes('/signin') &&
+              !pathname.includes('/verification') && <Navbar />}
+            {children}
+            <Footer />
+          </SessionProvider>
+        </Provider>
       </body>
     </html>
   );

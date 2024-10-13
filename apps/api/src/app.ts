@@ -14,6 +14,7 @@ import { CartRouter } from './routers/cart.router';
 import { ErrorHandler, responseHandle } from './helpers/response';
 import { ProductRouter } from './routers/product.router';
 import { AddressRouter } from './routers/address.router';
+import { UserRouter } from './routers/user.router';
 
 export default class App {
   private app: Express;
@@ -63,6 +64,8 @@ export default class App {
     this.app.use('/api/cart', new CartRouter().getRouter());
     this.app.use('/api/product', new ProductRouter().getRouter());
     this.app.use('/api/address', new AddressRouter().getRouter());
+    this.app.use('/api/user', new UserRouter().getRouter());
+    this.app.use('/api/:branchId/stocks', new UserRouter().getRouter());
   }
 
   public start(): void {

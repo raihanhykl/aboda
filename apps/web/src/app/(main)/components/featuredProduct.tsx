@@ -44,13 +44,15 @@ export function FeaturedProducts() {
         <div className="flex overflow-x-auto space-x-4 pb-4 -mx-4 px-4 scrollbar-hide">
           {loading
             ? Array.from({ length: 6 }).map((_, index) => (
-                <div className="flex-none w-64 sm:w-72 md:w-80">
-                  <ProductCardSkeleton key={index} button={false} />
+                <div key={index} className="flex-none w-64 sm:w-72 md:w-80">
+                  <ProductCardSkeleton button={false} />
                 </div>
               ))
             : products.map((branch: any) =>
-                branch.ProductStocks.map((product: any) => (
-                  <ProductCard key={product.id} {...product.Product} />
+                branch.ProductStocks.map((product: any, index: number) => (
+                  <div key={index} className="flex-none w-64 sm:w-72 md:w-80">
+                    <ProductCard key={product.id} {...product.Product} />
+                  </div>
                 )),
               )}
         </div>
