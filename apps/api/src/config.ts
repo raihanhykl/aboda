@@ -18,3 +18,4 @@ export const JWT_SECRET = process.env.JWT_SECRET || '';
 export const NODEMAILER_EMAIL = process.env.NODEMAILER_EMAIL || '';
 export const NODEMAILER_PASSWORD = process.env.NODEMAILER_PASSWORD || '';
 export const verification_url = process.env.VERIFICATION_URL || '';
+export const forgot_password_url = process.env.FORGOT_PASSWORD_URL || '';

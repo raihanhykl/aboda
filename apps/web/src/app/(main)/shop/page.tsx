@@ -33,11 +33,14 @@ export default function ShopPage() {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
   const itemsPerPage = 2;
-
+  const { longitude, latitude } = useSelector(
+    (state: RootState) => state.position,
+  );
   const performSearch = async () => {
     try {
+      console.log(`ini la: ${latitude}, dan long: ${longitude}`);
       const res = await api.get(
-        `/product?page=${currentPage}&limit=${itemsPerPage}`,
+        `/product?page=${currentPage}&limit=${itemsPerPage}&lat=${latitude}&long=${longitude}`,
       );
       setProducts(res.data.data.data);
       setTotalPages(Math.ceil(Number(res.data.data.total) / itemsPerPage)); // Set total pages based on API response
@@ -50,7 +53,7 @@ export default function ShopPage() {
 
   useEffect(() => {
     performSearch();
-  }, [currentPage]);
+  }, [currentPage, longitude, latitude]);
 
   const handlePageChange = (newPage: number) => {
     if (newPage > 0 && newPage <= totalPages) {

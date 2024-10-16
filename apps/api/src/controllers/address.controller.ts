@@ -12,6 +12,19 @@ export class AddressController {
       next(error);
     }
   }
+  async getUserAddressWithin10KiloFromBranch(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const data =
+        await AddressService.getUserAddressWithin10KiloFromBranch(req);
+      return res.send(responseHandle('Get Address Success', data));
+    } catch (error) {
+      next(error);
+    }
+  }
 
   async getProvinces(req: Request, res: Response, next: NextFunction) {
     try {

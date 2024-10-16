@@ -10,8 +10,8 @@ import { IUser, IUserDetail } from '@/interfaces/user';
 import { userDeletionQueue } from '@/lib/Deleteuser.lib';
 import { compare, hash } from 'bcrypt';
 import { generateTokeEmailVerification, generateToken } from '@/lib/jwt';
-import { sendVerificationEmail } from '@/lib/nodemailer';
-import { verification_url } from '@/config';
+import { forgotPasswordEmail, sendVerificationEmail } from '@/lib/nodemailer';
+import { forgot_password_url, verification_url } from '@/config';
 
 export class AuthService {
   static async login(req: Request) {
@@ -46,7 +46,6 @@ export class AuthService {
       delete data.password;
     } else throw new ErrorHandler('Password wrong', 400);
     return generateToken(data);
-    // return data;
   }
   static async register(req: Request) {
     return await prisma.$transaction(async (prisma) => {
@@ -134,6 +133,34 @@ export class AuthService {
     });
   }
 
+  static async forgotPassword(req: Request) {
+    try {
+      const { email } = req.body;
+      const user = await prisma.user.findFirst({
+        where: {
+          email,
+        },
+      });
+      if (!user || user.provider === 'google')
+        throw new ErrorHandler('User not found', 400);
+      await prisma.user.update({
+        where: {
+          email,
+        },
+        data: {
+          is_forgot: 1,
+        },
+      });
+      const token = generateTokeEmailVerification({ email });
+      return forgotPasswordEmail(email, {
+        email,
+        reset_url: forgot_password_url + token,
+      });
+    } catch (error) {
+      throw new ErrorHandler((error as Error).message, 400);
+    }
+  }
+
   static async socialRegister(req: Request) {
     return await prisma.$transaction(async (prisma) => {
       try {
@@ -198,6 +225,7 @@ export class AuthService {
     const data: Prisma.UserUpdateInput = {
       is_verified: 1,
       password: hashPassword,
+      is_forgot: 0,
     };
     await prisma.user.update({
       where: {

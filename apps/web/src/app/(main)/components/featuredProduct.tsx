@@ -8,22 +8,29 @@ import ProductCard, { Product } from '@/components/card/card.product';
 import { api } from '@/config/axios.config';
 import { set } from 'cypress/types/lodash';
 import ProductCardSkeleton from '@/components/card/skeleton.product';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/state/store';
 
 export function FeaturedProducts() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const { longitude, latitude } = useSelector(
+    (state: RootState) => state.position,
+  );
 
   useEffect(() => {
     const fetchMoreProducts = async () => {
       // Replace this with your actual API call
-      const response = await api.get(`/product?page=1&limit=6`);
+      const response = await api.get(
+        `/product?page=1&limit=6&lat=${latitude}&long=${longitude}`,
+      );
       const newProducts = response.data.data.data;
       setProducts(newProducts);
       setLoading(false);
     };
 
     fetchMoreProducts();
-  }, []);
+  }, [longitude, latitude]);
 
   return (
     <section className="py-8 px-4 bg-[#F5F5F5]">

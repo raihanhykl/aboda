@@ -1,3 +1,4 @@
+import getDistanceFromLatLonInKm from '@/helpers/getDistance';
 import { ErrorHandler } from '@/helpers/response';
 import prisma from '@/prisma';
 import { Prisma } from '@prisma/client';
@@ -14,6 +15,61 @@ export class AddressService {
           address: true,
         },
       });
+    } catch (error) {
+      throw new ErrorHandler('Error getting user address', 400);
+    }
+  }
+  static async getUserAddressWithin10KiloFromBranch(req: Request) {
+    try {
+      const maxDistance = 10;
+      const userAddress = await prisma.userAddress.findMany({
+        where: {
+          userId: Number(req.user.id),
+        },
+        include: {
+          address: {
+            include: {
+              City: {
+                include: {
+                  Province: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      const branchLocation = await prisma.cart.findFirst({
+        where: {
+          userId: Number(req.user.id),
+        },
+        include: {
+          ProductStock: {
+            include: {
+              Branch: {
+                include: {
+                  address: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      const nearbyProduct = userAddress.filter((ua) => {
+        const distance = getDistanceFromLatLonInKm(
+          Number(branchLocation?.ProductStock?.Branch.address.lat),
+          Number(branchLocation?.ProductStock?.Branch.address.lon),
+          ua.address.lat,
+          ua.address.lon,
+        );
+
+        if (distance <= maxDistance) {
+          return true;
+        }
+      });
+
+      return nearbyProduct;
     } catch (error) {
       throw new ErrorHandler('Error getting user address', 400);
     }

@@ -22,6 +22,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/state/store';
 import { api } from '@/config/axios.config';
 import { setPosition } from '@/state/position/positionSlice';
+import Image from 'next/image';
 
 interface Address {
   longitude: number;
@@ -51,6 +52,14 @@ export default function Navbar() {
           city: 'current',
           street: '',
         });
+        dispatch(
+          setPosition({
+            longitude: position.coords.longitude,
+            latitude: position.coords.latitude,
+            city: 'current',
+            street: '',
+          }),
+        );
       },
       (error) => {
         console.error('Error getting current location:', error);
@@ -101,23 +110,22 @@ export default function Navbar() {
         <div className="flex items-center justify-between py-4">
           <Link href="/">
             <div className="flex items-center space-x-4">
-              <ShoppingCart className="h-8 w-8" />
-              <span className="text-2xl font-bold">aboda</span>
+              <Image src="/logo-putih.png" alt="Logo" width={50} height={50} />
             </div>
           </Link>
           <div className="hidden md:flex items-center space-x-4 flex-grow mx-8">
             <div className="flex flex-col">
-              <span className="text-sm">Location</span>
+              <span className="text-sm pl-2">Location</span>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="flex items-center space-x-2 text-white hover:bg-[#39906D] w-full justify-start"
+                    className="flex items-center space-x-2 text-white hover:bg-[#39906D] w-full justify-start "
                   >
                     <MapPin className="h-4 w-4 text-[#F8C519]" />
                     <div>
                       {city != 'current'
-                        ? `${street}, ${city}`
+                        ? street && city && `${street}, ${city}`
                         : 'Current location'}
                     </div>
                     <ChevronDown className="h-4 w-4 ml-auto" />

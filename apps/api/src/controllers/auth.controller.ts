@@ -21,6 +21,15 @@ export class AuthController {
     }
   }
 
+  async forgotPassword(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await AuthService.forgotPassword(req);
+      return res.send(responseHandle('Forgot Password Success', data));
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async socialRegister(req: Request, res: Response, next: NextFunction) {
     try {
       const data = await AuthService.socialRegister(req);

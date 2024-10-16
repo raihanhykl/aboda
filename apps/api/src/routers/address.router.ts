@@ -30,6 +30,12 @@ export class AddressRouter {
       this.addressController.createUserAddress,
     );
 
+    this.router.get(
+      '/get-user-address-branch',
+      validateToken,
+      this.addressController.getUserAddressWithin10KiloFromBranch,
+    );
+
     // this.router.post('/add', validateToken, this.cartController.addToCart);
     // this.router.patch('/update', validateToken, this.cartController.updateCart);
     // this.router.patch('/delete', validateToken, this.cartController.deleteCart);

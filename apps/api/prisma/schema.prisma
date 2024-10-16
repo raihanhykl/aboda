@@ -27,6 +27,7 @@ model User {
   phone_number  String?
   image         String?
   is_verified   Int
+  is_forgot     Int           @default(0)
   created_at    DateTime      @default(now())
   updated_at    DateTime      @default(now())
   provider      String?

@@ -20,6 +20,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  // if (user?.id && pathname === '/add-address') {
+  //   const loginUrl = new URL('/signin', request.url);
+  //   loginUrl.searchParams.set('redirect', pathname); // Set the redirect parameter
+  //   return NextResponse.redirect(loginUrl);
+  // }
+
   return response;
 }
 

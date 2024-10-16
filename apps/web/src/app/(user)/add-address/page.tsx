@@ -9,9 +9,23 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
 import axios from 'axios';
 import { useSession } from 'next-auth/react';
 import { api } from '@/config/axios.config';
+import { addAddressSchema } from '@/schemas/address.schemas'; // Import Zod schema
+import { z } from 'zod';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Set default marker icon (Leaflet uses images for markers)
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl:
+    'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+});
 
 export default function AddAddress() {
   const [provinces, setProvinces] = useState<any[]>([]);
@@ -19,11 +33,11 @@ export default function AddAddress() {
   const [selectedProvince, setSelectedProvince] = useState<string | null>(null);
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [street, setStreet] = useState<string>('');
-  const [lon, setLon] = useState<string>('');
-  const [lat, setLat] = useState<string>('');
+  const [lon, setLon] = useState<number | null>(null); // Longitude state
+  const [lat, setLat] = useState<number | null>(null); // Latitude state
+  const [errors, setErrors] = useState<any>(null); // State to store validation errors
   const session = useSession();
 
-  // Fetch provinces when component mounts
   useEffect(() => {
     const fetchProvinces = async () => {
       try {
@@ -39,7 +53,6 @@ export default function AddAddress() {
     }
   }, [session]);
 
-  // Fetch cities based on selected province
   useEffect(() => {
     const fetchCities = async () => {
       if (!selectedProvince) return;
@@ -64,10 +77,38 @@ export default function AddAddress() {
     }
   }, [selectedProvince, session]);
 
+  function LocationMarker() {
+    useMapEvents({
+      click(e) {
+        setLat(e.latlng.lat);
+        setLon(e.latlng.lng);
+      },
+    });
+
+    return lat && lon ? <Marker position={[lat, lon]} /> : null;
+  }
+
   // Function to handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Data to be validated
+    const formData = {
+      street,
+      selectedProvince,
+      selectedCity,
+      lon,
+      lat,
+    };
+
+    const validationResult = addAddressSchema.safeParse(formData);
+    if (!validationResult.success) {
+      setErrors(validationResult.error.format());
+      return;
+    }
+
     try {
+      // console.log(street, selectedCity, lon, lat);
       const res = await api.post(
         '/address/add-user-address',
         {
@@ -107,12 +148,15 @@ export default function AddAddress() {
           value={street}
           onChange={(e) => setStreet(e.target.value)} // Set street state
         />
+        {errors?.street && (
+          <p className="text-red-500 text-sm">{errors.street._errors[0]}</p>
+        )}
 
         <Select onValueChange={(value) => setSelectedProvince(value)}>
           <SelectTrigger>
             <SelectValue placeholder="Select Province" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="relative z-50">
             {provinces.map((province) => (
               <SelectItem key={province.id} value={province.id.toString()}>
                 {province.name}
@@ -120,30 +164,53 @@ export default function AddAddress() {
             ))}
           </SelectContent>
         </Select>
+        {errors?.selectedProvince && (
+          <p className="text-red-500 text-sm">
+            {errors.selectedProvince._errors[0]}
+          </p>
+        )}
 
-        <Select onValueChange={(value) => setSelectedCity(value)}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select City" />
-          </SelectTrigger>
-          <SelectContent>
-            {cities.map((city) => (
-              <SelectItem key={city.id} value={city.id.toString()}>
-                {city.city}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="relative z-50">
+          <Select onValueChange={(value) => setSelectedCity(value)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select City" />
+            </SelectTrigger>
+            <SelectContent className="relative z-50">
+              {cities.map((city) => (
+                <SelectItem key={city.id} value={city.id.toString()}>
+                  {city.city}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-        <Input
-          placeholder="Longitude"
-          value={lon}
-          onChange={(e) => setLon(e.target.value)} // Set longitude state
-        />
-        <Input
-          placeholder="Latitude"
-          value={lat}
-          onChange={(e) => setLat(e.target.value)} // Set latitude state
-        />
+        {errors?.selectedCity && (
+          <p className="text-red-500 text-sm">
+            {errors.selectedCity._errors[0]}
+          </p>
+        )}
+
+        <div className="w-full h-64 relative z-10">
+          <MapContainer
+            center={[-6.301478160691095, 106.6510033607483]}
+            zoom={13}
+            style={{ width: '100%', height: '100%' }}
+          >
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            />
+            <LocationMarker />
+          </MapContainer>
+        </div>
+
+        {errors?.lat && (
+          <p className="text-red-500 text-sm">{errors.lat._errors[0]}</p>
+        )}
+        {errors?.lon && (
+          <p className="text-red-500 text-sm">{errors.lon._errors[0]}</p>
+        )}
 
         <Button
           type="submit"

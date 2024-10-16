@@ -22,6 +22,7 @@ export class AuthRouter {
       validateData(socialRegister),
       this.authController.socialRegister,
     );
+    this.router.post('/forgot-password', this.authController.forgotPassword);
     this.router.get(
       '/check-verify-email/:token',
       verifyEmail,

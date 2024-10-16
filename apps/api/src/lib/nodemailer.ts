@@ -25,7 +25,27 @@ export const sendVerificationEmail = (
   const html = compiledTemplate(data); // masukan email dan verification value ke dalam html// return string
   const mailOptions: nodemailer.SendMailOptions = {
     to,
-    subject: 'please verifty your account',
+    subject: 'Please verify your email',
+    html,
+  };
+
+  return transporter.sendMail(mailOptions);
+};
+
+export const forgotPasswordEmail = (
+  to: string,
+  data: {
+    email: string;
+    reset_url: string;
+  },
+) => {
+  const templatePath = join(__dirname, '../templates/', 'forgotPassword.hbs'); //cari file hbs
+  const templateSource = readFileSync(templatePath, 'utf-8'); // salin isi file
+  const compiledTemplate = compile(templateSource); //diubah jadi handlebars supaya bisa diinput value ke dalam html(function)
+  const html = compiledTemplate(data); // masukan email dan verification value ke dalam html// return string
+  const mailOptions: nodemailer.SendMailOptions = {
+    to,
+    subject: 'Reset your password',
     html,
   };
 

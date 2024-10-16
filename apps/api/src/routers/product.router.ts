@@ -13,6 +13,9 @@ export class ProductRouter {
     this.router.get('/', this.productController.getAllProducts);
     this.router.get('/search', this.productController.searchProducts);
     this.router.get('/:id', this.productController.getProductById);
+    this.router.post('/', this.productController.createProduct);
+    this.router.put('/:id', this.productController.updateProduct);
+    this.router.delete('/:id', this.productController.deleteProduct);
   }
 
   public getRouter() {

@@ -11,4 +11,13 @@ export class UserController {
       next(error);
     }
   }
+
+  async getUserVouchers(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await UserService.getuserVouchers(req);
+      return res.send(responseHandle('Get All User Vouchers Success', data));
+    } catch (error) {
+      next(error);
+    }
+  }
 }

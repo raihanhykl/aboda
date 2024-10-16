@@ -12,7 +12,11 @@ export class UserService {
         include: {
           address: {
             include: {
-              City: true,
+              City: {
+                include: {
+                  Province: true,
+                },
+              },
             },
           },
         },
@@ -20,5 +24,25 @@ export class UserService {
     } catch (error) {
       throw new ErrorHandler('Error getting user address', 400);
     }
+  }
+
+  static async getuserVouchers(req: Request) {
+    try {
+      return await prisma.userVoucher.findMany({
+        where: {
+          userId: Number(req.user.id),
+        },
+        include: {
+          Voucher: true,
+        },
+      });
+    } catch (error) {
+      throw new ErrorHandler('Error getting user vouchers', 400);
+    }
+  }
+
+  static async changePassword(req: Request) {
+    try {
+    } catch (error) {}
   }
 }

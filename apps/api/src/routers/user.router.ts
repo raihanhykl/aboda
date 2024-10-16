@@ -17,6 +17,12 @@ export class UserRouter {
       validateToken,
       this.userController.getAllUserAddress,
     );
+
+    this.router.get(
+      '/get-all-user-vouchers',
+      validateToken,
+      this.userController.getUserVouchers,
+    );
   }
 
   public getRouter() {

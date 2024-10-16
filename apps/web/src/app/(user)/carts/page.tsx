@@ -86,7 +86,6 @@ export default function page() {
     setCarts([]);
   };
 
-  // Gunakan 'reduce' hanya jika carts memiliki data
   const subtotal =
     carts?.length > 0
       ? carts.reduce(
@@ -95,9 +94,7 @@ export default function page() {
         )
       : 0;
 
-  const shipping = 10000;
-  const discount = 10000;
-  const total = subtotal + shipping - discount;
+  const total = subtotal;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -111,7 +108,9 @@ export default function page() {
           <Card className="lg:col-span-2">
             <CardHeader className="bg-yellow-300 rounded-t-xl">
               <div className="grid grid-cols-4 gap-4 font-semibold">
-                <div className="col-span-2">Product</div>
+                <div className="col-span-2">
+                  Product - {carts[0].ProductStock.Branch.branch_name} Branch
+                </div>
                 <div>Quantity</div>
                 <div>Subtotal</div>
               </div>

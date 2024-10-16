@@ -11,8 +11,7 @@ export class ProductService {
       const page = Number(req.query.page) || 1;
       const limit = Number(req.query.limit) || 8;
       const skip = (page - 1) * limit;
-      const long = 106.652429;
-      const lat = -6.300622;
+      const { lat, long } = req.query;
       const maxDistance = 10;
       const branches = await prisma.branch.findMany({
         include: {
@@ -34,8 +33,8 @@ export class ProductService {
 
       const nearbyProduct = branches.filter((branch) => {
         const distance = getDistanceFromLatLonInKm(
-          lat,
-          long,
+          Number(lat),
+          Number(long),
           branch.address.lat,
           branch.address.lon,
         );
@@ -130,5 +129,4 @@ export class ProductService {
       throw new ErrorHandler('Failed to fetch product', 500);
     }
   }
-  // Untuk CRUD
 }

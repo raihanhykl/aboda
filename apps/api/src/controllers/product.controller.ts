@@ -1,6 +1,7 @@
 import { responseHandle } from '@/helpers/response';
 import { NextFunction, Request, Response } from 'express';
 import { ProductService } from '../services/product.services';
+import { ProductAdminServices } from '@/services/product.admin.services';
 
 export class ProductController {
   // Search
@@ -30,5 +31,30 @@ export class ProductController {
       next(error);
     }
   }
+
   // CRUD
+  async createProduct(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await ProductService.getProductById(req);
+      return res.send(responseHandle('Get Product Success', data));
+    } catch (error) {
+      next(error);
+    }
+  }
+  async updateProduct(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await ProductService.getProductById(req);
+      return res.send(responseHandle('Get Product Success', data));
+    } catch (error) {
+      next(error);
+    }
+  }
+  async deleteProduct(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await ProductService.getProductById(req);
+      return res.send(responseHandle('Get Product Success', data));
+    } catch (error) {
+      next(error);
+    }
+  }
 }
