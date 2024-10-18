@@ -1,7 +1,6 @@
 'use client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -25,47 +24,128 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { HelpCircle } from 'lucide-react';
-import { env } from 'process';
 import axios from 'axios';
+import { useRouter } from 'next/navigation';
+
+interface Address {
+  id: number;
+  address: {
+    street: string;
+    City: {
+      id: number;
+      city: string;
+      Province: {
+        name: string;
+      };
+    };
+  };
+}
+
+interface Voucher {
+  id: number;
+  voucher_name: string;
+  discount_value: number;
+}
+
+interface Cart {
+  ProductStock: {
+    Product: {
+      price: number;
+      weight: number;
+    };
+    Branch: {
+      branch_name: string;
+      address: {
+        cityId: number;
+      };
+    };
+  };
+  quantity: number;
+}
+
+interface ShippingCost {
+  service: string;
+  description: string;
+  cost: {
+    value: number;
+    etd: string;
+    note: string;
+  }[];
+}
+
+interface ShippingOption {
+  code: string;
+  name: string;
+  costs: ShippingCost[];
+}
 
 export default function CheckoutPage() {
+  const [paymentMethod, setPaymentMethod] = useState<string>('');
+  const router = useRouter();
   const session = useSession();
-  const [address, setAddress] = useState<any[]>([]);
-  const [voucher, setVoucher] = useState<any[]>([]);
-  const [carts, setCarts] = useState<any[]>([]);
+  const [address, setAddress] = useState<Address[]>([]);
+  const [voucher, setVoucher] = useState<Voucher[]>([]);
+  const [carts, setCarts] = useState<Cart[]>([]);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [courier, setCourier] = useState('');
-  const [shipping, setShipping] = useState<any[]>([]);
-  const [origin, setOrigin] = useState(null); // Set your origin branch ID
-  const [selectedCity, setSelectedCity] = useState(null); // To store selected destination city
-  const [weight, setWeight] = useState(0); // Weight of the items
-  const [shippingOptions, setShippingOptions] = useState<any[]>([]);
+  const [origin, setOrigin] = useState<number | null>(null);
+  const [selectedCity, setSelectedCity] = useState<number | null>(null);
+  const [weight, setWeight] = useState<number>(0);
+  const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([]);
+  const [selectedShippingCost, setSelectedShippingCost] = useState<
+    number | null
+  >(null);
+  const [snapToken, setSnapToken] = useState<string | null>(null); // State for Snap token
+
+  useEffect(() => {
+    const snapScript: string = 'https://app.sandbox.midtrans.com/snap/snap.js';
+    const clientKey: any = 'SB-Mid-client-c7SnHqsRuZTiamhl';
+
+    const script = document.createElement('script');
+    script.src = snapScript;
+
+    script.setAttribute('data-client-key', clientKey);
+    script.async = true;
+
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await api.get(`/address/get-user-address-branch`, {
+        const resAddress = await api.get(`/address/get-user-address-branch`, {
           headers: {
             Authorization: 'Bearer ' + session?.data?.user.access_token,
           },
         });
 
-        const res2 = await api.get(`/user/get-all-user-vouchers`, {
+        const resVouchers = await api.get(`/user/get-all-user-vouchers`, {
           headers: {
             Authorization: 'Bearer ' + session?.data?.user.access_token,
           },
         });
 
-        const res3 = await api.get(`/cart/get`, {
+        const resCart = await api.get(`/cart/get`, {
           headers: {
             Authorization: 'Bearer ' + session?.data?.user.access_token,
           },
         });
-        setAddress(res.data.data);
-        setVoucher(res2.data.data);
-        setCarts(res3.data.data);
+
+        setAddress(resAddress.data.data);
+        setVoucher(resVouchers.data.data);
+        setCarts(resCart.data.data);
+
+        if (resCart.data.success && resCart.data.data.length > 0) {
+          const firstProductBranchCityId =
+            resCart.data.data[0].ProductStock.Branch.address.cityId;
+          setOrigin(firstProductBranchCityId);
+        }
       } catch (error) {
-        console.error('Error fetching user address.', error);
+        console.error('Error fetching data.', error);
       }
     };
 
@@ -76,28 +156,26 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     const fetchShippingCost = async () => {
-      if (courier && selectedCity && weight > 0) {
+      if (courier && selectedCity && weight > 0 && origin) {
         try {
-          const response = await axios.post(
-            `https://api.rajaongkir.com/starter/cost`,
-            {
-              origin, // origin city ID
-              destination: selectedCity, // selected destination city ID
-              weight: weight, // weight in grams
-              courier: courier, // selected courier
-            },
-            {
-              headers: {
-                key:
-                  process.env.RAJA_ONGKIR_KEY ||
-                  '6217fa0987d802058e79fa9a345c6923',
-              },
-            },
+          const response = await axios.post('/api/rajaongkir', {
+            origin,
+            destination: selectedCity,
+            weight: weight,
+            courier: courier,
+          });
+          console.log(response.data);
+
+          const results = response.data.rajaongkir.results;
+          const shippingServices: ShippingOption[] = results.map(
+            (result: any) => ({
+              code: result.code,
+              name: result.name,
+              costs: result.costs,
+            }),
           );
 
-          // Set shipping options from the API response
-          setShippingOptions(response.data.rajaongkir.results);
-          setShipping(response.data.data);
+          setShippingOptions(shippingServices);
         } catch (error) {
           console.error('Error fetching shipping details.', error);
         }
@@ -105,48 +183,96 @@ export default function CheckoutPage() {
     };
 
     fetchShippingCost();
-  }, [courier, selectedCity, weight]);
+  }, [courier, selectedCity, weight, origin]);
 
-  // Calculate the total weight based on items in the cart
   useEffect(() => {
     const totalWeight = calculateTotalWeight(carts);
-    setWeight(totalWeight * 1000); // Convert to grams
+    setWeight(totalWeight);
   }, [carts]);
 
-  // Handle the address selection change
   const handleAddressChange = (value: string) => {
-    // Assuming `value` is the selected address ID
     const selectedAddress = address.find(
       (addr) => addr.id.toString() === value,
     );
     if (selectedAddress) {
-      setSelectedCity(selectedAddress.address.City.id); // Assuming City has an ID
+      setSelectedCity(selectedAddress.address.City.id);
     }
   };
 
-  const calculateSubTotal = (carts: any[]) => {
+  const calculateSubTotal = (carts: Cart[]) => {
     return carts.reduce((acc, cart) => {
       return acc + cart.ProductStock.Product.price * cart.quantity;
     }, 0);
   };
 
-  const calculateTotalWeight = (carts: any[]) => {
+  const calculateTotalWeight = (carts: Cart[]) => {
     return carts.reduce((acc, cart) => {
       return acc + cart.ProductStock.Product.weight * cart.quantity;
     }, 0);
   };
 
-  // const calculateShippingCost = (totalWeight: number) => {
-  //   const baseRate = 10000;
-  //   return baseRate + totalWeight * 200;
-  // };
-
-  const calculateVoucherDiscount = (voucher: any[], subTotal: number) => {
+  const calculateVoucherDiscount = (voucher: Voucher[], subTotal: number) => {
     if (voucher.length > 0) {
       const discountValue = voucher[0]?.discount_value || 1;
       return (subTotal * discountValue) / 100;
     }
     return 0;
+  };
+
+  const handlePayment = async () => {
+    const subTotal = calculateSubTotal(carts); // Menghitung subtotal dari carts
+    const totalAmount =
+      subTotal +
+      (selectedShippingCost || 0) -
+      calculateVoucherDiscount(voucher, subTotal); // Total setelah diskon dan shipping cost
+    console.log(totalAmount, 'ini total amount');
+
+    try {
+      const response = await axios.post('/api/payment', {
+        carts: carts, // Mengirim carts ke backend
+        shippingCost: totalAmount || 0, // Mengirim biaya pengiriman
+      });
+
+      console.log(response, 'ini response');
+      // (window as any).snap.pay(response.data.token);
+
+      // if (typeof window.snap !== 'undefined') {
+      // (window as any).snap.pay('0ef8bf1c-a9f1-48cd-88d8-e24919e0c32d');
+
+      console.log(window.snap.pay(response.data.token));
+
+      // window.snap.pay('0ef8bf1c-a9f1-48cd-88d8-e24919e0c32d', {
+      //   onSuccess: function (result) {
+      //     console.log('payment success:', result);
+      //   },
+      //   onPending: function (result) {
+      //     console.log('payment pending:', result);
+      //   },
+      //   onError: function (result) {
+      //     console.error('payment error:', result);
+      //   },
+      //   onClose: function () {
+      //     console.log('payment popup closed');
+      //   },
+      // });
+
+      // } else {
+      //   console.error('Snap is not loaded');
+      // }
+    } catch (error) {
+      console.error('Payment error:', error);
+    }
+  };
+
+  const handleCheckout = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (paymentMethod === 'manual') {
+      router.push('/checkout-manual'); // Redirect ke halaman manual transfer
+    } else if (paymentMethod === 'gateway') {
+      handlePayment(); // Eksekusi pembayaran dengan payment gateway
+    } else {
+      console.log('Please select a payment method');
+    }
   };
 
   return (
@@ -212,90 +338,103 @@ export default function CheckoutPage() {
                         </AlertDialogContent>
                       </AlertDialog>
                     </div>
-                    <Link href="/add-address" className="text-[12px]">
+                    <Link
+                      href="/add-address"
+                      className="text-[12px] text-right"
+                    >
                       Add my address?
                     </Link>
                   </div>
-
-                  <Select onValueChange={handleAddressChange}>
-                    <SelectTrigger id="address">
+                  <Select
+                    onValueChange={handleAddressChange}
+                    defaultValue={address[0]?.id.toString()}
+                  >
+                    <SelectTrigger>
                       <SelectValue placeholder="Select Address" />
                     </SelectTrigger>
                     <SelectContent>
-                      {address.length > 0 ? (
-                        address.map((addr) => (
-                          <SelectItem key={addr.id} value={addr.id.toString()}>
-                            {addr.address.street}, {addr.address.City.city},{' '}
-                            {addr.address.City.Province.name}
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem
-                          value="no-address"
-                          className="text-muted-foreground cursor-not-allowed"
-                          disabled
-                        >
-                          No address found
+                      {address.map((addr) => (
+                        <SelectItem key={addr.id} value={addr.id.toString()}>
+                          {addr.address.street}, {addr.address.City.city}
                         </SelectItem>
-                      )}
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="voucher">Voucher</Label>
-                  <Select>
-                    <SelectTrigger id="voucher">
+                  <Select
+                    onValueChange={(value) => {
+                      const selectedVoucher = voucher.find(
+                        (v) => v.id.toString() === value,
+                      );
+                      // Apply voucher logic here if needed
+                    }}
+                    defaultValue={voucher[0]?.id.toString()}
+                  >
+                    <SelectTrigger>
                       <SelectValue placeholder="Select Voucher" />
                     </SelectTrigger>
                     <SelectContent>
-                      {voucher.length > 0 ? (
-                        voucher.map((vouch) => (
-                          <SelectItem
-                            key={vouch.id}
-                            value={vouch.id.toString()}
-                          >
-                            {vouch.voucher_name} - Discount:{' '}
-                            {vouch.discount_value}%
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem
-                          value="no-voucher"
-                          className="text-muted-foreground cursor-not-allowed"
-                          disabled
-                        >
-                          No voucher available
+                      {voucher.map((v) => (
+                        <SelectItem key={v.id} value={v.id.toString()}>
+                          {v.voucher_name}
                         </SelectItem>
-                      )}
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="courier">Courier</Label>
-                  <Select onValueChange={setCourier}>
-                    <SelectTrigger id="courier">
+                  <Select
+                    onValueChange={(value) => {
+                      setCourier(value);
+                    }}
+                    defaultValue=""
+                  >
+                    <SelectTrigger>
                       <SelectValue placeholder="Select Courier" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="jne">JNE</SelectItem>
-                      <SelectItem value="pos">POS</SelectItem>
+                      <SelectItem value="pos">POS Indonesia</SelectItem>
                       <SelectItem value="tiki">TIKI</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="courier">Courier Service</Label>
-                  <Select>
-                    <SelectTrigger id="courier">
-                      <SelectValue placeholder="Select Courier Service" />
+                  <Label htmlFor="shipping-service">Shipping Service</Label>
+                  <Select
+                    onValueChange={(value) => {
+                      const [selectedCode, selectedService] = value.split('-');
+                      const selectedOption = shippingOptions.find(
+                        (option) => option.code === selectedCode,
+                      );
+                      const selectedCost = selectedOption?.costs.find(
+                        (cost) => cost.service === selectedService,
+                      );
+                      setSelectedShippingCost(selectedCost?.cost[0].value || 0);
+                    }}
+                    defaultValue=""
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Shipping Service" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="jne">JNE</SelectItem>
-                      <SelectItem value="pos">POS</SelectItem>
-                      <SelectItem value="tiki">TIKI</SelectItem>
+                      {shippingOptions.map((option) =>
+                        option.costs.map((cost) => (
+                          <SelectItem
+                            key={cost.service}
+                            value={`${option.code}-${cost.service}`}
+                          >
+                            {cost.service} - {cost.description} - Rp.{' '}
+                            {cost.cost[0].value}
+                          </SelectItem>
+                        )),
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -325,11 +464,8 @@ export default function CheckoutPage() {
                 <div className="flex justify-between">
                   <span>Shipping</span>
                   <span>
-                    Rp.{' '}
-                    {/* {calculateShippingCost(
-                        calculateTotalWeight(carts),
-                      ).toLocaleString()} */}
-                  </span>{' '}
+                    Rp. {selectedShippingCost?.toLocaleString() || '0'}
+                  </span>
                 </div>
 
                 <div className="flex justify-between">
@@ -342,24 +478,45 @@ export default function CheckoutPage() {
                     ).toLocaleString()}
                   </span>
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="payment-method">Select Payment Method</Label>
+                  <Select
+                    onValueChange={(value) => setPaymentMethod(value)}
+                    defaultValue=""
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Payment Method" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="gateway">Payment Gateway</SelectItem>
+                      <SelectItem value="manual">Manual Transfer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-                {/* Total */}
                 <div className="flex justify-between font-bold">
                   <span>Total</span>
                   <span>
                     Rp.{' '}
                     {(
                       calculateSubTotal(carts) +
-                      // calculateShippingCost(calculateTotalWeight(carts))
-                      -calculateVoucherDiscount(
+                      (selectedShippingCost || 0) -
+                      calculateVoucherDiscount(
                         voucher,
                         calculateSubTotal(carts),
                       )
                     ).toLocaleString()}
                   </span>
                 </div>
-                <Button className="w-full">Proceed to Payment</Button>
               </div>
+
+              <Button
+                type="submit"
+                className="w-full mt-3"
+                onClick={handleCheckout}
+              >
+                Proceed to Payment
+              </Button>
             </CardContent>
           </Card>
         </div>

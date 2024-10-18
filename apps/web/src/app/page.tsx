@@ -15,7 +15,7 @@ export default function Home() {
     long: number;
   } | null>(null);
   // const [error, setError] = useState<string | null>(null);
-  // const session = useSession();
+  const session = useSession();
 
   return (
     <>

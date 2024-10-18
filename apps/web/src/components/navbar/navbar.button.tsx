@@ -10,6 +10,8 @@ import { ShoppingCart, User } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { sign } from 'crypto';
+import NavbarProfile from './navbar.profile';
+import ProfileMenu from './navbar.profile';
 
 type Props = {};
 
@@ -29,7 +31,13 @@ export default function NavbarButton({}: Props) {
               Cart
             </Link>
           </Button>
-          <Button
+
+          <ProfileMenu
+            image={session.data.user.image!}
+            name={session.data.user.name! || session.data.user.first_name!}
+          />
+
+          {/* <Button
             variant={'default'}
             className="flex gap-3 border items-center"
           >
@@ -46,7 +54,7 @@ export default function NavbarButton({}: Props) {
               <User className="h-6 w-6" />
             )}
             <p>{session.data.user.name || session.data.user.first_name}</p>
-          </Button>
+          </Button> */}
         </div>
       ) : (
         <div className=" flex gap-3 items-center">

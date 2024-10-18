@@ -90,7 +90,7 @@ export default function AddAddress() {
 
   // Function to handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    // e.preventDefault();
 
     // Data to be validated
     const formData = {

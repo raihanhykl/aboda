@@ -102,14 +102,26 @@ export const socialRegister = async (values: {
 }) => {
   try {
     const data = { ...values };
-    await api.post('/auth/v3', data);
-    return {
-      message: 'Register Berhasil',
-    };
+    const res = await api.post('/auth/v3', data);
+    return res.data.data;
   } catch (error) {
     if (error instanceof AxiosError) {
       throw new Error(error.response?.data.message);
     }
     throw new Error('Gagal Register');
+  }
+};
+
+export const forgotPasswordAction = async (email: string) => {
+  try {
+    await api.post('/auth/forgot-password', { email });
+    return {
+      message: 'Check your email for reset password link',
+    };
+  } catch (error) {
+    if (error instanceof AxiosError) {
+      throw new Error(error.response?.data.message);
+    }
+    throw new Error('Gagal Reset Password');
   }
 };

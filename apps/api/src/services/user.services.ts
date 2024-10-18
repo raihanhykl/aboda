@@ -1,8 +1,21 @@
 import { ErrorHandler } from '@/helpers/response';
+import { IUser } from '@/interfaces/user';
+import { generateToken } from '@/lib/jwt';
 import prisma from '@/prisma';
 import { Request } from 'express';
 
 export class UserService {
+  static async getUser(req: Request) {
+    try {
+      return await prisma.user.findUnique({
+        where: {
+          id: Number(req.user.id),
+        },
+      });
+    } catch (error) {
+      throw new ErrorHandler('Error getting user', 400);
+    }
+  }
   static async getAllUserAddresses(req: Request) {
     try {
       return await prisma.userAddress.findMany({
@@ -41,8 +54,27 @@ export class UserService {
     }
   }
 
-  static async changePassword(req: Request) {
+  static async editProfile(req: Request) {
     try {
-    } catch (error) {}
+      const { first_name, last_name, email, phone_number } = req.body;
+      const user = (await prisma.user.update({
+        where: {
+          id: Number(req.user.id),
+        },
+        data: {
+          first_name,
+          last_name,
+          email,
+          phone_number,
+          updated_at: new Date(),
+        },
+      })) as IUser;
+      delete user.password;
+
+      // return generateToken(user);
+      return user;
+    } catch (error) {
+      throw new ErrorHandler('Error editing user profile', 400);
+    }
   }
 }

@@ -7,7 +7,7 @@ import prisma from '@/prisma';
 import { Prisma } from '@prisma/client';
 import { Request } from 'express';
 import { IUser, IUserDetail } from '@/interfaces/user';
-import { userDeletionQueue } from '@/lib/Deleteuser.lib';
+import { forgotPasswordQueue, userDeletionQueue } from '@/lib/bull';
 import { compare, hash } from 'bcrypt';
 import { generateTokeEmailVerification, generateToken } from '@/lib/jwt';
 import { forgotPasswordEmail, sendVerificationEmail } from '@/lib/nodemailer';
@@ -17,35 +17,29 @@ export class AuthService {
   static async login(req: Request) {
     const { email, password } = req.body;
     const user = (await prisma.user.findUnique({
+      include: {
+        UserDetails: {
+          select: {
+            referral_code: true,
+            f_referral_code: true,
+          },
+        },
+      },
       where: {
         email,
       },
     })) as IUser;
 
     if (!user) throw new ErrorHandler('User not found', 400);
-    const detail = await prisma.userDetail.findUnique({
-      where: {
-        userId: user.id,
-      },
-      select: {
-        referral_code: true,
-        f_referral_code: true,
-      },
-    });
 
-    const data = { ...user, ...detail };
-
-    if (!data) {
-      throw new ErrorHandler('User not found', 400);
-    }
-    if (data.is_verified == 0) {
+    if (user.is_verified == 0) {
       throw new ErrorHandler('User not verified', 400);
     }
-    const checkPassword = await compare(password, data.password!);
+    const checkPassword = await compare(password, user.password!);
     if (checkPassword) {
-      delete data.password;
+      delete user.password;
     } else throw new ErrorHandler('Password wrong', 400);
-    return generateToken(data);
+    return generateToken(user);
   }
   static async register(req: Request) {
     return await prisma.$transaction(async (prisma) => {
@@ -142,7 +136,15 @@ export class AuthService {
         },
       });
       if (!user || user.provider === 'google')
-        throw new ErrorHandler('User not found', 400);
+        throw new ErrorHandler(
+          'The email address you entered is not linked to any account in our system. Please check the email and try again, or sign up if you don’t have an account yet.',
+          404,
+        );
+      if (user.is_forgot === 1)
+        throw new ErrorHandler(
+          'Email already sent, please check your email.',
+          400,
+        );
       await prisma.user.update({
         where: {
           email,
@@ -152,6 +154,15 @@ export class AuthService {
         },
       });
       const token = generateTokeEmailVerification({ email });
+
+      forgotPasswordQueue.add(
+        {
+          email,
+        },
+        {
+          delay: 360000,
+        },
+      );
       return forgotPasswordEmail(email, {
         email,
         reset_url: forgot_password_url + token,
@@ -166,7 +177,15 @@ export class AuthService {
       try {
         const { email, provider, first_name, last_name, phone_number } =
           req.body;
-        const user = await prisma.user.findFirst({
+        let user = await prisma.user.findFirst({
+          include: {
+            UserDetails: {
+              select: {
+                referral_code: true,
+                f_referral_code: true,
+              },
+            },
+          },
           where: {
             email,
           },
@@ -197,7 +216,23 @@ export class AuthService {
               referral_code: generateReferralCode(),
             },
           });
+
+          user = await prisma.user.findFirst({
+            include: {
+              UserDetails: {
+                select: {
+                  referral_code: true,
+                  f_referral_code: true,
+                },
+              },
+            },
+            where: {
+              email,
+            },
+          });
         }
+
+        return generateToken(user);
       } catch (error) {
         throw new ErrorHandler((error as Error).message, 400);
       }

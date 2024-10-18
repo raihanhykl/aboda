@@ -35,24 +35,33 @@ export class ProductController {
   // CRUD
   async createProduct(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await ProductService.getProductById(req);
-      return res.send(responseHandle('Get Product Success', data));
+      const data = await ProductAdminServices.createProduct(req);
+      return res.send(responseHandle('Create Product Success', data));
     } catch (error) {
       next(error);
     }
   }
   async updateProduct(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await ProductService.getProductById(req);
-      return res.send(responseHandle('Get Product Success', data));
+      const data = await ProductAdminServices.updateProduct(req);
+      return res.send(responseHandle('Update Product Success', data));
     } catch (error) {
       next(error);
     }
   }
   async deleteProduct(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await ProductService.getProductById(req);
-      return res.send(responseHandle('Get Product Success', data));
+      const data = await ProductAdminServices.deleteProduct(req);
+      return res.send(responseHandle('Delete Product Success', data));
+    } catch (error) {
+      next(error);
+    }
+  }
+  // Product Detail
+  async getProductDetail(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await ProductService.getProductDetail(req);
+      return res.send(responseHandle('Get Product Detail Success', data));
     } catch (error) {
       next(error);
     }

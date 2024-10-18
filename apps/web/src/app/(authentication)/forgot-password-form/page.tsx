@@ -6,20 +6,27 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { loginSchema } from '@/schemas/auth.schemas';
 import { ErrorMessage } from '@hookform/error-message';
-import { googleAuthenticate, loginAction } from '@/action/auth.action';
+import {
+  forgotPasswordAction,
+  googleAuthenticate,
+  loginAction,
+} from '@/action/auth.action';
 import Image from 'next/image';
 import { Loader2 } from 'lucide-react';
 import google from '@/../public/Google.svg.png';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
+import { forgotPasswordSchema } from '@/schemas/auth.schemas';
+import { Toast } from '@/components/ui/toast';
+import { useToast } from '@/hooks/use-toast';
+import { ChevronLeft } from 'lucide-react';
 
 export default function SignIn() {
+  const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const qparams = useSearchParams();
-  const form = useForm<z.infer<typeof loginSchema>>({
-    resolver: zodResolver(loginSchema),
+  const form = useForm<z.infer<typeof forgotPasswordSchema>>({
+    resolver: zodResolver(forgotPasswordSchema),
     defaultValues: {},
   });
 
@@ -40,28 +47,26 @@ export default function SignIn() {
     };
   }, []);
 
-  const onSubmit = (values: z.infer<typeof loginSchema>) => {
+  const onSubmit = (values: z.infer<typeof forgotPasswordSchema>) => {
     setIsSubmitting(true);
-    loginAction({
-      ...values,
-      redirectTo: qparams.get('redirect') || '/',
-    })
+    forgotPasswordAction(values.email)
       .then(() => {
-        setIsVisible(false);
+        toast({
+          description: 'Check your email for a link to reset your password',
+        });
       })
       .catch((e) => {
-        setError('password', {
+        toast({
+          description: e.message,
+        });
+        setError('email', {
           type: 'manual',
-          message: 'Email or password is incorrect',
+          message: e.message,
         });
       })
       .finally(() => {
         setIsSubmitting(false);
       });
-  };
-
-  const onGoogleSubmit = () => {
-    googleAuthenticate();
   };
   return (
     <div
@@ -69,14 +74,20 @@ export default function SignIn() {
     >
       <div className="w-full max-w-4xl bg-white rounded-3xl shadow-lg overflow-hidden">
         <div className="flex bg-[#1B8057] flex-col md:flex-row">
-          {/* Left side - sign in form */}
           <div
             className={`bg-white p-8 md:w-3/5 rounded-3xl  transition-transform duration-500 ${isVisible ? 'translate-x-0' : '-translate-x-full'}`}
           >
-            <h2 className="text-2xl font-bold text-[#1B8057] mb-6">
-              Sign up to Aboda
+            <Button>
+              <ChevronLeft onClick={() => router.back()} />
+            </Button>
+            <h2 className="text-2xl font-bold text-[#1B8057] my-3">
+              Forgot Password
             </h2>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <label htmlFor="email" className="text-gray-600 text-sm">
+                Enter your email address below, and we'll send you a link to
+                reset your password.
+              </label>
               <Input
                 type="email"
                 placeholder="Email"
@@ -84,53 +95,13 @@ export default function SignIn() {
                 className="bg-green-50"
               />
               <ErrorMessage errors={errors} name={'email'} />
-
-              <Input
-                type="password"
-                {...register('password')}
-                placeholder="Password"
-                className="bg-green-50"
-              />
-              <ErrorMessage errors={errors} name={'password'} />
-              {/* <p className=" text-end">anjay</p> */}
-              <div className=" text-end text-sm text-[#1B8057]">
-                <a href="/forgot-password-form">Forgot Password?</a>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Checkbox />
-                <label htmlFor="terms" className="text-sm text-gray-600">
-                  Creating an account you're okay with our Terms of Service,
-                  Privacy Policy and our default notification settings
-                </label>
-              </div>
               <div className="flex justify-between items-center">
                 <Button
                   type="submit"
                   disabled={isSubmitting}
                   className=" text-white"
                 >
-                  SIGN IN
-                </Button>
-
-                <Button
-                  onClick={onGoogleSubmit}
-                  disabled={form.formState.isSubmitting}
-                >
-                  {form.formState.isSubmitting ? (
-                    <Loader2 className="animate-spin" />
-                  ) : (
-                    <>
-                      <Image
-                        src={google}
-                        alt="Google"
-                        width={25}
-                        height={25}
-                        className=" mr-2 "
-                      />
-                      {' Masuk dengan Google'}
-                    </>
-                  )}
+                  {isSubmitting ? 'Sending...' : 'Send Email'}
                 </Button>
               </div>
             </form>

@@ -8,6 +8,7 @@ export interface IUser {
   image: String;
   is_verified: number;
   roleId: number;
+  is_forgot: number;
 }
 
 export interface IUserDetail {

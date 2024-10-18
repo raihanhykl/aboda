@@ -11,6 +11,7 @@ import { usePathname } from 'next/navigation';
 import { SessionProvider } from 'next-auth/react';
 import { Provider } from 'react-redux';
 import { store } from '@/state/store';
+import { Toaster } from '@/components/ui/toaster';
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -30,6 +31,11 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap"
           rel="stylesheet"
         />
+        <script
+          type="text/javascript"
+          src="https://app.midtrans.com/snap/snap.js"
+          data-client-key="SB-Mid-client-c7SnHqsRuZTiamhl"
+        ></script>
       </Head>
       <body
         className={
@@ -40,8 +46,10 @@ export default function RootLayout({
           <SessionProvider>
             {!pathname.includes('/signup') &&
               !pathname.includes('/signin') &&
-              !pathname.includes('/verification') && <Navbar />}
+              !pathname.includes('/verification') &&
+              !pathname.includes('/forgot-password-form') && <Navbar />}
             {children}
+            <Toaster />
             <Footer />
           </SessionProvider>
         </Provider>

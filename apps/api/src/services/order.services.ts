@@ -26,7 +26,7 @@ export class CartService {
     } catch (error) {}
   }
 
-  static async addToCart(req: Request) {
+  static async add(req: Request) {
     try {
       const { productStockId, quantityInput } = req.body;
 

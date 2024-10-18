@@ -55,6 +55,7 @@ export const { signIn, signOut, handlers, auth } = NextAuth({
           phone_number: (profile?.phone_number as string) || '',
         })
           .then((res) => {
+            user.access_token = res;
             return true;
           })
           .catch((err) => {

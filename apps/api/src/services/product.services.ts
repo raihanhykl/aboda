@@ -129,4 +129,29 @@ export class ProductService {
       throw new ErrorHandler('Failed to fetch product', 500);
     }
   }
+  // Product Detail
+  static async getProductDetail(req: Request) {
+    try {
+      const { id } = req.params;
+
+      const product = await prisma.product.findUnique({
+        where: {
+          id: Number(id),
+        },
+        include: {
+          category: true,
+          ProductStocks: true,
+          Discounts: true,
+        },
+      });
+
+      if (!product) {
+        throw new ErrorHandler('Product not found', 404);
+      }
+
+      return product;
+    } catch (error) {
+      throw new ErrorHandler('Failed to fetch product details', 500);
+    }
+  }
 }

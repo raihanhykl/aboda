@@ -12,6 +12,7 @@ export class UserRouter {
   }
 
   private routes() {
+    this.router.get('/get-user', validateToken, this.userController.getUser);
     this.router.get(
       '/get-all-user-addresses',
       validateToken,
@@ -22,6 +23,11 @@ export class UserRouter {
       '/get-all-user-vouchers',
       validateToken,
       this.userController.getUserVouchers,
+    );
+    this.router.put(
+      '/edit-profile',
+      validateToken,
+      this.userController.editProfile,
     );
   }
 
