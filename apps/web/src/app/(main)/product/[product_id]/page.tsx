@@ -13,7 +13,7 @@ type Props = {
 
 export default function ProductPage({ params }: Props) {
   const [quantity, setQuantity] = useState(1);
-  const [product, setProduct] = useState<any>({});
+  const [product, setProduct] = useState<any>(null);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -33,7 +33,7 @@ export default function ProductPage({ params }: Props) {
     setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
 
   if (!product) {
-    return <div>Loading...</div>; // Show a loading state while fetching product
+    return <div>Loading...</div>;
   }
 
   return (
@@ -67,8 +67,20 @@ export default function ProductPage({ params }: Props) {
 
       <div className="flex flex-col md:flex-row gap-8">
         <div className="md:w-1/2">
-          <div className="aspect-square bg-gray-200 mb-4"></div>
+          {/* Product Image */}
+          {product.image ? (
+            <img
+              src={product.image}
+              alt={product.product_name}
+              className="aspect-square object-cover mb-4"
+            />
+          ) : (
+            <div className="aspect-square bg-gray-200 mb-4"></div>
+          )}
+
+          {/* Additional Images */}
           <div className="grid grid-cols-4 gap-4">
+            {/* Placeholder for multiple images if needed */}
             {[...Array(4)].map((_, i) => (
               <div key={i} className="aspect-square bg-gray-200"></div>
             ))}
@@ -77,18 +89,22 @@ export default function ProductPage({ params }: Props) {
 
         <div className="md:w-1/2">
           <p className="text-sm text-gray-500 mb-2">
+            {/* Example Category: */}
             {/* Category: {product.ProductStocks[0]?.Branch?.address.city} */}
           </p>
           <h2 className="text-3xl font-bold mb-2">{product.product_name}</h2>
           <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full mb-4">
+            {/* Example Stock: */}
             {/* {product.ProductStocks[0]?.stock > 0 ? 'In Stock' : 'Out of Stock'} */}
           </span>
 
           <div className="mb-4">
             <span className="text-2xl font-bold mr-2">RP. {product.price}</span>
-            <span className="text-gray-500 line-through">
-              RP. {product.original_price}
-            </span>
+            {product.original_price && (
+              <span className="text-gray-500 line-through">
+                RP. {product.original_price}
+              </span>
+            )}
           </div>
 
           <p className="text-gray-600 mb-6">{product.description}</p>

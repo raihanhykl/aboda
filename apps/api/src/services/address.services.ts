@@ -12,7 +12,15 @@ export class AddressService {
           userId: Number(req.user.id),
         },
         include: {
-          address: true,
+          address: {
+            include: {
+              City: {
+                include: {
+                  Province: true,
+                },
+              },
+            },
+          },
         },
       });
     } catch (error) {
@@ -125,14 +133,23 @@ export class AddressService {
         },
       });
 
-      const userAddress = await prisma.userAddress.create({
+      return await prisma.userAddress.create({
         data: {
           userId: Number(req.user.id),
           addressId: newAddress.id,
         },
+        include: {
+          address: {
+            include: {
+              City: {
+                include: {
+                  Province: true,
+                },
+              },
+            },
+          },
+        },
       });
-
-      return { message: 'Address added successfully' };
     } catch (error) {
       throw new ErrorHandler('Terjadi kesalahan saat menambahkan address', 400);
     }

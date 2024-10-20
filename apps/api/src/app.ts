@@ -15,6 +15,8 @@ import { ErrorHandler, responseHandle } from './helpers/response';
 import { ProductRouter } from './routers/product.router';
 import { AddressRouter } from './routers/address.router';
 import { UserRouter } from './routers/user.router';
+import { join } from 'path';
+import { OrderRouter } from './routers/order.router';
 
 export default class App {
   private app: Express;
@@ -30,6 +32,7 @@ export default class App {
     this.app.use(cors());
     this.app.use(json());
     this.app.use(urlencoded({ extended: true }));
+    this.app.use(express.static(join(__dirname, '/public/images')));
   }
 
   private handleError(): void {
@@ -65,6 +68,7 @@ export default class App {
     this.app.use('/api/product', new ProductRouter().getRouter());
     this.app.use('/api/address', new AddressRouter().getRouter());
     this.app.use('/api/user', new UserRouter().getRouter());
+    this.app.use('/api/order', new OrderRouter().getRouter());
     this.app.use('/api/:branchId/stocks', new UserRouter().getRouter());
   }
 

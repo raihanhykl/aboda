@@ -237,14 +237,12 @@ model UserVoucher {
 
 enum PaymentType {
   bank_transfer
-  ovo
-  dana
-  qris
+  payment_gateway
 }
 
 model Payment {
   id     Int         @id @default(autoincrement())
-  type   PaymentType // ENUM('bank transfer', 'OVO', 'DANA', 'QRIS')
+  type   PaymentType
   orders Order[]
 
   @@map("payments")
@@ -259,11 +257,10 @@ model Expedition {
 }
 
 model ExpeditionDetail {
-  id             Int              @id @default(autoincrement())
-  expeditionId   Int
-  name           String
-  Expedition     Expedition       @relation(fields: [expeditionId], references: [id])
-  ShippingDetail ShippingDetail[]
+  id           Int        @id @default(autoincrement())
+  expeditionId Int
+  name         String
+  Expedition   Expedition @relation(fields: [expeditionId], references: [id])
 
   @@map("expedition_details")
 }
@@ -303,28 +300,28 @@ model Order {
 }
 
 model ShippingDetail {
-  id                 Int               @id @default(autoincrement())
-  price              Int
-  total_weight       Int
-  Order              Order?            @relation(fields: [orderId], references: [id])
-  orderId            Int?
-  ExpeditionDetail   ExpeditionDetail? @relation(fields: [expeditionDetailId], references: [id])
-  expeditionDetailId Int?
+  id                Int    @id @default(autoincrement())
+  price             Int
+  total_weight      Int
+  Order             Order? @relation(fields: [orderId], references: [id])
+  orderId           Int?
+  expedition        String
+  expedition_detail String
 
   @@map("shipping_details")
 }
 
 model OrderItem {
-  id         Int      @id @default(autoincrement())
+  id         Int       @id @default(autoincrement())
   orderId    Int
   productId  Int
-  discountId Int
+  discountId Int?
   quantity   Int
   price      Int
   subtotal   Int
-  Order      Order    @relation(fields: [orderId], references: [id])
-  Product    Product  @relation(fields: [productId], references: [id])
-  Discount   Discount @relation(fields: [discountId], references: [id])
+  Order      Order     @relation(fields: [orderId], references: [id])
+  Product    Product   @relation(fields: [productId], references: [id])
+  Discount   Discount? @relation(fields: [discountId], references: [id])
 
   @@map("order_items")
 }

@@ -8,9 +8,10 @@ export class ProductAdminServices {
     return prisma.$transaction(async (prisma) => {
       try {
         const user = req.user;
-        const { product_name, description, price, weight, categoryId, image } =
+        const { product_name, description, price, weight, categoryId } =
           req.body;
 
+        const image = req.file;
         // Check if the user is a superadmin
         if (user.roleId !== 2) {
           throw new ErrorHandler('Unauthorized', 401);
@@ -33,7 +34,7 @@ export class ProductAdminServices {
             price: Number(price),
             weight: Number(weight),
             categoryId: Number(categoryId),
-            image: req.file?.filename || '',
+            image: image?.filename || '',
           },
         });
 

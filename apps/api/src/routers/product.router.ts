@@ -1,37 +1,29 @@
 import { Router } from 'express';
 import { ProductController } from '../controllers/product.controller';
 import { validateToken } from '@/middlewares/verifyToken';
-import { Upload } from '@/helpers/upload';
+import { Uploader } from '@/middlewares/upload';
 export class ProductRouter {
   private router = Router();
   private productController = new ProductController();
-  private uploader = new Upload().getUploader();
+  private imageUploader = Uploader('product', 'product');
   constructor() {
     this.routes();
   }
 
   private routes() {
     this.router.get('/', this.productController.getAllProducts);
-    this.router.get(
-      '/search',
-      validateToken,
-      this.productController.searchProducts,
-    );
+    this.router.get('/search', this.productController.searchProducts);
     this.router.post(
       '/',
+      Uploader('product', 'product').single('image'),
       validateToken,
-      this.uploader.single('image'),
       this.productController.createProduct,
     );
-    this.router.get(
-      '/:id',
-      validateToken,
-      this.productController.getProductById,
-    );
+    this.router.get('/:id', this.productController.getProductById);
     this.router.put(
       '/:id',
       validateToken,
-      this.uploader.single('image'),
+      this.imageUploader.single('image'),
       this.productController.updateProduct,
     );
     this.router.delete(
@@ -39,11 +31,7 @@ export class ProductRouter {
       validateToken,
       this.productController.deleteProduct,
     );
-    // this.router.get(
-    //   '/:id',
-    //   validateToken,
-    //   this.productController.getProductDetail,
-    // );
+    this.router.get('/detail/:id', this.productController.getProductDetail);
   }
 
   public getRouter() {

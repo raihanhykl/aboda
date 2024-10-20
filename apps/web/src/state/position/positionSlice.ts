@@ -1,27 +1,6 @@
 import { PayloadAction, createSlice } from '@reduxjs/toolkit';
 
-// interface distanceState {
-//   distance: number;
-// }
-
-// const initialDistanceState: distanceState = {
-//   distance: Number(null),
-// };
-
-// const distanceSlice = createSlice({
-//   name: 'distance',
-//   initialState: initialDistanceState,
-//   reducers: {
-//     setDistance: (state, action: PayloadAction<number>) => {
-//       state.distance = action.payload;
-//     },
-//   },
-// });
-
-// export const { setDistance } = distanceSlice.actions;
-// export default distanceSlice.reducer;
-
-interface PositionState {
+export interface PositionState {
   latitude: number;
   longitude: number;
   city: string;

@@ -55,26 +55,27 @@ export class UserService {
   }
 
   static async editProfile(req: Request) {
-    try {
-      const { first_name, last_name, email, phone_number } = req.body;
-      const user = (await prisma.user.update({
-        where: {
-          id: Number(req.user.id),
-        },
-        data: {
-          first_name,
-          last_name,
-          email,
-          phone_number,
-          updated_at: new Date(),
-        },
-      })) as IUser;
-      delete user.password;
+    return prisma.$transaction(async (prisma) => {
+      try {
+        const { first_name, last_name, email, phone_number } = req.body;
+        const user = (await prisma.user.update({
+          where: {
+            id: Number(req.user.id),
+          },
+          data: {
+            first_name,
+            last_name,
+            email,
+            phone_number,
+            updated_at: new Date(),
+          },
+        })) as IUser;
+        delete user.password;
 
-      // return generateToken(user);
-      return user;
-    } catch (error) {
-      throw new ErrorHandler('Error editing user profile', 400);
-    }
+        return user;
+      } catch (error) {
+        throw new ErrorHandler('Error editing user profile', 400);
+      }
+    });
   }
 }

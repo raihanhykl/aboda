@@ -149,8 +149,14 @@ export class ProductService {
         throw new ErrorHandler('Product not found', 404);
       }
 
-      return product;
+      const productWithImageUrl = {
+        ...product,
+        image: product.image ? `/images/product/${product.image}` : null,
+      };
+
+      return productWithImageUrl;
     } catch (error) {
+      console.error('Error fetching product details:', error);
       throw new ErrorHandler('Failed to fetch product details', 500);
     }
   }

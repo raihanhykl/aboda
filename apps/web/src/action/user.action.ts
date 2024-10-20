@@ -3,12 +3,13 @@ import axios from 'axios';
 import { useSession } from 'next-auth/react';
 
 export const editProfileAction = async (
-  values: {
-    first_name: string;
-    last_name: string;
-    email: string;
-    phone_number: string;
-  },
+  // values: {
+  //   first_name: string;
+  //   last_name: string;
+  //   email: string;
+  //   phone_number: string;
+  // },
+  values: FormData,
   token?: string,
 ) => {
   try {

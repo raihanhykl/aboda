@@ -1,9 +1,11 @@
 import { configureStore } from '@reduxjs/toolkit';
 import positionReducer from './position/positionSlice';
+import addressesReducer from './addresses/addressesSlice';
 
 export const store = configureStore({
   reducer: {
     position: positionReducer,
+    addresses: addressesReducer,
   },
 });
 

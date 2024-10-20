@@ -96,6 +96,9 @@ export default function CheckoutPage() {
     number | null
   >(null);
   const [snapToken, setSnapToken] = useState<string | null>(null); // State for Snap token
+  const [selectedService, setSelectedService] = useState<string>(''); // Add service state
+  const [selectedVoucher, setSelectedVoucher] = useState<number | null>(null); // Add service state
+  const [selectedAddress, setSelectedAddress] = useState<number>(); // Add service state
 
   useEffect(() => {
     const snapScript: string = 'https://app.sandbox.midtrans.com/snap/snap.js';
@@ -191,11 +194,10 @@ export default function CheckoutPage() {
   }, [carts]);
 
   const handleAddressChange = (value: string) => {
-    const selectedAddress = address.find(
-      (addr) => addr.id.toString() === value,
-    );
-    if (selectedAddress) {
-      setSelectedCity(selectedAddress.address.City.id);
+    const selected = address.find((addr) => addr.id.toString() === value);
+    setSelectedAddress(selected?.id);
+    if (selected) {
+      setSelectedCity(selected.address.City.id);
     }
   };
 
@@ -217,6 +219,66 @@ export default function CheckoutPage() {
       return (subTotal * discountValue) / 100;
     }
     return 0;
+  };
+
+  const handleMakeOrder = async () => {
+    const subTotal = calculateSubTotal(carts);
+    const totalAmount =
+      subTotal +
+      (selectedShippingCost || 0) -
+      calculateVoucherDiscount(voucher, subTotal);
+
+    try {
+      const response = await api.post(
+        '/order/add-order',
+        {
+          origin: origin,
+          destination: selectedCity,
+          weight: weight,
+          courier: courier,
+          service: selectedService, // Send selected service to the backend
+          user_voucher_id: selectedVoucher || null,
+          shipping_price: selectedShippingCost || 0,
+          payment_id: paymentMethod === 'gateway' ? 1 : 2, // Example payment ID logic
+          user_address_id: selectedAddress,
+          expedition: courier,
+          expedition_detail: selectedService, // Send service as expedition detail
+        },
+        {
+          headers: {
+            Authorization: 'Bearer ' + session?.data?.user.access_token,
+          },
+        },
+      );
+      console.log(
+        {
+          origin,
+          destination: selectedCity,
+          weight,
+          courier,
+          service: selectedService,
+          user_voucher_id: selectedVoucher || null,
+          shipping_price: selectedShippingCost || 0,
+          payment_id: paymentMethod === 'gateway' ? 1 : 2,
+          user_address_id: selectedAddress,
+          expedition: courier,
+          expedition_detail: selectedService,
+        },
+        'Data sent to the backend',
+      );
+
+      // Individual logs for specific fields
+      console.log(selectedService, 'ini selected service');
+      console.log(selectedVoucher, 'ini selected voucher');
+      console.log(selectedShippingCost, 'ini selected shipping cost');
+      console.log(paymentMethod, 'ini payment method');
+      console.log(selectedAddress, 'ini selected address');
+
+      // console.log('Order created:', response.data);
+      // router.push('/order-success'); // Redirect to success page or handle accordingly
+    } catch (error) {
+      console.error('Error creating order:', error);
+    }
   };
 
   const handlePayment = async () => {
@@ -366,10 +428,10 @@ export default function CheckoutPage() {
                   <Label htmlFor="voucher">Voucher</Label>
                   <Select
                     onValueChange={(value) => {
-                      const selectedVoucher = voucher.find(
+                      const selected = voucher.find(
                         (v) => v.id.toString() === value,
                       );
-                      // Apply voucher logic here if needed
+                      setSelectedVoucher(selected ? selected.id : null);
                     }}
                     defaultValue={voucher[0]?.id.toString()}
                   >
@@ -417,6 +479,7 @@ export default function CheckoutPage() {
                         (cost) => cost.service === selectedService,
                       );
                       setSelectedShippingCost(selectedCost?.cost[0].value || 0);
+                      setSelectedService(selectedCost?.service || '');
                     }}
                     defaultValue=""
                   >
@@ -516,6 +579,14 @@ export default function CheckoutPage() {
                 onClick={handleCheckout}
               >
                 Proceed to Payment
+              </Button>
+
+              <Button
+                type="submit"
+                className="w-full mt-3"
+                onClick={handleMakeOrder}
+              >
+                Make an Order
               </Button>
             </CardContent>
           </Card>

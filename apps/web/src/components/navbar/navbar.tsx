@@ -23,6 +23,7 @@ import { RootState } from '@/state/store';
 import { api } from '@/config/axios.config';
 import { setPosition } from '@/state/position/positionSlice';
 import Image from 'next/image';
+import { setAddresses } from '@/state/addresses/addressesSlice';
 
 interface Address {
   longitude: number;
@@ -33,7 +34,7 @@ interface Address {
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [address, setAddress] = useState<Address[] | null>(null);
+  const addresses = useSelector((state: RootState) => state.addresses);
   const dispatch = useDispatch();
   const { city, street } = useSelector((state: RootState) => state.position);
   const session = useSession();
@@ -42,7 +43,7 @@ export default function Navbar() {
     latitude: number;
     city: string;
     street: string;
-  } | null>(null);
+  } | null>(addresses[0] || null);
   const getCurrentPosition = () =>
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -75,25 +76,13 @@ export default function Navbar() {
           },
         })
         .then((response) => {
-          const initialPosition = response.data.data[0];
-          if (!initialPosition) {
-            return;
-          }
-          dispatch(
-            setPosition({
-              longitude: initialPosition.address.lon,
-              latitude: initialPosition.address.lat,
-              city: initialPosition.address.City.city,
-              street: initialPosition.address.street,
-            }),
-          );
           const formattedAddresses = response.data.data.map((item: any) => ({
             longitude: item.address.lon,
             latitude: item.address.lat,
             city: item.address.City.city,
             street: item.address.street,
           }));
-          setAddress(formattedAddresses);
+          dispatch(setAddresses(formattedAddresses));
         });
     };
 
@@ -139,8 +128,8 @@ export default function Navbar() {
                       Use current location
                     </DropdownMenuItem>
                   )}
-                  {address &&
-                    address.map((address, index) => (
+                  {addresses &&
+                    addresses.map((address, index) => (
                       <DropdownMenuItem
                         key={index}
                         onSelect={() => dispatch(setPosition(address))}

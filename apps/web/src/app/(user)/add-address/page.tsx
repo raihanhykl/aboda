@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Select,
   SelectContent,
@@ -11,15 +11,16 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import axios from 'axios';
 import { useSession } from 'next-auth/react';
 import { api } from '@/config/axios.config';
-import { addAddressSchema } from '@/schemas/address.schemas'; // Import Zod schema
-import { z } from 'zod';
+import { addAddressSchema } from '@/schemas/address.schemas';
 import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useDispatch, useSelector } from 'react-redux';
+import { setAddresses } from '@/state/addresses/addressesSlice';
+import { AddressFormData } from '@/interfaces/address';
 
-// Set default marker icon (Leaflet uses images for markers)
 L.Icon.Default.mergeOptions({
   iconRetinaUrl:
     'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
@@ -30,107 +31,128 @@ L.Icon.Default.mergeOptions({
 export default function AddAddress() {
   const [provinces, setProvinces] = useState<any[]>([]);
   const [cities, setCities] = useState<any[]>([]);
-  const [selectedProvince, setSelectedProvince] = useState<string | null>(null);
-  const [selectedCity, setSelectedCity] = useState<string | null>(null);
-  const [street, setStreet] = useState<string>('');
-  const [lon, setLon] = useState<number | null>(null); // Longitude state
-  const [lat, setLat] = useState<number | null>(null); // Latitude state
-  const [errors, setErrors] = useState<any>(null); // State to store validation errors
-  const session = useSession();
+  const [coordinates, setCoordinates] = useState<[number, number] | null>(null);
+  const { data: session } = useSession();
+  const dispatch = useDispatch();
+
+  const {
+    control,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<AddressFormData>({
+    resolver: zodResolver(addAddressSchema),
+    defaultValues: {
+      street: '',
+      selectedProvince: null,
+      selectedCity: null,
+      lon: null,
+      lat: null,
+    },
+  });
+
+  const selectedProvince = watch('selectedProvince');
 
   useEffect(() => {
-    const fetchProvinces = async () => {
+    const fetchData = async (
+      url: string,
+      setter: React.Dispatch<React.SetStateAction<any[]>>,
+    ) => {
       try {
-        const res = await api.get('/address/get-provinces');
-        setProvinces(res.data.data);
-      } catch (error) {
-        console.error('Error fetching provinces:', error);
-      }
-    };
-
-    if (session.status === 'authenticated') {
-      fetchProvinces();
-    }
-  }, [session]);
-
-  useEffect(() => {
-    const fetchCities = async () => {
-      if (!selectedProvince) return;
-
-      try {
-        const res = await api.get(
-          `/address/get-city-by-province?provinceId=${selectedProvince}`,
-          {
-            headers: {
-              Authorization: 'Bearer ' + session?.data?.user.access_token,
-            },
+        const res = await api.get(url, {
+          headers: {
+            Authorization: 'Bearer ' + session?.user.access_token,
           },
-        );
-        setCities(res.data.data);
+        });
+        setter(res.data.data);
       } catch (error) {
-        console.error('Error fetching cities:', error);
+        console.error(`Error fetching ${url}:`, error);
       }
     };
 
-    if (selectedProvince) {
-      fetchCities();
-    }
-  }, [selectedProvince, session]);
+    session && fetchData('/address/get-provinces', setProvinces);
+    selectedProvince &&
+      fetchData(
+        `/address/get-city-by-province?provinceId=${selectedProvince}`,
+        setCities,
+      );
+  }, [session, selectedProvince]);
 
   function LocationMarker() {
     useMapEvents({
       click(e) {
-        setLat(e.latlng.lat);
-        setLon(e.latlng.lng);
+        setCoordinates([e.latlng.lat, e.latlng.lng]);
+        setValue('lat', e.latlng.lat);
+        setValue('lon', e.latlng.lng);
       },
     });
-
-    return lat && lon ? <Marker position={[lat, lon]} /> : null;
+    return coordinates ? <Marker position={coordinates} /> : null;
   }
 
-  // Function to handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    // e.preventDefault();
-
-    // Data to be validated
-    const formData = {
-      street,
-      selectedProvince,
-      selectedCity,
-      lon,
-      lat,
-    };
-
-    const validationResult = addAddressSchema.safeParse(formData);
-    if (!validationResult.success) {
-      setErrors(validationResult.error.format());
-      return;
-    }
-
+  const onSubmit = async (data: AddressFormData) => {
     try {
-      // console.log(street, selectedCity, lon, lat);
       const res = await api.post(
         '/address/add-user-address',
         {
-          street,
-          cityId: selectedCity,
-          lon,
-          lat,
+          street: data.street,
+          cityId: data.selectedCity,
+          lon: data.lon,
+          lat: data.lat,
         },
         {
           headers: {
-            Authorization: 'Bearer ' + session?.data?.user.access_token,
+            Authorization: 'Bearer ' + session?.user.access_token,
           },
         },
       );
 
-      console.log('Address added successfully:', res.data);
+      const result = [res.data.data];
+      dispatch(
+        setAddresses(
+          result.map((item: any) => ({
+            longitude: item.address.lon,
+            latitude: item.address.lat,
+            city: item.address.City.city,
+            street: item.address.street,
+          })),
+        ),
+      );
       alert('Address added successfully!');
     } catch (error) {
-      console.error('Error adding address:', error);
       alert('Failed to add address. Please try again.');
     }
   };
+
+  const renderSelect = (
+    name: keyof AddressFormData,
+    placeholder: string,
+    items: any[],
+    valueKey: string,
+    labelKey: string,
+  ) => (
+    <Controller
+      name={name}
+      control={control}
+      render={({ field }) => (
+        <Select onValueChange={field.onChange}>
+          <SelectTrigger>
+            <SelectValue placeholder={placeholder} />
+          </SelectTrigger>
+          <SelectContent className="relative z-50">
+            {items.map((item) => (
+              <SelectItem
+                key={item[valueKey]}
+                value={item[valueKey].toString()}
+              >
+                {item[labelKey]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+    />
+  );
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-md">
@@ -142,75 +164,49 @@ export default function AddAddress() {
         / Add Address
       </p>
 
-      <form className="space-y-4" onSubmit={handleSubmit}>
-        <Input
-          placeholder="Street Address"
-          value={street}
-          onChange={(e) => setStreet(e.target.value)} // Set street state
+      <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+        <Controller
+          name="street"
+          control={control}
+          render={({ field }) => (
+            <Input placeholder="Street Address" {...field} />
+          )}
         />
-        {errors?.street && (
-          <p className="text-red-500 text-sm">{errors.street._errors[0]}</p>
+        {errors.street && (
+          <p className="text-red-500 text-sm">{errors.street.message}</p>
         )}
 
-        <Select onValueChange={(value) => setSelectedProvince(value)}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select Province" />
-          </SelectTrigger>
-          <SelectContent className="relative z-50">
-            {provinces.map((province) => (
-              <SelectItem key={province.id} value={province.id.toString()}>
-                {province.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {errors?.selectedProvince && (
+        {renderSelect(
+          'selectedProvince',
+          'Select Province',
+          provinces,
+          'id',
+          'name',
+        )}
+        {errors.selectedProvince && (
           <p className="text-red-500 text-sm">
-            {errors.selectedProvince._errors[0]}
+            {errors.selectedProvince.message}
           </p>
         )}
 
-        <div className="relative z-50">
-          <Select onValueChange={(value) => setSelectedCity(value)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select City" />
-            </SelectTrigger>
-            <SelectContent className="relative z-50">
-              {cities.map((city) => (
-                <SelectItem key={city.id} value={city.id.toString()}>
-                  {city.city}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {errors?.selectedCity && (
-          <p className="text-red-500 text-sm">
-            {errors.selectedCity._errors[0]}
-          </p>
+        {renderSelect('selectedCity', 'Select City', cities, 'id', 'city')}
+        {errors.selectedCity && (
+          <p className="text-red-500 text-sm">{errors.selectedCity.message}</p>
         )}
 
         <div className="w-full h-64 relative z-10">
           <MapContainer
-            center={[-6.301478160691095, 106.6510033607483]}
+            center={[-6.301478, 106.651003]}
             zoom={13}
             style={{ width: '100%', height: '100%' }}
           >
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             />
             <LocationMarker />
           </MapContainer>
         </div>
-
-        {errors?.lat && (
-          <p className="text-red-500 text-sm">{errors.lat._errors[0]}</p>
-        )}
-        {errors?.lon && (
-          <p className="text-red-500 text-sm">{errors.lon._errors[0]}</p>
-        )}
 
         <Button
           type="submit"

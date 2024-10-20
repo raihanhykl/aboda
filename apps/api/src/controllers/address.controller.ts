@@ -47,7 +47,7 @@ export class AddressController {
   async createUserAddress(req: Request, res: Response, next: NextFunction) {
     try {
       const data = await AddressService.createUserAddress(req);
-      return res.send(responseHandle('Get Address Success', data));
+      return res.send(responseHandle('Address added successfully', data));
     } catch (error) {
       next(error);
     }
