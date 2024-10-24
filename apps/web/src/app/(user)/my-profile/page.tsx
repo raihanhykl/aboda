@@ -313,9 +313,9 @@ export default function ProfilePage() {
               <AvatarEditor
                 width={96}
                 height={96}
-                onCrop={onAvatarCrop}
-                onClose={onAvatarClose}
-                src={avatarPreview || userData.image} // Use the cropped image or existing image
+                // onCrop={onAvatarCrop}
+                // onClose={onAvatarClose}
+                // src={avatarPreview || userData.image} // Use the cropped image or existing image
               />
               {!avatarPreview && (
                 <div className="absolute inset-0 flex items-center justify-center bg-gray-200 rounded-full text-green-700">

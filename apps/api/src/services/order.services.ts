@@ -28,9 +28,17 @@ export class OrderService {
             },
           },
         },
+        orderBy: {
+          // Misalnya ingin mengurutkan berdasarkan `createdAt` secara descending
+          invoice: 'desc',
+        },
       });
-    } catch (error) {}
+    } catch (error) {
+      // error handling jika diperlukan
+      console.error(error);
+    }
   }
+
   static async addOrder(req: Request) {
     const {
       origin,
@@ -148,6 +156,8 @@ export class OrderService {
 
       const shippingCost = selectedService.cost[0].value;
 
+      totalPrice += shippingCost;
+
       const address = await prisma.userAddress.findFirst({
         where: { id: user_address_id, userId: req.user.id },
         include: { address: true },
@@ -186,117 +196,140 @@ export class OrderService {
     }
   }
 
-  static async add(req: Request) {
+  static async getByInvoice(req: Request) {
     try {
-      // const { productStockId, quantityInput } = req.body;
-      // if (!req.user || !req.user.is_verified) {
-      //   throw new ErrorHandler(
-      //     'User belum terverifikasi atau tidak teregistrasi',
-      //     403,
-      //   );
-      // }
-      // const productStock = await prisma.productStock.findUnique({
-      //   where: {
-      //     id: productStockId,
-      //   },
-      //   include: {
-      //     Branch: true,
-      //   },
-      // });
-      // if (!productStock || productStock.stock < quantityInput) {
-      //   throw new ErrorHandler(
-      //     'Stok produk tidak tersedia atau jumlah melebihi stok',
-      //     400,
-      //   );
-      // }
-      // const userCartItems = await prisma.cart.findMany({
-      //   where: {
-      //     userId: req.user.id,
-      //   },
-      //   include: {
-      //     ProductStock: {
-      //       include: {
-      //         Branch: true,
-      //       },
-      //     },
-      //   },
-      // });
-      // const hasDifferentBranch = userCartItems.some(
-      //   (cartItem) =>
-      //     cartItem.ProductStock?.Branch?.id !== productStock?.Branch?.id,
-      // );
-      // if (hasDifferentBranch) {
-      //   await prisma.cart.deleteMany({
-      //     where: {
-      //       userId: req.user.id,
-      //     },
-      //   });
-      // }
-      // const existingCartItem = await prisma.cart.findFirst({
-      //   where: {
-      //     userId: req.user.id,
-      //     productStockId,
-      //   },
-      // });
-      // if (existingCartItem) {
-      //   const updatedQuantity = existingCartItem.quantity + quantityInput;
-      //   if (updatedQuantity > Number(productStock?.stock)) {
-      //     throw new ErrorHandler(
-      //       'Jumlah total melebihi stok yang tersedia',
-      //       400,
-      //     );
-      //   }
-      //   await prisma.cart.update({
-      //     where: {
-      //       id: existingCartItem.id,
-      //     },
-      //     data: {
-      //       quantity: updatedQuantity,
-      //     },
-      //   });
-      // } else {
-      //   await prisma.cart.create({
-      //     data: {
-      //       quantity: quantityInput,
-      //       ProductStock: {
-      //         connect: {
-      //           id: productStockId,
-      //         },
-      //       },
-      //       User: {
-      //         connect: {
-      //           id: req.user.id,
-      //         },
-      //       },
-      //     },
-      //   });
-      // }
-      // return { message: 'Produk berhasil ditambahkan ke keranjang' };
+      const { invoice } = req.params;
+      console.log(req.params, 'ini req params');
+      console.log(invoice, 'ini invoice');
+
+      if (!req.user || !req.user.is_verified) {
+        throw new ErrorHandler(
+          'User belum terverifikasi atau tidak teregistrasi',
+          403,
+        );
+      }
+
+      const order = await prisma.order.findFirst({
+        where: {
+          invoice,
+          userId: req.user.id,
+          paymentId: 2,
+          payment_proof: null,
+        },
+      });
+
+      if (!order) {
+        throw new ErrorHandler('Order tidak ditemukan', 403);
+      }
+
+      return order;
     } catch (error) {
-      throw new ErrorHandler(
-        'Terjadi kesalahan saat menambahkan ke keranjang',
-        400,
-      );
+      throw new ErrorHandler('Terjadi kesalahan saat mengambil order', 400);
+    }
+  }
+  //
+
+  // static async updatePaymentProof(req: Request) {
+  //   try {
+  //     const { id } = req.body;
+  //     const image = req.file;
+
+  //     return await prisma.order.update({
+  //       where: {
+  //         id: Number(id),
+  //         userId: req.user.id,
+  //       },
+  //       data: {
+  //         payment_proof: image?.filename || '',
+  //         status: 'awaiting_confirmation',
+  //       },
+  //     });
+  //   } catch (error) {
+  //     throw new Error('Failed to update payment proof!');
+  //   }
+  // }
+
+  static async updateFromMidtrans(req: Request) {
+    try {
+      const { invoice } = req.body;
+      const order = await prisma.order.findFirst({
+        where: {
+          invoice,
+          userId: req.user.id,
+          status: 'pending_payment',
+        },
+      });
+      if (order) {
+        return await prisma.order.update({
+          where: {
+            id: order.id,
+            paymentId: 1,
+          },
+          data: {
+            status: 'processing',
+          },
+        });
+      } else throw new Error('Order not valid!');
+    } catch (error) {
+      throw new Error('Failed to update order status!');
     }
   }
 
-  static async updateCart(req: Request) {
-    // try {
-    //   const { quantity, cartId } = req.body;
-    //   if (quantity > 0) {
-    //     return await prisma.cart.update({
-    //       where: {
-    //         id: Number(cartId),
-    //         userId: req.user.id,
-    //       },
-    //       data: {
-    //         quantity: quantity,
-    //       },
-    //     });
-    //   }
-    // } catch (error) {
-    //   throw new Error('Failed update cart!');
-    // }
+  static async updatePaymentProof(req: Request) {
+    try {
+      const { id } = req.body;
+      const image = req.file;
+
+      console.log(image?.filename);
+
+      if (!id || !image) {
+        throw new Error('Id atau image gaada!');
+      }
+
+      const order = await prisma.order.update({
+        where: {
+          id: Number(id),
+          userId: req.user.id,
+          payment_proof: null,
+          paymentId: 2,
+        },
+        data: {
+          payment_proof: image.filename || '',
+          status: 'awaiting_confirmation',
+        },
+      });
+
+      return order;
+    } catch (error) {
+      console.error(error);
+      throw new Error('Failed to update payment proof!');
+    }
+  }
+
+  static async updateToken(req: Request) {
+    try {
+      // const { order_id } = req.params;
+      const { invoice, order_token } = req.body;
+      const order = await prisma.order.findFirst({
+        where: {
+          invoice,
+          userId: req.user.id,
+          status: 'pending_payment',
+        },
+      });
+      if (order) {
+        return await prisma.order.update({
+          where: {
+            id: order.id,
+          },
+          data: {
+            midtrans_token: order_token,
+          },
+        });
+      }
+    } catch (error) {
+      throw new Error('Failed to add token!');
+    }
   }
 
   // static async delete(req: Request) {

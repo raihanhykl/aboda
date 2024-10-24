@@ -1,6 +1,7 @@
 import { ErrorHandler, responseHandle } from '@/helpers/response';
 import { AuthService } from '@/services/auth.services';
 import { NextFunction, Request, Response } from 'express';
+import { logger } from 'handlebars';
 
 export class AuthController {
   async login(req: Request, res: Response, next: NextFunction) {
@@ -8,6 +9,16 @@ export class AuthController {
       const data = await AuthService.login(req);
       return res.send(responseHandle('Login Success', data));
     } catch (error) {
+      next(error);
+    }
+  }
+  async refreshToken(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await AuthService.refreshToken(req);
+      return res.send(responseHandle('Refresh Token Success', data));
+    } catch (error) {
+      console.log(error, 'ini error');
+
       next(error);
     }
   }

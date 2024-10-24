@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Minus, Plus } from 'lucide-react';
 import { api } from '@/config/axios.config';
-
+import Image from 'next/image';
 type Props = {
   params: {
     product_id: number;
@@ -69,8 +69,10 @@ export default function ProductPage({ params }: Props) {
         <div className="md:w-1/2">
           {/* Product Image */}
           {product.image ? (
-            <img
-              src={product.image}
+            <Image
+              width={500}
+              height={500}
+              src={`/${product.image}`}
               alt={product.product_name}
               className="aspect-square object-cover mb-4"
             />

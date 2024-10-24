@@ -31,6 +31,9 @@ import {
 import { ChevronLeft, ChevronRight, Package, Search } from 'lucide-react';
 import { api } from '@/config/axios.config';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
+import AlertModal from '@/components/modal/modal';
 
 type OrderItem = {
   id: number;
@@ -55,6 +58,8 @@ type Order = {
   items: OrderItem[];
   shipping_address: string;
   payment_method: string;
+  midtrans_token: string | null;
+  shipping_price: number;
 };
 
 export default function EnhancedCustomerOrderList() {
@@ -66,6 +71,8 @@ export default function EnhancedCustomerOrderList() {
   );
   const session = useSession();
   const ordersPerPage = 5;
+  const router = useRouter();
+  const { toast } = useToast();
 
   // Fetch orders from API on component mount
   useEffect(() => {
@@ -97,6 +104,8 @@ export default function EnhancedCustomerOrderList() {
             ', ' +
             order.Address.City.Province.name, // Replace with actual shipping address if available
           payment_method: order.paymentId === 1 ? 'Gateway' : 'Bank Transfer', // Example
+          midtrans_token: order.midtrans_token,
+          shipping_price: order.ShippingDetail[0]?.price || 0,
         }));
         setOrders(res);
       } catch (error) {
@@ -151,25 +160,111 @@ export default function EnhancedCustomerOrderList() {
     };
   }, []);
 
-  const handlePayment = async (orderId: string, totalAmount: number) => {
-    // const subTotal = calculateSubTotal(carts); // Menghitung subtotal dari carts
-    // const totalAmount =
-    //   subTotal +
-    //   (selectedShippingCost || 0) -
-    //   calculateVoucherDiscount(voucher, subTotal); // Total setelah diskon dan shipping cost
-    // console.log(totalAmount, 'ini total amount');
+  const handlePayment = async (
+    order_invoice: string,
+    totalAmount: number,
+    token: string | null,
+  ) => {
+    console.log(order_invoice);
 
     try {
-      const response = await axios.post('/api/payment', {
-        order_id: orderId, // Mengirim carts ke backend
-        shippingCost: totalAmount || 0, // Mengirim biaya pengiriman
-      });
+      console.log(token, 'ini token after try');
 
-      console.log(response, 'ini response');
-      console.log(window.snap.pay(response.data.token));
+      if (!token) {
+        token = null;
+        console.log(token, 'ini token didalem if try');
+        const response = await axios.post('/api/payment', {
+          order_id: order_invoice,
+          shippingCost: totalAmount || 0, // Mengirim biaya pengiriman
+        });
+        token = response.data.token;
+        console.log(token, 'ini token after dimasukin tokennya');
+        const inputToken = await api.post(
+          `/order/update-midtrans-token`,
+          {
+            invoice: order_invoice,
+            order_token: token,
+          },
+          {
+            headers: {
+              Authorization: 'Bearer ' + session?.data?.user.access_token,
+            },
+          },
+        );
+        const check = inputToken;
+        console.log(check, 'ini check');
+      }
+
+      // console.log(response, 'ini response');
+      console.log(
+        window.snap.pay(String(token), {
+          onSuccess: async function (result) {
+            console.log('success');
+            console.log(result);
+            toast({
+              description: order_invoice,
+            });
+            await api.post(
+              `/order/update-midtrans`,
+              {
+                invoice: order_invoice,
+              },
+              {
+                headers: {
+                  Authorization: 'Bearer ' + session?.data?.user.access_token,
+                },
+              },
+            );
+            router.push('/order');
+          },
+          onPending: function (result) {
+            console.log('pending');
+            console.log(result);
+            toast({
+              description: 'Payment pending!',
+            });
+          },
+          onError: function (result) {
+            console.log('error');
+            console.log(result);
+            toast({
+              description: 'Payment Error!',
+            });
+          },
+          onClose: function () {
+            console.log(
+              'customer closed the popup without finishing the payment',
+            );
+            toast({
+              description: 'Payment Closed',
+            });
+          },
+        }),
+      );
     } catch (error) {
       console.error('Payment error:', error);
     }
+  };
+
+  const handleCheckout = (
+    order_invoice: string,
+    totalAmount: number,
+    payment_method: string,
+    token: string | null,
+  ) => {
+    // e.preventDefault();
+    if (payment_method === 'Bank Transfer') {
+      router.push(`/checkout-manual/${order_invoice}`);
+    } else if (payment_method === 'Gateway') {
+      handlePayment(order_invoice, totalAmount, token); // Eksekusi pembayaran dengan payment gateway
+    } else {
+      console.log('Please select a payment method');
+    }
+  };
+
+  const handleCancel = (invoice: string) => {
+    console.log(invoice);
+    router.push('/');
   };
 
   return (
@@ -262,6 +357,17 @@ export default function EnhancedCustomerOrderList() {
                         </div>
                       ))}
                     </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>Shipping Price: </span>
+                        <span>
+                          {order.shipping_price?.toLocaleString('id-ID', {
+                            style: 'currency',
+                            currency: 'IDR',
+                          })}
+                        </span>
+                      </div>
+                    </div>
                     <div className="flex justify-between font-semibold">
                       <span>Total:</span>
                       <span>
@@ -280,69 +386,31 @@ export default function EnhancedCustomerOrderList() {
                         <strong>Payment Method:</strong> {order.payment_method}
                       </p>
                     </div>
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button variant="outline">View Details</Button>
-                      </DialogTrigger>
-                      <DialogContent className="sm:max-w-[425px]">
-                        <DialogHeader>
-                          <DialogTitle>Order Details</DialogTitle>
-                          <DialogDescription>
-                            Complete information for Order #{order.invoice}
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="grid gap-4 py-4">
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="status" className="text-right">
-                              Status
-                            </Label>
-                            <div className="col-span-3">
-                              <Badge
-                                className={`${statusColors[order.status]} text-white`}
-                              >
-                                {order.status.replace('_', ' ')}
-                              </Badge>
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="date" className="text-right">
-                              Date
-                            </Label>
-                            <Input
-                              id="date"
-                              value={new Date(
-                                order.created_at,
-                              ).toLocaleDateString()}
-                              className="col-span-3"
-                              readOnly
-                            />
-                          </div>
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="total" className="text-right">
-                              Total
-                            </Label>
-                            <Input
-                              id="total"
-                              value={order.total_price.toLocaleString('id-ID', {
-                                style: 'currency',
-                                currency: 'IDR',
-                              })}
-                              className="col-span-3"
-                              readOnly
-                            />
-                          </div>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                    <Button
-                      className="ml-3"
-                      variant="outline"
-                      onClick={() =>
-                        handlePayment(order.invoice, order.total_price)
-                      }
-                    >
-                      Pay Now
-                    </Button>
+                    {order.status === 'pending_payment' ? (
+                      <div className="py-1">
+                        <Button
+                          className="ml mr-3"
+                          variant="outline"
+                          onClick={() =>
+                            handleCheckout(
+                              order.invoice,
+                              order.total_price,
+                              order.payment_method,
+                              order.midtrans_token,
+                            )
+                          }
+                        >
+                          Pay Now
+                        </Button>
+
+                        <AlertModal
+                          onConfirm={() => handleCancel(order.invoice)}
+                          triggerText="Cancel Order"
+                          title="Are you sure?"
+                          description={`This action cannot be undone. This will delete your order.`}
+                        />
+                      </div>
+                    ) : null}
                   </div>
                 </AccordionContent>
               </AccordionItem>

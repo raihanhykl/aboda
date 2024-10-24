@@ -81,10 +81,15 @@ export class ProductService {
   static async searchProducts(req: Request) {
     try {
       const { name } = req.query;
+
+      if (!name) {
+        throw new ErrorHandler('Product name is required', 400);
+      }
+
       return await prisma.product.findMany({
         where: {
           product_name: {
-            contains: String(name),
+            contains: String(name).toLowerCase(),
           },
         },
         include: {
@@ -130,33 +135,66 @@ export class ProductService {
     }
   }
   // Product Detail
+  // static async getProductDetail(req: Request) {
+  //   try {
+  //     const { id } = req.params;
+
+  //     const product = await prisma.product.findUnique({
+  //       where: {
+  //         id: Number(id),
+  //       },
+  //       include: {
+  //         category: true,
+  //         ProductStocks: true,
+  //         Discounts: true,
+  //       },
+  //     });
+
+  //     if (!product) {
+  //       throw new ErrorHandler('Product not found', 404);
+  //     }
+
+  //     const productWithImageUrl = {
+  //       ...product,
+  //       image: product.image ? `/images/product/${product.image}` : null,
+  //     };
+
+  //     return productWithImageUrl;
+  //   } catch (error) {
+  //     console.error('Error fetching product details:', error);
+  //     throw new ErrorHandler('Failed to fetch product details', 500);
+  //   }
+  // }
   static async getProductDetail(req: Request) {
     try {
       const { id } = req.params;
 
-      const product = await prisma.product.findUnique({
-        where: {
-          id: Number(id),
-        },
-        include: {
-          category: true,
-          ProductStocks: true,
-          Discounts: true,
-        },
-      });
+      // const product = await prisma.product.findUnique({
+      //   where: {
+      //     id: Number(id),
+      //   },
+      //   include: {
+      //     category: true,
+      //     ProductStocks: true,
+      //     Discounts: true,
+      //     images: true,
+      //   },
+      // });
 
-      if (!product) {
-        throw new ErrorHandler('Product not found', 404);
-      }
+      // if (!product) {
+      //   throw new ErrorHandler('Product not found', 404);
+      // }
 
-      const productWithImageUrl = {
-        ...product,
-        image: product.image ? `/images/product/${product.image}` : null,
-      };
+      // const productWithImageUrl = {
+      //   ...product,
+      //   images: product.images.map((img) => ({
+      //     ...img,
+      //     imageUrl: `/images/product/${img.imageUrl}`,
+      //   })),
+      // };
 
-      return productWithImageUrl;
+      // return productWithImageUrl;
     } catch (error) {
-      console.error('Error fetching product details:', error);
       throw new ErrorHandler('Failed to fetch product details', 500);
     }
   }

@@ -6,6 +6,7 @@ import { verifyEmail } from '@/middlewares/verifyEmail';
 import { CartController } from '@/controllers/cart.controller';
 import { validateToken } from '@/middlewares/verifyToken';
 import { OrderController } from '@/controllers/order.controller';
+import { Uploader } from '@/middlewares/upload';
 
 export class OrderRouter {
   private router = Router();
@@ -20,6 +21,28 @@ export class OrderRouter {
       validateToken,
       this.orderController.addOrder,
     );
+    this.router.get(
+      '/:invoice',
+      validateToken,
+      this.orderController.getByInvoice,
+    );
+    this.router.post(
+      '/update-payment-proof',
+      Uploader('payment-proof', 'payment-proof').single('image'),
+      validateToken,
+      this.orderController.updatePaymentProof,
+    );
+    this.router.post(
+      '/update-midtrans',
+      validateToken,
+      this.orderController.updateFromMidtrans,
+    );
+    this.router.post(
+      '/update-midtrans-token',
+      validateToken,
+      this.orderController.updateToken,
+    );
+
     // this.router.patch('/update', validateToken, this.cartController.updateCart);
     // this.router.patch('/delete', validateToken, this.cartController.deleteCart);
     // this.router.patch(

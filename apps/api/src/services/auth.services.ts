@@ -41,6 +41,29 @@ export class AuthService {
     } else throw new ErrorHandler('Password wrong', 400);
     return generateToken(user);
   }
+
+  static async refreshToken(req: Request) {
+    const { id } = req.user;
+    const user = (await prisma.user.findUnique({
+      include: {
+        UserDetails: {
+          select: {
+            referral_code: true,
+            f_referral_code: true,
+          },
+        },
+      },
+      where: {
+        id: Number(id),
+      },
+    })) as IUser;
+    if (!user) throw new ErrorHandler('User not found', 400);
+    delete user.password;
+
+    console.log(user, 'ini user');
+
+    return generateToken(user);
+  }
   static async register(req: Request) {
     return await prisma.$transaction(async (prisma) => {
       try {

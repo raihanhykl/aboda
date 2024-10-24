@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { actionLogout } from '@/action/auth.action';
 import { useRouter } from 'next/navigation';
+import MyProfile from '@/app/(user)/my-profile/component/my-profile';
 
 interface ProfileMenuProps {
   image?: string;
@@ -36,7 +37,10 @@ export default function ProfileMenu({ image, name }: ProfileMenuProps) {
       <DropdownMenuTrigger asChild className=" bg-[#1B8057]">
         <Button variant="outline" className="flex items-center gap-2 px-3 py-2">
           <Avatar className="w-6 h-6">
-            <AvatarImage src={image} alt={displayName} />
+            <AvatarImage
+              src={`http://localhost:8000/profile/${image}`}
+              alt={displayName}
+            />
             <AvatarFallback className=" text-[#1B8057]">
               {initials}
             </AvatarFallback>
@@ -45,7 +49,7 @@ export default function ProfileMenu({ image, name }: ProfileMenuProps) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
-        <DropdownMenuItem onClick={() => router.push('/my-profile')}>
+        <DropdownMenuItem onClick={() => router.push('/my-profile2')}>
           My Profile
         </DropdownMenuItem>
         <DropdownMenuItem>Transaction</DropdownMenuItem>

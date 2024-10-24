@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { ProductController } from '../controllers/product.controller';
 import { UserController } from '@/controllers/user.controller';
 import { validateToken } from '@/middlewares/verifyToken';
+import { Uploader } from '@/middlewares/upload';
 
 export class UserRouter {
   private router = Router();
@@ -26,6 +27,7 @@ export class UserRouter {
     );
     this.router.put(
       '/edit-profile',
+      Uploader('profile', 'profile').single('image'),
       validateToken,
       this.userController.editProfile,
     );

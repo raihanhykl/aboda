@@ -17,6 +17,7 @@ import { AddressRouter } from './routers/address.router';
 import { UserRouter } from './routers/user.router';
 import { join } from 'path';
 import { OrderRouter } from './routers/order.router';
+import { CategoryRouter } from './routers/category.admin.router';
 
 export default class App {
   private app: Express;
@@ -70,6 +71,7 @@ export default class App {
     this.app.use('/api/user', new UserRouter().getRouter());
     this.app.use('/api/order', new OrderRouter().getRouter());
     this.app.use('/api/:branchId/stocks', new UserRouter().getRouter());
+    this.app.use('/api/category', new CategoryRouter().getRouter());
   }
 
   public start(): void {

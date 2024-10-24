@@ -14,7 +14,6 @@ export const editProfileAction = async (
 ) => {
   try {
     console.log('mashok editprofileaction: ', values);
-    console.log(values, 'ini values user edit');
     const res = await api.put('/user/edit-profile', values, {
       headers: {
         Authorization: `Bearer ${token}`,

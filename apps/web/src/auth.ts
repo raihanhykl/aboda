@@ -1,5 +1,5 @@
 // 'use server';
-import NextAuth, { User } from 'next-auth';
+import NextAuth, { IUserDetails, User } from 'next-auth';
 import Credential from 'next-auth/providers/credentials';
 import google from 'next-auth/providers/google';
 import { api } from './config/axios.config';
@@ -22,23 +22,43 @@ export const { signIn, signOut, handlers, auth } = NextAuth({
     Credential({
       authorize: async (credentials) => {
         try {
-          if (!credentials || !credentials?.email || !credentials?.password)
+          let token;
+          if (credentials.access_token) {
+            // console.log(credentials.access_token);
+
+            const res = await api.post(
+              '/auth/refresh-token',
+              {},
+              {
+                headers: {
+                  Authorization: `Bearer ${credentials.access_token}`,
+                },
+              },
+            );
+
+            token = res.data.data;
+          } else if (credentials?.email && credentials?.password) {
+            //if credentials.access != null, bikin route baru di api buat keep login, atau refresh token
+            const res = await api.post('/auth/v1', {
+              email: credentials?.email,
+              password: credentials?.password,
+            });
+            token = res.data.data;
+          } else {
             return null;
-
-          const res = await api.post('/auth/v1', {
-            email: credentials?.email,
-            password: credentials?.password,
-          });
-
-          const token = res.data.data;
+          }
 
           if (!token) throw new Error("Can't login");
 
           const user = jwtDecode<User>(token);
+
           user.access_token = token;
+          console.log(user, 'ini user');
 
           return user;
         } catch (error) {
+          console.log(error);
+
           return null;
         }
       },
@@ -72,8 +92,8 @@ export const { signIn, signOut, handlers, auth } = NextAuth({
         session.user.last_name = token.last_name as string;
         session.user.email = token.email as string;
         session.user.phone_number = token.phone_number as string;
-        session.user.referral_code = token.referral_code as string;
-        session.user.f_referral_code = token.f_referral_code as string;
+        session.user.UserDetails = token.UserDetails as IUserDetails;
+
         session.user.roleId = token.roleId as number;
         session.user.image = token.image as string;
         session.user.access_token = token.access_token as string;
@@ -89,8 +109,7 @@ export const { signIn, signOut, handlers, auth } = NextAuth({
         token.email = user.email;
         token.phone_number = user.phone_number;
         token.image = user.image;
-        token.referral_code = user.referral_code;
-        token.f_referral_code = user.f_referral_code;
+        token.UserDetails = user.UserDetails;
         token.roleId = Number(user.roleId);
         token.access_token = user.access_token;
       }

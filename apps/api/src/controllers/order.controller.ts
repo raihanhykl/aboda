@@ -22,6 +22,44 @@ export class OrderController {
     }
   }
 
+  async getByInvoice(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await OrderService.getByInvoice(req);
+      return res.send(responseHandle('Get Order by Invoice Success', data));
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async updatePaymentProof(req: Request, res: Response, next: NextFunction) {
+    try {
+      // console.log(req, 'ini req body di controller');
+
+      const data = await OrderService.updatePaymentProof(req);
+      return res.send(responseHandle('Update Payment Proof Success', data));
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async updateFromMidtrans(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await OrderService.updateFromMidtrans(req);
+      return res.send(responseHandle('Update Order Status Success', data));
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async updateToken(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await OrderService.updateToken(req);
+      return res.send(responseHandle('Update Token Success', data));
+    } catch (error) {
+      next(error);
+    }
+  }
+
   //   `async updateCart(req: Request, res: Response, next: NextFunction) {
   //     try {
   //       const data = await CartService.updateCart(req);

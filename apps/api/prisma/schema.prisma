@@ -113,20 +113,48 @@ model Category {
   @@map("categories")
 }
 
+// model Product {
+//   id            Int            @id @default(autoincrement())
+//   categoryId    Int
+//   product_name  String
+//   description   String
+//   price         Int
+//   image         String
+//   weight        Int
+//   category      Category       @relation(fields: [categoryId], references: [id])
+//   ProductStocks ProductStock[]
+//   Discounts     Discount[]
+//   OrderItems    OrderItem[]
+
+//   @@map("products")
+// }
+
 model Product {
   id            Int            @id @default(autoincrement())
   categoryId    Int
-  product_name  String
+  product_name  String         @unique
   description   String
   price         Int
-  image         String
   weight        Int
   category      Category       @relation(fields: [categoryId], references: [id])
+  image         ProductImage[]
   ProductStocks ProductStock[]
-  Discounts     Discount[]
-  OrderItems    OrderItem[]
+  discounts     Discount[]
+  orderItems    OrderItem[]
+  storeAdminId  Int            @default(0)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
   @@map("products")
+}
+
+model ProductImage {
+  id        Int     @id @default(autoincrement())
+  productId Int
+  imageUrl  String
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@map("product_images")
 }
 
 model Branch {
@@ -281,8 +309,9 @@ model Order {
   invoice          String
   total_price      Int
   status           OrderStatus // ENUM('pending', 'paid', 'processed', 'shipped', 'confirmed', 'cancelled')
+  midtrans_token   String?
   created_at       DateTime         @default(now())
-  updated_at       DateTime         @updatedAt
+  updated_at       DateTime         @default(now())
   OrderItem        OrderItem[]
   ShippingDetail   ShippingDetail[]
   User             User?            @relation(fields: [userId], references: [id])

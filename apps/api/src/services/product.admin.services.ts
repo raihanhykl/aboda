@@ -34,7 +34,14 @@ export class ProductAdminServices {
             price: Number(price),
             weight: Number(weight),
             categoryId: Number(categoryId),
-            image: image?.filename || '',
+            //     image: image?.filename || '',
+            //   },
+            // });
+            images: {
+              create: {
+                imageUrl: image?.filename || '',
+              },
+            },
           },
         });
 
@@ -82,7 +89,11 @@ export class ProductAdminServices {
             price: Number(price),
             weight: Number(weight),
             categoryId: Number(categoryId),
-            image: req.file?.filename || undefined,
+            images: {
+              create: {
+                imageUrl: image?.filename || undefined,
+              },
+            },
           },
         });
 

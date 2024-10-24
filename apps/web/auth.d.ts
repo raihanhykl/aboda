@@ -8,10 +8,14 @@ declare module 'next-auth' {
     email: string | undefined;
     image: string | undefined;
     phone_number: string | undefined;
-    referral_code: string | undefined;
-    f_referral_code: string | undefined;
+    UserDetails: IUserDetails;
     roleId: number | undefined;
     access_token: string;
+  }
+
+  interface IUserDetails {
+    referral_code: string | undefined;
+    f_referral_code: string | undefined | null;
   }
 
   interface Session {

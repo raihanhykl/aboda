@@ -2,6 +2,7 @@ import { ErrorHandler } from '@/helpers/response';
 import { IUser } from '@/interfaces/user';
 import { generateToken } from '@/lib/jwt';
 import prisma from '@/prisma';
+import { Prisma } from '@prisma/client';
 import { Request } from 'express';
 
 export class UserService {
@@ -57,18 +58,27 @@ export class UserService {
   static async editProfile(req: Request) {
     return prisma.$transaction(async (prisma) => {
       try {
-        const { first_name, last_name, email, phone_number } = req.body;
+        const { first_name, last_name, email, phone_number, isDeleting } =
+          req.body;
+        const image = req.file;
+        const data: Prisma.UserUpdateInput = {
+          first_name,
+          last_name,
+          email,
+          phone_number,
+        };
+
+        if (image) {
+          data.image = image.filename;
+        }
+        if (isDeleting) {
+          data.image = '';
+        }
         const user = (await prisma.user.update({
           where: {
             id: Number(req.user.id),
           },
-          data: {
-            first_name,
-            last_name,
-            email,
-            phone_number,
-            updated_at: new Date(),
-          },
+          data,
         })) as IUser;
         delete user.password;
 

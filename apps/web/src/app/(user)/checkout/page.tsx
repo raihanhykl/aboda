@@ -100,22 +100,22 @@ export default function CheckoutPage() {
   const [selectedVoucher, setSelectedVoucher] = useState<number | null>(null); // Add service state
   const [selectedAddress, setSelectedAddress] = useState<number>(); // Add service state
 
-  useEffect(() => {
-    const snapScript: string = 'https://app.sandbox.midtrans.com/snap/snap.js';
-    const clientKey: any = 'SB-Mid-client-c7SnHqsRuZTiamhl';
+  // useEffect(() => {
+  //   const snapScript: string = 'https://app.sandbox.midtrans.com/snap/snap.js';
+  //   const clientKey: any = 'SB-Mid-client-c7SnHqsRuZTiamhl';
 
-    const script = document.createElement('script');
-    script.src = snapScript;
+  //   const script = document.createElement('script');
+  //   script.src = snapScript;
 
-    script.setAttribute('data-client-key', clientKey);
-    script.async = true;
+  //   script.setAttribute('data-client-key', clientKey);
+  //   script.async = true;
 
-    document.body.appendChild(script);
+  //   document.body.appendChild(script);
 
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
+  //   return () => {
+  //     document.body.removeChild(script);
+  //   };
+  // }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -250,92 +250,93 @@ export default function CheckoutPage() {
           },
         },
       );
-      console.log(
-        {
-          origin,
-          destination: selectedCity,
-          weight,
-          courier,
-          service: selectedService,
-          user_voucher_id: selectedVoucher || null,
-          shipping_price: selectedShippingCost || 0,
-          payment_id: paymentMethod === 'gateway' ? 1 : 2,
-          user_address_id: selectedAddress,
-          expedition: courier,
-          expedition_detail: selectedService,
-        },
-        'Data sent to the backend',
-      );
+      // console.log(
+      //   {
+      //     origin,
+      //     destination: selectedCity,
+      //     weight,
+      //     courier,
+      //     service: selectedService,
+      //     user_voucher_id: selectedVoucher || null,
+      //     shipping_price: selectedShippingCost || 0,
+      //     payment_id: paymentMethod === 'gateway' ? 1 : 2,
+      //     user_address_id: selectedAddress,
+      //     expedition: courier,
+      //     expedition_detail: selectedService,
+      //   },
+      //   'Data sent to the backend',
+      // );
 
-      // Individual logs for specific fields
-      console.log(selectedService, 'ini selected service');
-      console.log(selectedVoucher, 'ini selected voucher');
-      console.log(selectedShippingCost, 'ini selected shipping cost');
-      console.log(paymentMethod, 'ini payment method');
-      console.log(selectedAddress, 'ini selected address');
+      // // Individual logs for specific fields
+      // console.log(selectedService, 'ini selected service');
+      // console.log(selectedVoucher, 'ini selected voucher');
+      // console.log(selectedShippingCost, 'ini selected shipping cost');
+      // console.log(paymentMethod, 'ini payment method');
+      // console.log(selectedAddress, 'ini selected address');
 
       // console.log('Order created:', response.data);
-      // router.push('/order-success'); // Redirect to success page or handle accordingly
+      router.push('/order'); // Redirect to success page or handle accordingly
+      // toast
     } catch (error) {
       console.error('Error creating order:', error);
     }
   };
 
-  const handlePayment = async () => {
-    const subTotal = calculateSubTotal(carts); // Menghitung subtotal dari carts
-    const totalAmount =
-      subTotal +
-      (selectedShippingCost || 0) -
-      calculateVoucherDiscount(voucher, subTotal); // Total setelah diskon dan shipping cost
-    console.log(totalAmount, 'ini total amount');
+  // const handlePayment = async () => {
+  //   const subTotal = calculateSubTotal(carts); // Menghitung subtotal dari carts
+  //   const totalAmount =
+  //     subTotal +
+  //     (selectedShippingCost || 0) -
+  //     calculateVoucherDiscount(voucher, subTotal); // Total setelah diskon dan shipping cost
+  //   console.log(totalAmount, 'ini total amount');
 
-    try {
-      const response = await axios.post('/api/payment', {
-        carts: carts, // Mengirim carts ke backend
-        shippingCost: totalAmount || 0, // Mengirim biaya pengiriman
-      });
+  //   try {
+  //     const response = await axios.post('/api/payment', {
+  //       carts: carts, // Mengirim carts ke backend
+  //       shippingCost: totalAmount || 0, // Mengirim biaya pengiriman
+  //     });
 
-      console.log(response, 'ini response');
-      // (window as any).snap.pay(response.data.token);
+  //     console.log(response, 'ini response');
+  //     // (window as any).snap.pay(response.data.token);
 
-      // if (typeof window.snap !== 'undefined') {
-      // (window as any).snap.pay('0ef8bf1c-a9f1-48cd-88d8-e24919e0c32d');
+  //     // if (typeof window.snap !== 'undefined') {
+  //     // (window as any).snap.pay('0ef8bf1c-a9f1-48cd-88d8-e24919e0c32d');
 
-      console.log(window.snap.pay(response.data.token));
+  //     console.log(window.snap.pay(response.data.token));
 
-      // window.snap.pay('0ef8bf1c-a9f1-48cd-88d8-e24919e0c32d', {
-      //   onSuccess: function (result) {
-      //     console.log('payment success:', result);
-      //   },
-      //   onPending: function (result) {
-      //     console.log('payment pending:', result);
-      //   },
-      //   onError: function (result) {
-      //     console.error('payment error:', result);
-      //   },
-      //   onClose: function () {
-      //     console.log('payment popup closed');
-      //   },
-      // });
+  //     // window.snap.pay('0ef8bf1c-a9f1-48cd-88d8-e24919e0c32d', {
+  //     //   onSuccess: function (result) {
+  //     //     console.log('payment success:', result);
+  //     //   },
+  //     //   onPending: function (result) {
+  //     //     console.log('payment pending:', result);
+  //     //   },
+  //     //   onError: function (result) {
+  //     //     console.error('payment error:', result);
+  //     //   },
+  //     //   onClose: function () {
+  //     //     console.log('payment popup closed');
+  //     //   },
+  //     // });
 
-      // } else {
-      //   console.error('Snap is not loaded');
-      // }
-    } catch (error) {
-      console.error('Payment error:', error);
-    }
-  };
+  //     // } else {
+  //     //   console.error('Snap is not loaded');
+  //     // }
+  //   } catch (error) {
+  //     console.error('Payment error:', error);
+  //   }
+  // };
 
-  const handleCheckout = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (paymentMethod === 'manual') {
-      router.push('/checkout-manual'); // Redirect ke halaman manual transfer
-    } else if (paymentMethod === 'gateway') {
-      handlePayment(); // Eksekusi pembayaran dengan payment gateway
-    } else {
-      console.log('Please select a payment method');
-    }
-  };
+  // const handleCheckout = (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   if (paymentMethod === 'manual') {
+  //     router.push('/checkout-manual'); // Redirect ke halaman manual transfer
+  //   } else if (paymentMethod === 'gateway') {
+  //     handlePayment(); // Eksekusi pembayaran dengan payment gateway
+  //   } else {
+  //     console.log('Please select a payment method');
+  //   }
+  // };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -573,13 +574,13 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              <Button
+              {/* <Button
                 type="submit"
                 className="w-full mt-3"
                 onClick={handleCheckout}
               >
                 Proceed to Payment
-              </Button>
+              </Button> */}
 
               <Button
                 type="submit"

@@ -1,22 +1,38 @@
+'use client';
 import { useSession } from 'next-auth/react';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '../ui/button';
 import {
   actionLogout,
   loginAction,
   registerAction,
 } from '@/action/auth.action';
-import { ShoppingCart, User } from 'lucide-react';
+import { Router, ShoppingCart, User } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { sign } from 'crypto';
 import NavbarProfile from './navbar.profile';
 import ProfileMenu from './navbar.profile';
+import { api } from '@/config/axios.config';
+import { NextRequest, NextResponse } from 'next/server';
+import { usePathname, useRouter } from 'next/navigation';
 
 type Props = {};
 
 export default function NavbarButton({}: Props) {
   const session = useSession();
+  const router = useRouter();
+  const baseURL = 'http://localhost:3000';
+  const pathname = usePathname();
+  const [user, setUser] = useState<{
+    first_name: string;
+    image: string;
+  } | null>(null);
+  const signIn = () => {
+    const loginUrl = new URL('/signin', baseURL + pathname);
+    loginUrl.searchParams.set('redirect', pathname);
+    return router.push(String(loginUrl));
+  };
   return (
     <>
       {session.data?.user ? (
@@ -33,28 +49,9 @@ export default function NavbarButton({}: Props) {
           </Button>
 
           <ProfileMenu
-            image={session.data.user.image!}
-            name={session.data.user.name! || session.data.user.first_name!}
+            image={session.data.user?.image!}
+            name={session.data.user?.first_name}
           />
-
-          {/* <Button
-            variant={'default'}
-            className="flex gap-3 border items-center"
-          >
-            {session.data.user.image ? (
-              // <Image
-              //   src={session.data.user.image}
-              //   alt="profile"
-              //   width={25}
-              //   height={25}
-              //   className="rounded-full"
-              // />
-              <p>test</p>
-            ) : (
-              <User className="h-6 w-6" />
-            )}
-            <p>{session.data.user.name || session.data.user.first_name}</p>
-          </Button> */}
         </div>
       ) : (
         <div className=" flex gap-3 items-center">
@@ -64,8 +61,13 @@ export default function NavbarButton({}: Props) {
           >
             <Link href={'/signup'}>Sign up</Link>
           </Button>
-          <Button variant={'default'} className="flex items-center border">
-            <Link href={'/signin'}>Sign in</Link>
+          <Button
+            variant={'default'}
+            className="flex items-center border"
+            onClick={() => signIn()}
+          >
+            {/* <Link href={'/signin'}>Sign in</Link> */}
+            Sign in
           </Button>
         </div>
       )}

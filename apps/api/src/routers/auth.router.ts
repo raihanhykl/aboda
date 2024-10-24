@@ -3,6 +3,7 @@ import { AuthController } from '../controllers/auth.controller';
 import { validateData } from '@/middlewares/validationMiddleware';
 import { registerSchema, socialRegister } from '@/schemas/auth.schema';
 import { verifyEmail } from '@/middlewares/verifyEmail';
+import { validateToken } from '@/middlewares/verifyToken';
 
 export class AuthRouter {
   private router = Router();
@@ -21,6 +22,11 @@ export class AuthRouter {
       '/v3',
       validateData(socialRegister),
       this.authController.socialRegister,
+    );
+    this.router.post(
+      '/refresh-token',
+      validateToken,
+      this.authController.refreshToken,
     );
     this.router.post('/forgot-password', this.authController.forgotPassword);
     this.router.get(
