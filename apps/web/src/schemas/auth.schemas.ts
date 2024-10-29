@@ -71,3 +71,17 @@ export const editProfileSchema = z.object({
       message: 'Mohon masukan nomor telepon yang valid.',
     }),
 });
+
+export const createAdminSchema = z.object({
+  first_name: z.string().min(1, { message: 'Mohon masukan nama depan Admin.' }),
+  last_name: z.string(),
+  email: z.string().email({ message: 'Invalid email address' }),
+  phone_number: z
+    .string({ message: 'Mohon masukan nomor telepon Admin.' })
+    .min(8, {
+      message: 'Mohon masukan nomor telepon yang valid.',
+    })
+    .refine(validator.isMobilePhone, {
+      message: 'Mohon masukan nomor telepon yang valid.',
+    }),
+});

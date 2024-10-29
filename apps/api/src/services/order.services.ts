@@ -1,15 +1,307 @@
 import { ErrorHandler } from '@/helpers/response';
+import { cancelOrder } from '@/lib/bull';
 import prisma from '@/prisma';
 import { Prisma } from '@prisma/client';
 import axios from 'axios';
 import { Request } from 'express';
+import { subDays, startOfWeek, startOfMonth, startOfYear } from 'date-fns';
 
 export class OrderService {
+  // static async getOrder(req: Request) {
+  //   try {
+  //     const page = Number(req.query.page) || 1;
+  //     const limit = Number(req.query.limit) || 5;
+  //     const search = String(req.query.search);
+  //     const status = String(req.query.status);
+
+  //     const skip = (page - 1) * limit;
+
+  //     console.log(page, 'ini page');
+  //     console.log(limit, 'ini limit');
+  //     console.log(search, 'ini search');
+  //     console.log(status, 'ini status');
+
+  //     if (search) console.log('search true');
+
+  //     const order = prisma.order.findMany({
+  //       where: {
+  //         userId: Number(req.user.id),
+  //         invoice: search ?? Prisma.skip
+  //       },
+  //       include: {
+  //         OrderItem: {
+  //           include: {
+  //             Product: true,
+  //           },
+  //         },
+  //         ShippingDetail: true,
+  //         Address: {
+  //           include: {
+  //             City: {
+  //               include: {
+  //                 Province: true,
+  //               },
+  //             },
+  //           },
+  //         },
+  //       },
+  //       orderBy: {
+  //         invoice: 'desc',
+  //       },
+  //       skip,
+  //       take: limit,
+  //     });
+  //   } catch (error) {
+  //     console.error(error);
+  //   }
+  // }
+
+  static async getAllOrder(req: Request) {
+    try {
+      const branchId = req.query.branch as number | undefined;
+      const status = req.query.status ? String(req.query.status) : '';
+      const page = Number(req.query.page) || 1;
+      const limit = Number(req.query.limit) || 5;
+      const skip = (page - 1) * limit;
+
+      const branchFilter: Prisma.OrderWhereInput = branchId ? { branchId } : {};
+
+      const statusFilter: Prisma.OrderWhereInput =
+        status && status !== 'all' ? { status: status as any } : {};
+
+      if (req.user.roleId == 2) {
+        return await prisma.order.findMany({
+          where: {
+            ...branchFilter,
+            ...statusFilter,
+          },
+          skip,
+          take: limit,
+        });
+      } else throw new ErrorHandler('Unauthorized!', 401);
+    } catch (error) {
+      throw new ErrorHandler(
+        'Terjadi kesalahan saat mengambil semua order',
+        400,
+      );
+    }
+  }
+
+  static async getOrderByBranch(req: Request) {
+    try {
+      const status = req.query.status ? String(req.query.status) : '';
+      const branchIdFilter = req.query.branchFilter
+        ? String(req.query.branchFilter)
+        : '';
+      const page = Number(req.query.page) || 1;
+      const limit = Number(req.query.limit) || 5;
+      const skip = (page - 1) * limit;
+      const user = req.user;
+      const dateFilter = req.query.date;
+
+      const statusFilter: Prisma.OrderWhereInput =
+        status && status !== 'all' ? { status: status as any } : {};
+
+      const dateFilterCondition: Prisma.OrderWhereInput = (() => {
+        const today = new Date();
+        if (dateFilter === 'today') {
+          return {
+            created_at: {
+              gte: new Date(today.setHours(0, 0, 0, 0)),
+              lte: new Date(),
+            },
+          };
+        } else if (dateFilter === 'this_week') {
+          return {
+            created_at: {
+              gte: startOfWeek(today),
+              lte: new Date(),
+            },
+          };
+        } else if (dateFilter === 'this_month') {
+          return {
+            created_at: {
+              gte: startOfMonth(today),
+              lte: new Date(),
+            },
+          };
+        } else if (dateFilter === 'this_year') {
+          return {
+            created_at: {
+              gte: startOfYear(today),
+              lte: new Date(),
+            },
+          };
+        }
+        return {};
+      })();
+
+      let branchFilter: Prisma.OrderWhereInput = {};
+
+      if (user.roleId === 3) {
+        const adminDetail = await prisma.adminDetail.findUnique({
+          where: { userId: user.id },
+          select: { branchId: true },
+        });
+
+        if (!adminDetail || !adminDetail.branchId) {
+          throw new ErrorHandler(
+            'Admin does not have an associated branch',
+            400,
+          );
+        }
+
+        branchFilter = { branchId: adminDetail.branchId };
+      } else if (user.roleId != 2) {
+        throw new ErrorHandler('Unauthorized!', 401);
+      } else if (user.roleId === 2) {
+        if (branchIdFilter) branchFilter = { branchId: Number(branchIdFilter) };
+      }
+      const order = await prisma.order.findMany({
+        where: {
+          ...branchFilter,
+          ...statusFilter,
+          ...dateFilterCondition,
+        },
+        include: {
+          OrderItem: {
+            include: {
+              Product: true,
+            },
+          },
+          Branch: true,
+          Address: {
+            include: {
+              City: {
+                include: {
+                  Province: true,
+                },
+              },
+            },
+          },
+          ShippingDetail: true,
+          User: true,
+        },
+        skip,
+        take: limit,
+        orderBy: {
+          invoice: 'desc',
+        },
+      });
+
+      const totalOrders = await prisma.order.count({
+        where: {
+          ...branchFilter,
+          ...statusFilter,
+          ...dateFilterCondition,
+        },
+      });
+
+      // Calculate total pages
+      const totalPages = Math.ceil(totalOrders / limit);
+
+      return {
+        data: order,
+        totalPages,
+      };
+    } catch (error) {
+      throw new ErrorHandler(
+        'Terjadi kesalahan saat mengambil semua order',
+        400,
+      );
+    }
+  }
+
   static async getOrder(req: Request) {
     try {
-      return await prisma.order.findMany({
+      const userId = Number(req.user.id);
+      const page = Number(req.query.page) || 1;
+      const limit = Number(req.query.limit) || 5;
+      const search = req.query.search ? String(req.query.search) : '';
+      const status = req.query.status ? String(req.query.status) : '';
+      // const date = 'today' || 'this week' || 'this month' || 'this year';
+
+      const dateFilter = req.query.date;
+
+      const skip = (page - 1) * limit;
+
+      console.log(page, 'ini page');
+      console.log(limit, 'ini limit');
+      console.log(search, 'ini search');
+      console.log(status, 'ini status');
+      console.log(dateFilter, 'ini date');
+
+      // Define search filter
+      const searchFilter: Prisma.OrderWhereInput = search
+        ? {
+            OR: [
+              {
+                invoice: {
+                  contains: search,
+                } as Prisma.StringFilter,
+              },
+              {
+                OrderItem: {
+                  some: {
+                    Product: {
+                      product_name: {
+                        contains: search,
+                      } as Prisma.StringFilter,
+                    },
+                  },
+                },
+              },
+            ],
+          }
+        : {};
+
+      // Define status filter
+      const statusFilter: Prisma.OrderWhereInput =
+        status && status !== 'all'
+          ? { status: status as any } // Adjust this to match your enum type if `status` is an enum
+          : {};
+
+      const dateFilterCondition: Prisma.OrderWhereInput = (() => {
+        const today = new Date();
+        if (dateFilter === 'today') {
+          return {
+            created_at: {
+              gte: new Date(today.setHours(0, 0, 0, 0)),
+              lte: new Date(),
+            },
+          };
+        } else if (dateFilter === 'this_week') {
+          return {
+            created_at: {
+              gte: startOfWeek(today),
+              lte: new Date(),
+            },
+          };
+        } else if (dateFilter === 'this_month') {
+          return {
+            created_at: {
+              gte: startOfMonth(today),
+              lte: new Date(),
+            },
+          };
+        } else if (dateFilter === 'this_year') {
+          return {
+            created_at: {
+              gte: startOfYear(today),
+              lte: new Date(),
+            },
+          };
+        }
+        return {};
+      })();
+
+      // Fetch paginated orders with filters
+      const orders = await prisma.order.findMany({
         where: {
-          userId: Number(req.user.id),
+          userId,
+          ...searchFilter,
+          ...statusFilter,
+          ...dateFilterCondition,
         },
         include: {
           OrderItem: {
@@ -29,15 +321,249 @@ export class OrderService {
           },
         },
         orderBy: {
-          // Misalnya ingin mengurutkan berdasarkan `createdAt` secara descending
           invoice: 'desc',
         },
+        skip,
+        take: limit,
       });
+
+      // Fetch total orders count for pagination
+      const totalOrders = await prisma.order.count({
+        where: {
+          userId,
+          ...searchFilter,
+          ...statusFilter,
+          ...dateFilterCondition,
+        },
+      });
+
+      // Calculate total pages
+      const totalPages = Math.ceil(totalOrders / limit);
+
+      return {
+        data: orders,
+        totalPages,
+        currentPage: page,
+        totalItems: totalOrders,
+      };
     } catch (error) {
-      // error handling jika diperlukan
-      console.error(error);
+      // console.error('Error fetching orders:', error);
+      throw new ErrorHandler('Terjadi kesalahan saat mengambil order', 400);
+      //   res
+      //     // .status(500)
+      //     // .json({ error: 'An error occurred while fetching orders.' });
     }
   }
+
+  static async updateStatus(req: Request) {
+    const { orderId, status } = req.body;
+    // let status;
+    const order = await prisma.order.findUnique({
+      where: {
+        id: Number(orderId),
+      },
+    });
+
+    try {
+      if (req.user.roleId == 2 || req.user.roleId == 3) {
+        if (status == 'pending_payment') {
+          const order = await prisma.order.update({
+            where: {
+              id: Number(orderId),
+            },
+            data: {
+              payment_proof: null,
+              status,
+              updated_at: new Date(),
+            },
+          });
+
+          cancelOrder.add(
+            {
+              user: order.userId,
+              id: order.id,
+            },
+            {
+              delay: 300000,
+            },
+          );
+
+          return order;
+        } else {
+          return await prisma.order.update({
+            where: {
+              id: Number(orderId),
+            },
+            data: {
+              status,
+            },
+          });
+        }
+      } else throw new ErrorHandler('Unauthorized', 401);
+    } catch (error) {
+      throw new ErrorHandler('Terjadi kesalahan saat update status order', 400);
+    }
+  }
+
+  // static async getOrder(req: Request) {
+  //   try {
+  //     // const { page = '1', limit = '5', search = '', status } = req.query;
+  //     const page = Number(req.query.page) || 1;
+  //     const limit = Number(req.query.limit) || 5;
+  //     const search = String(req.query.search);
+  //     const status = req.query.status;
+  //     const pageNumber = page;
+  //     const limitNumber = limit;
+  //     const skip = (pageNumber - 1) * limitNumber;
+
+  //     console.log(page, 'ini page');
+  //     console.log(limit, 'ini limit');
+  //     console.log(search, 'ini search');
+  //     console.log(status, 'ini status');
+
+  //     const whereClause: any = {
+  //       userId: Number(req.user.id),
+  //     };
+
+  //     if (status && status !== 'all') {
+  //       whereClause.status = status;
+  //     }
+
+  //     if (search) {
+  //       whereClause.OR = [
+  //         { invoice: { contains: search } },
+  //         {
+  //           OrderItem: {
+  //             some: {
+  //               Product: {
+  //                 product_name: {
+  //                   contains: search,
+  //                 },
+  //               },
+  //             },
+  //           },
+  //         },
+  //       ];
+  //     }
+
+  //     const [orders, totalCount] = await Promise.all([
+  //       prisma.order.findMany({
+  //         where: whereClause,
+  //         include: {
+  //           OrderItem: {
+  //             include: {
+  //               Product: true,
+  //             },
+  //           },
+  //           ShippingDetail: true,
+  //           Address: {
+  //             include: {
+  //               City: {
+  //                 include: {
+  //                   Province: true,
+  //                 },
+  //               },
+  //             },
+  //           },
+  //         },
+  //         orderBy: {
+  //           invoice: 'desc',
+  //         },
+  //         skip,
+  //         take: limitNumber,
+  //       }),
+  //       prisma.order.count({ where: whereClause }),
+  //     ]);
+
+  //     const totalPages = Math.ceil(totalCount / limitNumber);
+
+  //     return {
+  //       data: orders,
+  //       totalPages,
+  //       currentPage: pageNumber,
+  //       totalItems: totalCount,
+  //     };
+  //   } catch (error) {
+  //     console.error('Error in getOrder:', error);
+  //     throw error;
+  //   }
+  // }
+
+  // static async getOrder(req: Request) {
+  //   try {
+  //     const { page = '1', limit = '5', search = '', status } = req.query;
+  //     const pageNumber = parseInt(page as string, 10);
+  //     const limitNumber = parseInt(limit as string, 10);
+  //     const skip = (pageNumber - 1) * limitNumber;
+
+  //     const whereClause: any = {
+  //       userId: Number(req.user.id),
+  //     };
+
+  //     if (status && status !== 'all') {
+  //       whereClause.status = status;
+  //     }
+
+  //     if (search) {
+  //       whereClause.OR = [
+  //         { invoice: { contains: search as string, mode: 'insensitive' } },
+  //         {
+  //           OrderItem: {
+  //             some: {
+  //               Product: {
+  //                 product_name: {
+  //                   contains: search as string,
+  //                   mode: 'insensitive',
+  //                 },
+  //               },
+  //             },
+  //           },
+  //         },
+  //       ];
+  //     }
+
+  //     const [orders, totalCount] = await Promise.all([
+  //       prisma.order.findMany({
+  //         where: whereClause,
+  //         include: {
+  //           OrderItem: {
+  //             include: {
+  //               Product: true,
+  //             },
+  //           },
+  //           ShippingDetail: true,
+  //           Address: {
+  //             include: {
+  //               City: {
+  //                 include: {
+  //                   Province: true,
+  //                 },
+  //               },
+  //             },
+  //           },
+  //         },
+  //         orderBy: {
+  //           invoice: 'desc',
+  //         },
+  //         skip,
+  //         take: limitNumber,
+  //       }),
+  //       prisma.order.count({ where: whereClause }),
+  //     ]);
+
+  //     const totalPages = Math.ceil(totalCount / limitNumber);
+
+  //     return {
+  //       data: orders,
+  //       totalPages,
+  //       currentPage: pageNumber,
+  //       totalItems: totalCount,
+  //     };
+  //   } catch (error) {
+  //     console.error('Error in getOrder:', error);
+  //     throw error;
+  //   }
+  // }
 
   static async addOrder(req: Request) {
     const {
@@ -78,6 +604,18 @@ export class OrderService {
 
       if (!cartItems.length) {
         throw new ErrorHandler('Keranjang belanja kosong', 400);
+      }
+
+      for (const cartItem of cartItems) {
+        const productStock = cartItem.ProductStock;
+        const quantity = cartItem.quantity || 1;
+
+        if (productStock && quantity > productStock.stock) {
+          throw new ErrorHandler(
+            `Jumlah yang diminta untuk produk "${productStock.Product?.product_name}" melebihi stok yang tersedia`,
+            400,
+          );
+        }
       }
 
       let totalPrice = 0;
@@ -187,6 +725,43 @@ export class OrderService {
           },
         },
       });
+
+      for (const cartItem of cartItems) {
+        const productStock = cartItem.ProductStock;
+        const quantity = cartItem.quantity || 1;
+
+        if (productStock) {
+          // Decrease the stock
+          const newStock = productStock.stock - quantity;
+          await prisma.productStock.update({
+            where: { id: productStock.id },
+            data: { stock: newStock },
+          });
+
+          // Record the stock change in StockHistory
+          await prisma.stockHistory.create({
+            data: {
+              productStockId: productStock.id,
+              stock_id: productStock.id,
+              status: 'out',
+              reference: `Order ID: ${order.id}`,
+              quantity,
+              stock_before: productStock.stock,
+              stock_after: newStock,
+            },
+          });
+        }
+      }
+
+      cancelOrder.add(
+        {
+          user: req.user.id,
+          id: order.id,
+        },
+        {
+          delay: 300000,
+        },
+      );
 
       await prisma.cart.deleteMany({ where: { userId: req.user.id } });
 
@@ -332,30 +907,77 @@ export class OrderService {
     }
   }
 
-  // static async delete(req: Request) {
-  //   try {
-  //     const { cartId } = req.body;
+  static async cancelOrder(req: Request) {
+    try {
+      const { invoice } = req.body;
+      let order;
+      if (!req.user) {
+        throw new ErrorHandler('Unauthorized user', 403);
+      }
+      if (req.user.roleId == 1) {
+        order = await prisma.order.findFirst({
+          where: {
+            invoice,
+            userId: req.user.id,
+            status: 'pending_payment',
+          },
+          include: {
+            OrderItem: true,
+          },
+        });
+      } else if (req.user.roleId == 2 || req.user.roleId == 3) {
+        order = await prisma.order.findFirst({
+          where: {
+            invoice,
+            status: 'pending_payment',
+          },
+          include: {
+            OrderItem: true,
+          },
+        });
+      }
+      if (order) {
+        await prisma.order.update({
+          where: {
+            id: Number(order.id),
+          },
+          data: {
+            status: 'cancelled',
+          },
+        });
+        for (const item of order.OrderItem) {
+          const productStock = await prisma.productStock.findFirst({
+            where: {
+              productId: item.productId,
+              branchId: Number(order.branchId),
+            },
+          });
 
-  //     return await prisma.cart.delete({
-  //       where: {
-  //         id: Number(cartId),
-  //         userId: req.user.id,
-  //       },
-  //     });
-  //   } catch (error) {
-  //     throw new Error('Failed to delete cart!');
-  //   }
-  // }
+          if (productStock) {
+            const restoredStock = productStock.stock + item.quantity;
 
-  // static async deleteAll(req: Request) {
-  //   try {
-  //     return await prisma.cart.deleteMany({
-  //       where: {
-  //         userId: req.user.id,
-  //       },
-  //     });
-  //   } catch (error) {
-  //     throw new Error('Failed to delete all cart!');
-  //   }
-  // }
+            await prisma.productStock.update({
+              where: { id: productStock.id },
+              data: { stock: restoredStock },
+            });
+
+            await prisma.stockHistory.create({
+              data: {
+                productStockId: productStock.id,
+                stock_id: productStock.id,
+                status: 'in',
+                reference: `Order cancellation for Order ID: ${order.id}`,
+                quantity: item.quantity,
+                stock_before: productStock.stock,
+                stock_after: restoredStock,
+              },
+            });
+          }
+        }
+        return { message: 'Order cancelled successfully' };
+      }
+    } catch (error) {
+      throw new Error('Failed to cancel order!');
+    }
+  }
 }

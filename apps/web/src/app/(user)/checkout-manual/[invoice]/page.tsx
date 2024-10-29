@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Upload } from 'lucide-react';
 import { api } from '@/config/axios.config';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 type Props = {
   params: {
@@ -35,7 +36,7 @@ export default function PaymentPage({ params }: Props) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const session = useSession();
-
+  const router = useRouter();
   useEffect(() => {
     const fetchProduct = async () => {
       setIsLoading(true);
@@ -97,7 +98,8 @@ export default function PaymentPage({ params }: Props) {
       });
 
       if (res.status === 200) {
-        alert('Bukti pembayaran berhasil diunggah.');
+        // alert('Bukti pembayaran berhasil diunggah.');
+        router.push('/order');
       } else {
         alert('Gagal mengunggah bukti pembayaran.');
       }

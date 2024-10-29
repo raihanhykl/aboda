@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Minus, Plus } from 'lucide-react';
 import { api } from '@/config/axios.config';
 import Image from 'next/image';
+
 type Props = {
   params: {
     product_id: number;
@@ -68,11 +69,12 @@ export default function ProductPage({ params }: Props) {
       <div className="flex flex-col md:flex-row gap-8">
         <div className="md:w-1/2">
           {/* Product Image */}
-          {product.image ? (
+          {product.images && product.images.length > 0 ? (
             <Image
               width={500}
               height={500}
-              src={`/${product.image}`}
+              // src={product.images[0].imageUrl} // Display main product image
+              src={`http://localhost:8000/product/${product.images[0].imageUrl}`}
               alt={product.product_name}
               className="aspect-square object-cover mb-4"
             />
@@ -81,25 +83,24 @@ export default function ProductPage({ params }: Props) {
           )}
 
           {/* Additional Images */}
-          <div className="grid grid-cols-4 gap-4">
-            {/* Placeholder for multiple images if needed */}
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="aspect-square bg-gray-200"></div>
+          {/* <div className="grid grid-cols-4 gap-4">
+            {product.images.map((img: { imageUrl: string }, i: number) => (
+              <div key={i} className="aspect-square">
+                <Image
+                  width={125}
+                  height={125}
+                  src={img.imageUrl}
+                  alt={`${product.product_name} image ${i + 1}`}
+                  className="object-cover"
+                />
+              </div>
             ))}
           </div>
+         */}
         </div>
 
         <div className="md:w-1/2">
-          <p className="text-sm text-gray-500 mb-2">
-            {/* Example Category: */}
-            {/* Category: {product.ProductStocks[0]?.Branch?.address.city} */}
-          </p>
           <h2 className="text-3xl font-bold mb-2">{product.product_name}</h2>
-          <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full mb-4">
-            {/* Example Stock: */}
-            {/* {product.ProductStocks[0]?.stock > 0 ? 'In Stock' : 'Out of Stock'} */}
-          </span>
-
           <div className="mb-4">
             <span className="text-2xl font-bold mr-2">RP. {product.price}</span>
             {product.original_price && (
@@ -121,11 +122,9 @@ export default function ProductPage({ params }: Props) {
             </Button>
           </div>
 
-          <div className="flex gap-4 mb-8">
-            <Button className="bg-green-600 hover:bg-green-700">
-              Add To Cart
-            </Button>
-          </div>
+          <Button className="bg-green-600 hover:bg-green-700">
+            Add To Cart
+          </Button>
         </div>
       </div>
 

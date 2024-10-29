@@ -27,16 +27,13 @@ export class ProductAdminServices {
         }
 
         // Create the product
-        const product = await prisma.product.create({
+        const newProduct = await prisma.product.create({
           data: {
             product_name,
             description,
             price: Number(price),
             weight: Number(weight),
             categoryId: Number(categoryId),
-            //     image: image?.filename || '',
-            //   },
-            // });
             images: {
               create: {
                 imageUrl: image?.filename || '',
@@ -45,7 +42,20 @@ export class ProductAdminServices {
           },
         });
 
-        return product;
+        // Fetch all branches
+        const branches = await prisma.branch.findMany();
+
+        for (let i = 0; i < branches.length; i++) {
+          await prisma.productStock.create({
+            data: {
+              productId: newProduct.id,
+              branchId: branches[i].id,
+              stock: 0,
+            },
+          });
+        }
+
+        return newProduct; // Return the created product
       } catch (error) {
         if (error instanceof ErrorHandler) {
           throw error;

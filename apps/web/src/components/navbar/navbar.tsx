@@ -163,25 +163,27 @@ export default function Navbar() {
         </div>
 
         {/* Bottom bar - Desktop */}
-        <div className="hidden md:flex justify-between py-2">
-          {[
-            'Home',
-            'Shop',
-            'Fruit',
-            'Vegetable',
-            'Beverages',
-            'About Us',
-            'Blogs',
-          ].map((item) => (
-            <Link
-              key={item}
-              href={`${item === 'Home' ? '/' : '/' + item.toLowerCase()}`}
-              className="hover:text-green-200"
-            >
-              {item}
-            </Link>
-          ))}
-        </div>
+        {session.data?.user.roleId == 1 ? null : (
+          <div className="hidden md:flex justify-between py-2">
+            {[
+              'Dashboard',
+              'Discount Management',
+              'Order Management',
+              'Branches Management',
+              'Product Management',
+              'About Us',
+              'Blogs',
+            ].map((item) => (
+              <Link
+                key={item}
+                href={`${item === 'Dashboard' ? '/' : '/' + item.toLowerCase()}`}
+                className="hover:text-green-200"
+              >
+                {item}
+              </Link>
+            ))}
+          </div>
+        )}
 
         {/* Mobile menu */}
         {isMenuOpen && (

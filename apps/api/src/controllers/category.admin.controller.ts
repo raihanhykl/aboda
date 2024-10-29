@@ -1,6 +1,6 @@
 import { responseHandle } from '@/helpers/response';
 import { NextFunction, Request, Response } from 'express';
-import { CategoryService } from '@/services/category,admin.services';
+import { CategoryService } from '@/services/category.admin.services';
 
 export class CategoryController {
   async getAllCategories(req: Request, res: Response, next: NextFunction) {
@@ -49,4 +49,4 @@ export class CategoryController {
   }
 }
 
-export default new CategoryController();
+// export default new CategoryController();

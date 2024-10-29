@@ -6,6 +6,7 @@ import { Request } from 'express';
 
 export class ProductService {
   // Untuk Search
+
   static async getAllProducts(req: Request) {
     try {
       const page = Number(req.query.page) || 1;
@@ -113,6 +114,7 @@ export class ProductService {
           id: Number(id),
         },
         include: {
+          images: true,
           ProductStocks: {
             include: {
               Branch: {
@@ -169,32 +171,40 @@ export class ProductService {
     try {
       const { id } = req.params;
 
-      // const product = await prisma.product.findUnique({
-      //   where: {
-      //     id: Number(id),
-      //   },
-      //   include: {
-      //     category: true,
-      //     ProductStocks: true,
-      //     Discounts: true,
-      //     images: true,
-      //   },
-      // });
+      const product = await prisma.product.findUnique({
+        where: {
+          id: Number(id),
+        },
+        include: {
+          ProductStocks: {
+            include: {
+              Branch: {
+                include: {
+                  address: true,
+                },
+              },
+            },
+          },
+          images: true,
+          discounts: true,
+        },
+      });
 
-      // if (!product) {
-      //   throw new ErrorHandler('Product not found', 404);
-      // }
+      if (!product) {
+        throw new ErrorHandler('Product not found', 404);
+      }
 
-      // const productWithImageUrl = {
-      //   ...product,
-      //   images: product.images.map((img) => ({
-      //     ...img,
-      //     imageUrl: `/images/product/${img.imageUrl}`,
-      //   })),
-      // };
+      const productWithImages = {
+        ...product,
+        images: product.images.map((img) => ({
+          ...img,
+          imageUrl: `/images/product/${img.imageUrl}`,
+        })),
+      };
 
-      // return productWithImageUrl;
+      return productWithImages;
     } catch (error) {
+      console.error('Error fetching product details:', error);
       throw new ErrorHandler('Failed to fetch product details', 500);
     }
   }

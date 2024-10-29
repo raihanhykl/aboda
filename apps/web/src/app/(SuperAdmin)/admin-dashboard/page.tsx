@@ -1,130 +1,179 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Overview } from '@/components/overview';
-import { RecentSales } from '@/components/recent-sales';
+'use client';
 
-export default function DashboardPage() {
+import { useState } from 'react';
+import Image from 'next/image';
+import {
+  Bell,
+  ChevronDown,
+  Users,
+  ShoppingCart,
+  DollarSign,
+  Clock,
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
+import ProductStockTable from '../components/product-stock';
+import StockManagement from '../components/stockManagement'; // Importing your StockManagement component
+
+const data = [
+  { name: '5k', value: 20 },
+  { name: '10k', value: 30 },
+  // other data...
+];
+
+const salesData = [
+  {
+    month: 'January',
+    totalSales: 5000,
+    categories: [{ name: 'Fruits', sales: 2000 }],
+  },
+  // other sales data...
+];
+
+const stockData = [
+  {
+    month: 'January',
+    product: 'Apple',
+    additions: 100,
+    deductions: 50,
+    endingStock: 500,
+  },
+  // other stock data...
+];
+
+const menuItems = [
+  { name: 'Dashboard', active: true },
+  { name: 'Products', active: false },
+  { name: 'Order Lists', active: false },
+  { name: 'Product Stock', active: false },
+  { name: 'Sales Report', active: false },
+  { name: 'Stock Management', active: false },
+];
+
+export default function Component() {
+  const [activeMenuItem, setActiveMenuItem] = useState('Dashboard');
+  const [role, setRole] = useState('admin');
+
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-      </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total User</CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-muted-foreground"
+    <div className="flex h-screen bg-gray-100">
+      {/* Sidebar */}
+      <aside className="w-64 bg-green-700 text-white p-6">
+        <h1 className="text-2xl font-bold mb-10">Aboda</h1>
+        <nav>
+          {menuItems.map((item) => (
+            <button
+              key={item.name}
+              className={`w-full text-left py-2 px-4 rounded ${
+                item.name === activeMenuItem
+                  ? 'bg-green-600'
+                  : 'hover:bg-green-600'
+              }`}
+              onClick={() => setActiveMenuItem(item.name)}
             >
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">40,689</div>
-            <p className="text-xs text-muted-foreground">
-              <span className="text-green-500">8.5% Up</span> from yesterday
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Order</CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-muted-foreground"
-            >
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">10293</div>
-            <p className="text-xs text-muted-foreground">
-              <span className="text-green-500">1.3% Up</span> from past week
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Sales</CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-muted-foreground"
-            >
-              <rect width="20" height="14" x="2" y="5" rx="2" />
-              <path d="M2 10h20" />
-            </svg>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">$89,000</div>
-            <p className="text-xs text-muted-foreground">
-              <span className="text-red-500">4.3% Down</span> from yesterday
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Pending</CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-muted-foreground"
-            >
-              <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-            </svg>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">2040</div>
-            <p className="text-xs text-muted-foreground">
-              <span className="text-green-500">1.8% Up</span> from yesterday
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4">
-          <CardHeader>
-            <CardTitle>Sales Details</CardTitle>
-          </CardHeader>
-          <CardContent className="pl-2">
-            <Overview />
-          </CardContent>
-        </Card>
-        <Card className="col-span-3">
-          <CardHeader>
-            <CardTitle>Deals Details</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <RecentSales />
-          </CardContent>
-        </Card>
-      </div>
+              {item.name}
+            </button>
+          ))}
+        </nav>
+        <div className="mt-auto"></div>
+      </aside>
+
+      {/* Main content */}
+      <main className="flex-1 p-8 overflow-auto">
+        <header className="flex justify-between items-center mb-8">
+          <h2 className="text-3xl font-bold">{activeMenuItem}</h2>
+        </header>
+
+        {/* Dashboard Content */}
+        {activeMenuItem === 'Dashboard' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Total User
+                </CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">40,689</div>
+                <p className="text-xs text-muted-foreground">
+                  <span className="text-green-500">8.5% Up</span> from yesterday
+                </p>
+              </CardContent>
+            </Card>
+            {/* Other Cards... */}
+          </div>
+        )}
+
+        {/* Sales Report Section */}
+        {activeMenuItem === 'Sales Report' && (
+          <div>
+            <h3 className="text-xl font-semibold mb-4">Monthly Sales Report</h3>
+            {salesData.map((report) => (
+              <Card key={report.month} className="mb-4">
+                <CardHeader>
+                  <CardTitle>{report.month}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p>Total Sales: ${report.totalSales}</p>
+                  <p>Sales by Category:</p>
+                  <ul>
+                    {report.categories.map((category) => (
+                      <li key={category.name}>
+                        {category.name}: ${category.sales}
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        {/* Stock Management Section */}
+        {activeMenuItem === 'Stock Management' && (
+          <div>
+            <h3 className="text-xl font-semibold mb-4">Stock Management</h3>
+            <StockManagement />{' '}
+            {/* Render your StockManagement component here */}
+          </div>
+        )}
+
+        {/* Stock Report Section */}
+        {activeMenuItem === 'Stock Report' && (
+          <div>
+            <h3 className="text-xl font-semibold mb-4">Monthly Stock Report</h3>
+            {stockData.map((stock) => (
+              <Card key={stock.product + stock.month} className="mb-4">
+                <CardHeader>
+                  <CardTitle>
+                    {stock.product} - {stock.month}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p>Total Additions: {stock.additions}</p>
+                  <p>Total Deductions: {stock.deductions}</p>
+                  <p>Ending Stock: {stock.endingStock}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </main>
     </div>
   );
 }

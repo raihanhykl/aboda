@@ -65,9 +65,9 @@ export class StockService {
   }
 
   static async createStock(req: Request) {
-    const { branchId, productId, stock } = req.body;
-
     try {
+      const { branchId, productId, stock } = req.body;
+      console.log(branchId, productId, stock);
       await prisma.productStock.create({
         data: {
           branchId: Number(branchId),

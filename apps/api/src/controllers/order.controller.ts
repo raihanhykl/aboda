@@ -60,6 +60,33 @@ export class OrderController {
     }
   }
 
+  async cancelOrder(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await OrderService.cancelOrder(req);
+      return res.send(responseHandle('Cancel Order Success', data));
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getOrderByBranch(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await OrderService.getOrderByBranch(req);
+      return res.send(responseHandle('Get Order Success', data));
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async updateStatus(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await OrderService.updateStatus(req);
+      return res.send(responseHandle('Update Order Status Success', data));
+    } catch (error) {
+      next(error);
+    }
+  }
+
   //   `async updateCart(req: Request, res: Response, next: NextFunction) {
   //     try {
   //       const data = await CartService.updateCart(req);

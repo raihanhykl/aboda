@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { CategoryController } from '../controllers/category.admin.controller';
 import { validateToken } from '@/middlewares/verifyToken';
+import { CartController } from '@/controllers/cart.controller';
 
 export class CategoryRouter {
   private router = Router();

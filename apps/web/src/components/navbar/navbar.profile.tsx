@@ -64,7 +64,7 @@ export default function ProfileMenu({ image, name }: ProfileMenuProps) {
               Sign Out
             </DropdownMenuItem>
           </AlertDialogTrigger>
-          <AlertDialogContent>
+          <AlertDialogContent className=" z-autp">
             <AlertDialogHeader>
               <AlertDialogTitle>
                 Are you sure you want to sign out?

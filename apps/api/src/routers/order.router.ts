@@ -15,6 +15,11 @@ export class OrderRouter {
     this.routes();
   }
   private routes() {
+    this.router.get(
+      '/get-branch',
+      validateToken,
+      this.orderController.getOrderByBranch,
+    );
     this.router.get('/get', validateToken, this.orderController.getOrder);
     this.router.post(
       '/add-order',
@@ -41,6 +46,17 @@ export class OrderRouter {
       '/update-midtrans-token',
       validateToken,
       this.orderController.updateToken,
+    );
+
+    this.router.post(
+      '/cancel',
+      validateToken,
+      this.orderController.cancelOrder,
+    );
+    this.router.post(
+      '/update-status',
+      validateToken,
+      this.orderController.updateStatus,
     );
 
     // this.router.patch('/update', validateToken, this.cartController.updateCart);

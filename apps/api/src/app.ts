@@ -18,7 +18,8 @@ import { UserRouter } from './routers/user.router';
 import { join } from 'path';
 import { OrderRouter } from './routers/order.router';
 import { CategoryRouter } from './routers/category.admin.router';
-
+import { BranchRouter } from './routers/branch.router';
+import { StockRouter } from './routers/stock.router';
 export default class App {
   private app: Express;
 
@@ -70,8 +71,9 @@ export default class App {
     this.app.use('/api/address', new AddressRouter().getRouter());
     this.app.use('/api/user', new UserRouter().getRouter());
     this.app.use('/api/order', new OrderRouter().getRouter());
-    this.app.use('/api/:branchId/stocks', new UserRouter().getRouter());
+    this.app.use('/api/stocks', new StockRouter().getRouter());
     this.app.use('/api/category', new CategoryRouter().getRouter());
+    this.app.use('/api/branch', new BranchRouter().getRouter());
   }
 
   public start(): void {
