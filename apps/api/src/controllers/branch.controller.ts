@@ -47,4 +47,13 @@ export class BranchController {
       next(error);
     }
   }
+
+  async deleteBranch(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await BranchService.deleteBranch(req);
+      return res.send(responseHandle('Success delete branch', data));
+    } catch (error) {
+      next(error);
+    }
+  }
 }

@@ -52,4 +52,13 @@ export class AddressController {
       next(error);
     }
   }
+
+  async updateUserAddress(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await AddressService.updateUserAddress(req);
+      return res.send(responseHandle('Address updated successfully', data));
+    } catch (error) {
+      next(error);
+    }
+  }
 }

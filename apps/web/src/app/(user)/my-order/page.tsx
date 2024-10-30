@@ -311,9 +311,28 @@ export default function EnhancedCustomerOrderList() {
         },
       },
     );
-    router.push('/order');
+    fetchOrders();
     toast({
       description: 'Order Cancelled!',
+    });
+  };
+
+  const handleConfirm = async (invoice: string) => {
+    console.log(invoice);
+    await api.post(
+      `/order/confirm-order`,
+      {
+        invoice,
+      },
+      {
+        headers: {
+          Authorization: 'Bearer ' + session?.data?.user.access_token,
+        },
+      },
+    );
+    fetchOrders();
+    toast({
+      description: 'Order Successfully Confirmed!',
     });
   };
 
@@ -507,6 +526,31 @@ export default function EnhancedCustomerOrderList() {
                             triggerText="Cancel Order"
                             title="Are you sure?"
                             description={`This action cannot be undone. This will delete your order.`}
+                          />
+                        </div>
+                      ) : null}
+                      {order.status === 'shipped' ? (
+                        <div className="py-1">
+                          {/* <Button
+                            className="ml mr-3"
+                            variant="outline"
+                            onClick={() =>
+                              handleCheckout(
+                                order.invoice,
+                                order.total_price,
+                                order.payment_method,
+                                order.midtrans_token,
+                              )
+                            }
+                          >
+                            Pay Now
+                          </Button> */}
+
+                          <AlertModal
+                            onConfirm={() => handleConfirm(order.invoice)}
+                            triggerText="Confirm Order"
+                            title="Are you sure?"
+                            description={`This action will close your order. Make sure you received the package and make sure your stuff is not damaged.`}
                           />
                         </div>
                       ) : null}

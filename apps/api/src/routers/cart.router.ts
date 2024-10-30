@@ -13,6 +13,7 @@ export class CartRouter {
     this.routes();
   }
   private routes() {
+    this.router.get('/count', validateToken, this.cartController.countCart);
     this.router.get('/get', validateToken, this.cartController.getCart);
     this.router.post('/add', validateToken, this.cartController.addToCart);
     this.router.patch('/update', validateToken, this.cartController.updateCart);

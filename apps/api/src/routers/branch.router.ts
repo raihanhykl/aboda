@@ -39,6 +39,11 @@ export class BranchRouter {
       validateToken,
       this.BranchController.addBranch,
     );
+    this.router.put(
+      '/delete-branch/:id',
+      validateToken,
+      this.BranchController.deleteBranch,
+    );
   }
   public getRouter() {
     return this.router;

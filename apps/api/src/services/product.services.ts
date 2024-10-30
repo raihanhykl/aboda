@@ -113,18 +113,18 @@ export class ProductService {
         where: {
           id: Number(id),
         },
-        include: {
-          images: true,
-          ProductStocks: {
-            include: {
-              Branch: {
-                include: {
-                  address: true,
-                },
-              },
-            },
-          },
-        },
+        // include: {
+        //   images: true,
+        //   ProductStocks: {
+        //     include: {
+        //       Branch: {
+        //         include: {
+        //           address: true,
+        //         },
+        //       },
+        //     },
+        //   },
+        // },
       });
 
       if (!product) {
@@ -170,7 +170,6 @@ export class ProductService {
   static async getProductDetail(req: Request) {
     try {
       const { id } = req.params;
-
       const product = await prisma.product.findUnique({
         where: {
           id: Number(id),
@@ -185,23 +184,20 @@ export class ProductService {
               },
             },
           },
-          images: true,
+          image: true,
           discounts: true,
         },
       });
-
       if (!product) {
         throw new ErrorHandler('Product not found', 404);
       }
-
       const productWithImages = {
         ...product,
-        images: product.images.map((img) => ({
+        image: product.image.map((img) => ({
           ...img,
           imageUrl: `/images/product/${img.imageUrl}`,
         })),
       };
-
       return productWithImages;
     } catch (error) {
       console.error('Error fetching product details:', error);

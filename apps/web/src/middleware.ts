@@ -25,8 +25,8 @@ export async function middleware(request: NextRequest) {
   if (user?.roleId == 1) {
     if (
       pathname == '/order' ||
-      pathname == '/all-branch-orders' ||
-      pathname == '/branch-orders'
+      pathname == '/admin-dashboard/all-branch-orders' ||
+      pathname == '/admin-dashboard/branch-orders'
     ) {
       return NextResponse.redirect(new URL('/my-order', request.url));
     }
@@ -35,19 +35,23 @@ export async function middleware(request: NextRequest) {
     if (
       pathname == '/order' ||
       pathname == '/my-order' ||
-      pathname == '/branch-orders'
+      pathname == '/admin-dashboard/branch-orders'
     ) {
       console.log('masuk');
-      return NextResponse.redirect(new URL('/all-branch-orders', request.url));
+      return NextResponse.redirect(
+        new URL('/admin-dashboard/all-branch-orders', request.url),
+      );
     }
   }
   if (user?.roleId == 3) {
     if (
       pathname == '/order' ||
       pathname == '/my-order' ||
-      pathname == '/all-branch-orders'
+      pathname == '/admin-dashboard/all-branch-orders'
     ) {
-      return NextResponse.redirect(new URL('/branch-orders', request.url));
+      return NextResponse.redirect(
+        new URL('/admin-dashboard/branch-orders', request.url),
+      );
     }
   }
 

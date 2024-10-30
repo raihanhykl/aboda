@@ -20,6 +20,7 @@ import { usePathname, useRouter } from 'next/navigation';
 type Props = {};
 
 export default function NavbarButton({}: Props) {
+  const [cartCount, setCartCount] = useState(0);
   const session = useSession();
   const router = useRouter();
   const baseURL = 'http://localhost:3000';
@@ -33,6 +34,26 @@ export default function NavbarButton({}: Props) {
     loginUrl.searchParams.set('redirect', pathname);
     return router.push(String(loginUrl));
   };
+
+  const fetchCart = async () => {
+    try {
+      const res = await api.get(`/cart/count`, {
+        headers: {
+          Authorization: 'Bearer ' + session?.data?.user.access_token,
+        },
+      });
+      setCartCount(res.data.data);
+    } catch (error) {
+      console.error('Error fetching cart:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (session.data?.user) {
+      fetchCart();
+    }
+  }, [session.data?.user]);
+
   return (
     <>
       {session.data?.user ? (
@@ -40,11 +61,12 @@ export default function NavbarButton({}: Props) {
           <Button
             variant={'default'}
             className=" *:flex *:gap-3 *:items-center  bg-[#e0b116] "
-            onClick={() => actionLogout()}
+            // onClick={() => actionLogout()}
+            onClick={() => router.push('/carts')}
           >
             <Link href={'/carts'}>
               <ShoppingCart />
-              Cart
+              Cart ({cartCount})
             </Link>
           </Button>
 

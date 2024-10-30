@@ -34,7 +34,7 @@ export class ProductAdminServices {
             price: Number(price),
             weight: Number(weight),
             categoryId: Number(categoryId),
-            images: {
+            image: {
               create: {
                 imageUrl: image?.filename || '',
               },
@@ -99,7 +99,7 @@ export class ProductAdminServices {
             price: Number(price),
             weight: Number(weight),
             categoryId: Number(categoryId),
-            images: {
+            image: {
               create: {
                 imageUrl: image?.filename || undefined,
               },

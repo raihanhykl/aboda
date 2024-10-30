@@ -176,7 +176,7 @@ export default function Navbar() {
             ].map((item) => (
               <Link
                 key={item}
-                href={`${item === 'Dashboard' ? '/' : '/' + item.toLowerCase()}`}
+                href={`${item === 'Dashboard' ? '/admin-dashboard' : '/admin-dashboard/' + item.split(' ')[0].toLocaleLowerCase()}`}
                 className="hover:text-green-200"
               >
                 {item}

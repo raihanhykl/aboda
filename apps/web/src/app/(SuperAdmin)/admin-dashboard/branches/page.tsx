@@ -2,11 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { Edit, Trash2, Plus } from 'lucide-react';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  useMapEvents,
+  useMap,
+} from 'react-leaflet';
 import { useForm, Controller } from 'react-hook-form';
-import axios from 'axios';
 import 'leaflet/dist/leaflet.css';
-
+import L from 'leaflet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,6 +22,14 @@ import { useSession } from 'next-auth/react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import CreateAdminPopover from '../../components/createAdmin';
 import { api } from '@/config/axios.config';
+import DeleteBranch from '../../components/deleteBranch';
+
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl:
+    'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+});
 
 export default function SuperAdminDashboard() {
   const [branches, setBranches] = useState<IBranch[]>([]);
@@ -50,10 +63,21 @@ export default function SuperAdminDashboard() {
         const data = res?.data.data as IBranch[];
         setBranches(data);
         setSelectedBranch(data[0]);
+        setPosition([data[0].address.lat, data[0].address.lon]);
         setBranchAdmin(data[0].AdminDetails);
       });
     }
   }, [session]);
+
+  const MapUpdater = () => {
+    const map = useMap();
+    useEffect(() => {
+      if (position) {
+        map.setView(position, 13); // Memusatkan peta ke posisi baru
+      }
+    }, [position, map]);
+    return null;
+  };
 
   const fetchAvailableAdmins = async () => {
     getUnassignedAdmin(session.data?.user.access_token!)
@@ -112,31 +136,41 @@ export default function SuperAdminDashboard() {
           branch.id === updatedBranch.id ? updatedBranch : branch,
         ),
       );
-      await api
-        .put(
-          `/branch/update-branch`,
-          { data: updatedBranch },
-          {
-            headers: {
-              Authorization: 'Bearer ' + session.data?.user.access_token,
-            },
+      await api.put(
+        `/branch/update-branch`,
+        { data: updatedBranch },
+        {
+          headers: {
+            Authorization: 'Bearer ' + session.data?.user.access_token,
           },
-        )
-        .then(() => alert('success hit api'))
-        .catch((err) => alert(`failed hit api: ${err.message}`));
+        },
+      );
     }
     setSelectedBranch(updatedBranch);
     setIsEditing(false);
   };
 
-  const handleDeleteBranch = (id: number) => {
-    setBranches(branches.filter((branch) => branch.id !== id));
-    setSelectedBranch(null);
+  const handleDeleteBranch = async (id: number) => {
+    await api
+      .put(
+        `branch/delete-branch/${id}`,
+        {},
+        {
+          headers: {
+            Authorization: 'Bearer ' + session.data?.user.access_token,
+          },
+        },
+      )
+      .then(() => {
+        setBranches(branches.filter((branch) => branch.id !== id));
+        setSelectedBranch(null);
+      })
+      .catch((err) => alert(`failed hit api: ${err.message}`));
   };
 
   const handleAddBranch = () => {
     const newBranch: IBranch = {
-      id: branches.length + 1,
+      id: branches[branches.length - 1].id + 1,
       branch_name: 'New Branch',
       addressId: 0,
       address: {
@@ -160,15 +194,15 @@ export default function SuperAdminDashboard() {
     };
     setBranches([...branches, newBranch]);
     setSelectedBranch(newBranch);
+    setBranchAdmin([]);
     setPosition([newBranch.address.lat, newBranch.address.lon]);
     setIsAdding(true);
-    setBranchAdmin([]);
     setIsEditing(true);
     reset(newBranch);
   };
 
   const handleCancelAdd = () => {
-    if (isAdding && selectedBranch?.id === branches[branches.length - 1].id) {
+    if (isAdding && selectedBranch?.id == branches[branches.length - 1].id) {
       setBranches(branches.slice(0, -1));
     }
     setSelectedBranch(null);
@@ -188,13 +222,13 @@ export default function SuperAdminDashboard() {
   };
 
   return (
-    <div className="  p-4">
+    <div className=" min-h-screen p-4">
       <div className="flex flex-col lg:flex-row gap-8">
         <Card className="w-full lg:w-1/3">
           <CardHeader>
             <CardTitle className="flex justify-between items-center">
               Branches
-              <Button size="icon" onClick={handleAddBranch}>
+              <Button size="icon" onClick={handleAddBranch} disabled={isAdding}>
                 <Plus className="h-4 w-4" />
               </Button>
             </CardTitle>
@@ -228,7 +262,9 @@ export default function SuperAdminDashboard() {
                     ? 'Add New Branch'
                     : 'Edit Branch'
                   : 'Branch Details'}
-                <div className="space-x-2">
+                <div
+                  className={`space-x-2 ${session.data?.user.roleId !== 2 && 'hidden'}`}
+                >
                   {!isEditing ? (
                     <>
                       <Button
@@ -239,14 +275,11 @@ export default function SuperAdminDashboard() {
                         <Edit className="h-4 w-4 mr-2" />
                         Edit
                       </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDeleteBranch(selectedBranch.id)}
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
-                      </Button>
+                      <DeleteBranch
+                        branchName={selectedBranch.branch_name}
+                        id={selectedBranch.id}
+                        handler={handleDeleteBranch}
+                      />
                     </>
                   ) : (
                     <>
@@ -273,7 +306,12 @@ export default function SuperAdminDashboard() {
               <Tabs defaultValue="details">
                 <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="details">Details</TabsTrigger>
-                  <TabsTrigger value="admins">Admins</TabsTrigger>
+                  <TabsTrigger
+                    value="admins"
+                    disabled={session?.data?.user.roleId !== 2}
+                  >
+                    Admins
+                  </TabsTrigger>
                   <TabsTrigger value="products">Products</TabsTrigger>
                 </TabsList>
 
@@ -305,7 +343,7 @@ export default function SuperAdminDashboard() {
                           render={({ field }) => (
                             <Input
                               {...field}
-                              readOnly={!isEditing}
+                              disabled={!isEditing}
                               className="mt-1"
                             />
                           )}
@@ -319,7 +357,7 @@ export default function SuperAdminDashboard() {
                           render={({ field }) => (
                             <Input
                               {...field}
-                              readOnly={!isEditing}
+                              disabled={!isEditing}
                               className="mt-1"
                             />
                           )}
@@ -333,7 +371,7 @@ export default function SuperAdminDashboard() {
                           render={({ field }) => (
                             <Input
                               {...field}
-                              readOnly={!isEditing}
+                              disabled={!isEditing}
                               className="mt-1"
                             />
                           )}
@@ -344,14 +382,18 @@ export default function SuperAdminDashboard() {
 
                   <div>
                     <Label>Location</Label>
-                    <div className="mt-1 h-64 rounded-md overflow-hidden">
+                    <div className="mt-1 h-64 rounded-md overflow-hidden w-full">
                       <MapContainer
                         center={position}
                         zoom={13}
                         style={{ height: '100%', width: '100%', zIndex: 1 }}
                       >
-                        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                        <TileLayer
+                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                        />
                         <LocationMarker />
+                        <MapUpdater />
                       </MapContainer>
                     </div>
                     {isEditing && (

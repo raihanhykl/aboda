@@ -30,6 +30,12 @@ export class AddressRouter {
       this.addressController.createUserAddress,
     );
 
+    this.router.put(
+      '/update-user-address',
+      validateToken,
+      this.addressController.updateUserAddress,
+    );
+
     this.router.get(
       '/get-user-address-branch',
       validateToken,

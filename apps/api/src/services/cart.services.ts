@@ -4,6 +4,15 @@ import { Prisma } from '@prisma/client';
 import { Request } from 'express';
 
 export class CartService {
+  static async countCart(req: Request) {
+    try {
+      return await prisma.cart.count({
+        where: {
+          userId: Number(req.user.id),
+        },
+      });
+    } catch (error) {}
+  }
   static async getCart(req: Request) {
     try {
       return await prisma.cart.findMany({

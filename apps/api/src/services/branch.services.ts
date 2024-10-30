@@ -96,6 +96,7 @@ export class BranchService {
       if (req.user.roleId != 2)
         throw new ErrorHandler('Unauthorized, Super admin only!', 400);
       const branchData: IBranch = req.body.data;
+      console.log(branchData, 'ini branch data di branch service');
 
       const newAddress = await prisma.address.create({
         data: {
@@ -146,11 +147,24 @@ export class BranchService {
 
       const { id } = req.params;
 
-      await prisma.branch.delete({
+      await prisma.branch.update({
         where: {
           id: Number(id),
         },
+        data: {
+          isActive: 0,
+        },
       });
+
+      await prisma.adminDetail.updateMany({
+        where: {
+          branchId: Number(id),
+        },
+        data: {
+          branchId: null,
+        },
+      });
+      return await returnBranch();
     });
   }
 }

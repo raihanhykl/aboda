@@ -26,6 +26,7 @@ import { useEffect, useState } from 'react';
 import { HelpCircle } from 'lucide-react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
+import { z } from 'zod';
 
 interface Address {
   id: number;
@@ -99,23 +100,14 @@ export default function CheckoutPage() {
   const [selectedService, setSelectedService] = useState<string>(''); // Add service state
   const [selectedVoucher, setSelectedVoucher] = useState<number | null>(null); // Add service state
   const [selectedAddress, setSelectedAddress] = useState<number>(); // Add service state
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({}); // State untuk pesan error
 
-  // useEffect(() => {
-  //   const snapScript: string = 'https://app.sandbox.midtrans.com/snap/snap.js';
-  //   const clientKey: any = 'SB-Mid-client-c7SnHqsRuZTiamhl';
-
-  //   const script = document.createElement('script');
-  //   script.src = snapScript;
-
-  //   script.setAttribute('data-client-key', clientKey);
-  //   script.async = true;
-
-  //   document.body.appendChild(script);
-
-  //   return () => {
-  //     document.body.removeChild(script);
-  //   };
-  // }, []);
+  const checkoutSchema = z.object({
+    address: z.string().nonempty('Address is required.'),
+    courier: z.string().nonempty('Shipping courier is required.'),
+    service: z.string().nonempty('Shipping service is required.'),
+    paymentMethod: z.string().nonempty('Payment method is required.'),
+  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -222,6 +214,28 @@ export default function CheckoutPage() {
   };
 
   const handleMakeOrder = async () => {
+    const validation = checkoutSchema.safeParse({
+      address: selectedAddress ? selectedAddress.toString() : '',
+      courier,
+      service: selectedService,
+      paymentMethod,
+    });
+
+    if (!validation.success) {
+      // Simpan pesan error ke state
+      const errors = validation.error.errors.reduce(
+        (acc, error) => {
+          acc[error.path[0]] = error.message;
+          return acc;
+        },
+        {} as Record<string, string>,
+      );
+      setFormErrors(errors);
+      return; // Hentikan eksekusi jika validasi gagal
+    } else {
+      setFormErrors({}); // Bersihkan error jika validasi berhasil
+    }
+
     const subTotal = calculateSubTotal(carts);
     const totalAmount =
       subTotal +
@@ -250,93 +264,13 @@ export default function CheckoutPage() {
           },
         },
       );
-      // console.log(
-      //   {
-      //     origin,
-      //     destination: selectedCity,
-      //     weight,
-      //     courier,
-      //     service: selectedService,
-      //     user_voucher_id: selectedVoucher || null,
-      //     shipping_price: selectedShippingCost || 0,
-      //     payment_id: paymentMethod === 'gateway' ? 1 : 2,
-      //     user_address_id: selectedAddress,
-      //     expedition: courier,
-      //     expedition_detail: selectedService,
-      //   },
-      //   'Data sent to the backend',
-      // );
 
-      // // Individual logs for specific fields
-      // console.log(selectedService, 'ini selected service');
-      // console.log(selectedVoucher, 'ini selected voucher');
-      // console.log(selectedShippingCost, 'ini selected shipping cost');
-      // console.log(paymentMethod, 'ini payment method');
-      // console.log(selectedAddress, 'ini selected address');
-
-      // console.log('Order created:', response.data);
       router.push('/order'); // Redirect to success page or handle accordingly
       // toast
     } catch (error) {
       console.error('Error creating order:', error);
     }
   };
-
-  // const handlePayment = async () => {
-  //   const subTotal = calculateSubTotal(carts); // Menghitung subtotal dari carts
-  //   const totalAmount =
-  //     subTotal +
-  //     (selectedShippingCost || 0) -
-  //     calculateVoucherDiscount(voucher, subTotal); // Total setelah diskon dan shipping cost
-  //   console.log(totalAmount, 'ini total amount');
-
-  //   try {
-  //     const response = await axios.post('/api/payment', {
-  //       carts: carts, // Mengirim carts ke backend
-  //       shippingCost: totalAmount || 0, // Mengirim biaya pengiriman
-  //     });
-
-  //     console.log(response, 'ini response');
-  //     // (window as any).snap.pay(response.data.token);
-
-  //     // if (typeof window.snap !== 'undefined') {
-  //     // (window as any).snap.pay('0ef8bf1c-a9f1-48cd-88d8-e24919e0c32d');
-
-  //     console.log(window.snap.pay(response.data.token));
-
-  //     // window.snap.pay('0ef8bf1c-a9f1-48cd-88d8-e24919e0c32d', {
-  //     //   onSuccess: function (result) {
-  //     //     console.log('payment success:', result);
-  //     //   },
-  //     //   onPending: function (result) {
-  //     //     console.log('payment pending:', result);
-  //     //   },
-  //     //   onError: function (result) {
-  //     //     console.error('payment error:', result);
-  //     //   },
-  //     //   onClose: function () {
-  //     //     console.log('payment popup closed');
-  //     //   },
-  //     // });
-
-  //     // } else {
-  //     //   console.error('Snap is not loaded');
-  //     // }
-  //   } catch (error) {
-  //     console.error('Payment error:', error);
-  //   }
-  // };
-
-  // const handleCheckout = (e: React.FormEvent) => {
-  //   e.preventDefault();
-  //   if (paymentMethod === 'manual') {
-  //     router.push('/checkout-manual'); // Redirect ke halaman manual transfer
-  //   } else if (paymentMethod === 'gateway') {
-  //     handlePayment(); // Eksekusi pembayaran dengan payment gateway
-  //   } else {
-  //     console.log('Please select a payment method');
-  //   }
-  // };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -401,10 +335,7 @@ export default function CheckoutPage() {
                         </AlertDialogContent>
                       </AlertDialog>
                     </div>
-                    <Link
-                      href="/add-address"
-                      className="text-[12px] text-right"
-                    >
+                    <Link href="/my-address" className="text-[12px] text-right">
                       Add my address?
                     </Link>
                   </div>
@@ -423,6 +354,9 @@ export default function CheckoutPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {formErrors.address && (
+                    <p className="text-red-500 text-sm">{formErrors.address}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -466,6 +400,9 @@ export default function CheckoutPage() {
                       <SelectItem value="tiki">TIKI</SelectItem>
                     </SelectContent>
                   </Select>
+                  {formErrors.courier && (
+                    <p className="text-red-500 text-sm">{formErrors.courier}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -501,6 +438,9 @@ export default function CheckoutPage() {
                       )}
                     </SelectContent>
                   </Select>
+                  {formErrors.service && (
+                    <p className="text-red-500 text-sm">{formErrors.service}</p>
+                  )}
                 </div>
               </form>
             </CardContent>
@@ -556,6 +496,11 @@ export default function CheckoutPage() {
                       <SelectItem value="manual">Manual Transfer</SelectItem>
                     </SelectContent>
                   </Select>
+                  {formErrors.paymentMethod && (
+                    <p className="text-red-500 text-sm">
+                      {formErrors.paymentMethod}
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex justify-between font-bold">

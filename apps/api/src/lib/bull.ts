@@ -5,6 +5,7 @@ import Queue from 'bull';
 export const userDeletionQueue = new Queue('userDeletion');
 export const forgotPasswordQueue = new Queue('forgotPassword');
 export const cancelOrder = new Queue('cancelOrder');
+export const confirmOrder = new Queue('confirmOrder');
 
 userDeletionQueue.process(async (job) => {
   prisma.$transaction(async (prisma) => {
@@ -107,5 +108,30 @@ cancelOrder.process(async (job) => {
         });
       }
     }
+  }
+});
+
+confirmOrder.process(async (job) => {
+  const { id } = job.data;
+  const order = await prisma.order.findFirst({
+    where: {
+      id: Number(id),
+      status: 'shipped',
+    },
+    include: {
+      OrderItem: true,
+    },
+  });
+
+  if (order) {
+    await prisma.order.update({
+      where: {
+        id: Number(id),
+        status: 'shipped',
+      },
+      data: {
+        status: 'confirmed',
+      },
+    });
   }
 });

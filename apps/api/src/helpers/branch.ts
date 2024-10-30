@@ -2,6 +2,9 @@ import prisma from '@/prisma';
 
 export const returnBranch = async () => {
   return await prisma.branch.findMany({
+    where: {
+      isActive: 1,
+    },
     include: {
       AdminDetails: {
         include: {

@@ -70,3 +70,10 @@ export interface Product {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface UserAddress {
+  id: number;
+  addressId: number;
+  userId: number;
+  address: Address;
+}

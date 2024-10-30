@@ -20,6 +20,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useDispatch, useSelector } from 'react-redux';
 import { setAddresses } from '@/state/addresses/addressesSlice';
 import { AddressFormData } from '@/interfaces/address';
+import RenderSelect from '@/components/cityProvince/renderSelect';
 
 L.Icon.Default.mergeOptions({
   iconRetinaUrl:
@@ -27,6 +28,33 @@ L.Icon.Default.mergeOptions({
   iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
   shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
 });
+const renderSelect = (
+  name: keyof AddressFormData,
+  placeholder: string,
+  items: any[],
+  valueKey: string,
+  labelKey: string,
+  control: any,
+) => (
+  <Controller
+    name={name}
+    control={control}
+    render={({ field }) => (
+      <Select onValueChange={field.onChange}>
+        <SelectTrigger>
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent className="relative z-50">
+          {items.map((item) => (
+            <SelectItem key={item[valueKey]} value={item[valueKey].toString()}>
+              {item[labelKey]}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    )}
+  />
+);
 
 export default function AddAddress() {
   const [provinces, setProvinces] = useState<any[]>([]);
@@ -124,36 +152,6 @@ export default function AddAddress() {
     }
   };
 
-  const renderSelect = (
-    name: keyof AddressFormData,
-    placeholder: string,
-    items: any[],
-    valueKey: string,
-    labelKey: string,
-  ) => (
-    <Controller
-      name={name}
-      control={control}
-      render={({ field }) => (
-        <Select onValueChange={field.onChange}>
-          <SelectTrigger>
-            <SelectValue placeholder={placeholder} />
-          </SelectTrigger>
-          <SelectContent className="relative z-50">
-            {items.map((item) => (
-              <SelectItem
-                key={item[valueKey]}
-                value={item[valueKey].toString()}
-              >
-                {item[labelKey]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      )}
-    />
-  );
-
   return (
     <div className="container mx-auto px-4 py-8 max-w-md">
       <h1 className="text-3xl font-bold mb-1 text-center">Add Address</h1>
@@ -175,21 +173,28 @@ export default function AddAddress() {
         {errors.street && (
           <p className="text-red-500 text-sm">{errors.street.message}</p>
         )}
-
-        {renderSelect(
-          'selectedProvince',
-          'Select Province',
-          provinces,
-          'id',
-          'name',
-        )}
+        <RenderSelect
+          name="selectedProvince"
+          placeholder="Select Province"
+          items={provinces}
+          valueKey="id"
+          labelKey="name"
+          control={control}
+        />
         {errors.selectedProvince && (
           <p className="text-red-500 text-sm">
             {errors.selectedProvince.message}
           </p>
         )}
 
-        {renderSelect('selectedCity', 'Select City', cities, 'id', 'city')}
+        {renderSelect(
+          'selectedCity',
+          'Select City',
+          cities,
+          'id',
+          'city',
+          control,
+        )}
         {errors.selectedCity && (
           <p className="text-red-500 text-sm">{errors.selectedCity.message}</p>
         )}

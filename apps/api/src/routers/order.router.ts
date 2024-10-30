@@ -58,6 +58,11 @@ export class OrderRouter {
       validateToken,
       this.orderController.updateStatus,
     );
+    this.router.post(
+      '/confirm-order',
+      validateToken,
+      this.orderController.confirmOrder,
+    );
 
     // this.router.patch('/update', validateToken, this.cartController.updateCart);
     // this.router.patch('/delete', validateToken, this.cartController.deleteCart);

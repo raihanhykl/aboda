@@ -32,18 +32,20 @@ export default function ShopPage() {
   const [products, setProducts] = useState([]);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
+  const [searchQuery, setSearchQuery] = useState<string>(''); // State for search input
   const itemsPerPage = 2;
   const { longitude, latitude } = useSelector(
     (state: RootState) => state.position,
   );
+
   const performSearch = async () => {
     try {
-      console.log(`ini la: ${latitude}, dan long: ${longitude}`);
       const res = await api.get(
-        `/product?page=${currentPage}&limit=${itemsPerPage}&lat=${latitude}&long=${longitude}`,
+        `/product?page=${currentPage}&limit=${itemsPerPage}&lat=${latitude}&long=${longitude}&name=${searchQuery}`,
       );
+      console.log(res, 'ini ressss');
       setProducts(res.data.data.data);
-      setTotalPages(Math.ceil(Number(res.data.data.total) / itemsPerPage)); // Set total pages based on API response
+      setTotalPages(Math.ceil(Number(res.data.data.total) / itemsPerPage));
     } catch (error) {
       console.error('Error fetching products:', error);
     } finally {
@@ -53,7 +55,7 @@ export default function ShopPage() {
 
   useEffect(() => {
     performSearch();
-  }, [currentPage, longitude, latitude]);
+  }, [currentPage, longitude, latitude, searchQuery]);
 
   const handlePageChange = (newPage: number) => {
     if (newPage > 0 && newPage <= totalPages) {
@@ -104,6 +106,15 @@ export default function ShopPage() {
         </aside>
         <main className="w-full md:w-3/4">
           <div className="flex justify-between items-center mb-4">
+            <div className="relative w-full">
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              />
+            </div>
             <Select>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Sort by: Price" />

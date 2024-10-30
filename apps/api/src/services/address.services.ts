@@ -154,4 +154,40 @@ export class AddressService {
       throw new ErrorHandler('Terjadi kesalahan saat menambahkan address', 400);
     }
   }
+
+  static async updateUserAddress(req: Request) {
+    try {
+      const { addressId, street, cityId, lon, lat } = req.body;
+
+      if (!addressId || !street || !cityId || !lon || !lat) {
+        throw new ErrorHandler('All fields are required', 400);
+      }
+
+      const city = await prisma.city.findUnique({
+        where: { id: parseInt(cityId) },
+      });
+
+      if (!city) {
+        throw new ErrorHandler('City not found', 404);
+      }
+
+      if (!req.user.id) {
+        throw new ErrorHandler('User not authenticated', 401);
+      }
+
+      return await prisma.address.update({
+        where: {
+          id: Number(addressId),
+        },
+        data: {
+          street: street,
+          cityId: city.id,
+          lon: parseFloat(lon),
+          lat: parseFloat(lat),
+        },
+      });
+    } catch (error) {
+      throw new ErrorHandler('Terjadi kesalahan saat mengupdate alamat', 400);
+    }
+  }
 }

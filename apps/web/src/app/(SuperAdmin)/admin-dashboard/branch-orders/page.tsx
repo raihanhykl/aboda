@@ -29,6 +29,7 @@ import { useSession } from 'next-auth/react';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import AlertModal from '@/components/modal/modal';
+import { useRouter } from 'next/navigation';
 
 type OrderItem = {
   id: number;
@@ -75,6 +76,7 @@ export default function AdminOrderList() {
   const session = useSession();
   const ordersPerPage = 5;
   const { toast } = useToast();
+  const router = useRouter();
 
   useEffect(() => {
     fetchOrders();
@@ -230,6 +232,26 @@ export default function AdminOrderList() {
         });
       }
     }
+  };
+
+  const handleCancel = async (invoice: string) => {
+    console.log(invoice);
+    await api.post(
+      `/order/cancel`,
+      {
+        invoice,
+      },
+      {
+        headers: {
+          Authorization: 'Bearer ' + session?.data?.user.access_token,
+        },
+      },
+    );
+    setIsUpdateModalOpen(false);
+    fetchOrders();
+    toast({
+      description: 'Order Cancelled!',
+    });
   };
 
   return (
@@ -436,12 +458,32 @@ export default function AdminOrderList() {
             )
             // )
           }
+          {
+            selectedOrder?.status === 'pending_payment' && (
+              // selectedOrder.payment_proof && (
+              <div className="mt-4">
+                {/* <h4 className="text-sm font-medium mb-2">Payment Proof:</h4> */}
+                <h4 className="text-sm text-center font-medium">
+                  Cancel Order?
+                </h4>
+                {/* <Image
+                  // src={selectedOrder.payment_proof}
+                  src={`http://localhost:8000/payment-proof/${selectedOrder.payment_proof}`}
+                  alt="Payment Proof"
+                  width={300}
+                  height={300}
+                  className="rounded-md"
+                /> */}
+              </div>
+            )
+            // )
+          }
           <div className="flex justify-end space-x-2 mt-4">
             <Button
               variant="outline"
               onClick={() => setIsUpdateModalOpen(false)}
             >
-              Cancel
+              Close
             </Button>
             {selectedOrder?.status === 'awaiting_confirmation' && (
               <>
@@ -455,19 +497,28 @@ export default function AdminOrderList() {
             )}
             {selectedOrder?.status === 'processing' && (
               <>
-                {/* <Button variant="destructive" onClick={handleRejectOrder}>
-                  Cancel Order
-                </Button> */}
                 <AlertModal
-                  onConfirm={handleRejectOrder}
+                  onConfirm={() => handleCancel(selectedOrder.invoice)}
                   triggerText="Cancel Order"
                   title="Are you sure?"
-                  description={`This action cannot be undone. This will delete the order from your cart.`}
+                  description={`This action cannot be undone. This will delete the ${selectedOrder?.invoice} order.`}
                   variant="destructive"
                 />
+
                 <Button variant="default" onClick={handleAcceptOrder}>
                   Yes
                 </Button>
+              </>
+            )}
+            {selectedOrder?.status === 'pending_payment' && (
+              <>
+                <AlertModal
+                  onConfirm={() => handleCancel(selectedOrder.invoice)}
+                  triggerText="Cancel Order"
+                  title="Are you sure?"
+                  description={`This action cannot be undone. This will delete the ${selectedOrder?.invoice} order.`}
+                  variant="destructive"
+                />
               </>
             )}
           </div>

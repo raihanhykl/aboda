@@ -87,6 +87,15 @@ export class OrderController {
     }
   }
 
+  async confirmOrder(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await OrderService.confirmOrder(req);
+      return res.send(responseHandle('Confirm Order Status Success', data));
+    } catch (error) {
+      next(error);
+    }
+  }
+
   //   `async updateCart(req: Request, res: Response, next: NextFunction) {
   //     try {
   //       const data = await CartService.updateCart(req);

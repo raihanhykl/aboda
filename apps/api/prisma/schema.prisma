@@ -161,6 +161,7 @@ model Branch {
   id            Int            @id @default(autoincrement())
   branch_name   String
   addressId     Int
+  isActive      Int            @default(1)
   address       Address        @relation(fields: [addressId], references: [id])
   ProductStocks ProductStock[]
   AdminDetails  AdminDetail[]

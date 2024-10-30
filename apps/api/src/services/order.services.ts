@@ -1,5 +1,5 @@
 import { ErrorHandler } from '@/helpers/response';
-import { cancelOrder } from '@/lib/bull';
+import { cancelOrder, confirmOrder } from '@/lib/bull';
 import prisma from '@/prisma';
 import { Prisma } from '@prisma/client';
 import axios from 'axios';
@@ -358,11 +358,11 @@ export class OrderService {
   static async updateStatus(req: Request) {
     const { orderId, status } = req.body;
     // let status;
-    const order = await prisma.order.findUnique({
-      where: {
-        id: Number(orderId),
-      },
-    });
+    // const order = await prisma.order.findUnique({ //gatau ini di command apa kaga hrsnya sih gakepake
+    //   where: {
+    //     id: Number(orderId),
+    //   },
+    // });
 
     try {
       if (req.user.roleId == 2 || req.user.roleId == 3) {
@@ -384,20 +384,33 @@ export class OrderService {
               id: order.id,
             },
             {
-              delay: 300000,
+              delay: 300000, //5 min
             },
           );
 
           return order;
         } else {
-          return await prisma.order.update({
+          const order = await prisma.order.update({
             where: {
               id: Number(orderId),
             },
             data: {
               status,
+              updated_at: new Date(),
             },
           });
+
+          if (status == 'shipped') {
+            confirmOrder.add(
+              {
+                id: order.id,
+              },
+              {
+                delay: 600000, //10 min
+              },
+            );
+          }
+          return order;
         }
       } else throw new ErrorHandler('Unauthorized', 401);
     } catch (error) {
@@ -926,16 +939,24 @@ export class OrderService {
           },
         });
       } else if (req.user.roleId == 2 || req.user.roleId == 3) {
+        // console.log('masuk ke if');
         order = await prisma.order.findFirst({
           where: {
             invoice,
-            status: 'pending_payment',
+            status: {
+              in: ['pending_payment', 'processing', 'awaiting_confirmation'],
+            },
           },
           include: {
             OrderItem: true,
           },
         });
+        // console.log(order, 'ini order didalem if');
       }
+      // console.log(req.user.roleId, 'ini role id');
+
+      // console.log(order, 'ini order');
+
       if (order) {
         await prisma.order.update({
           where: {
@@ -978,6 +999,33 @@ export class OrderService {
       }
     } catch (error) {
       throw new Error('Failed to cancel order!');
+    }
+  }
+
+  static async confirmOrder(req: Request) {
+    const { invoice } = req.body;
+    try {
+      if (!req.user) throw new ErrorHandler('Unauthorized', 403);
+      const order = await prisma.order.findFirst({
+        where: {
+          invoice,
+          userId: req.user.id,
+          status: 'shipped',
+        },
+      });
+      if (order) {
+        return await prisma.order.update({
+          where: {
+            id: order.id,
+          },
+          data: {
+            status: 'confirmed',
+            updated_at: new Date(),
+          },
+        });
+      }
+    } catch (error) {
+      throw new Error('Failed to confirm order!');
     }
   }
 }
