@@ -13,6 +13,7 @@ import { signIn, useSession } from 'next-auth/react';
 import { Trash2 } from 'lucide-react';
 import { editProfileSchema } from '@/schemas/auth.schemas';
 import { editProfileAction } from '@/action/user.action';
+import ChangePasswordButton from './components/changepassword';
 
 type FormData = z.infer<typeof editProfileSchema>;
 
@@ -113,7 +114,10 @@ export default function MyProfile() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">My Profile</h1>
+      <div className=" flex justify-between">
+        <h1 className="text-3xl font-bold mb-6">My Profile</h1>
+        <ChangePasswordButton />
+      </div>
       <div className="bg-card text-card-foreground rounded-lg shadow-lg p-6">
         <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
           <div className="w-full md:w-1/3 flex flex-col items-center">

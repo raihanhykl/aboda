@@ -99,6 +99,8 @@ model UserAddress {
   id        Int     @id @default(autoincrement())
   userId    Int
   addressId Int
+  isActive  Int     @default(1)
+  isDefault Int     @default(0)
   user      User    @relation(fields: [userId], references: [id])
   address   Address @relation(fields: [addressId], references: [id])
 
@@ -108,6 +110,7 @@ model UserAddress {
 model Category {
   id       Int       @id @default(autoincrement())
   name     String
+  image    String
   Products Product[]
 
   @@map("categories")

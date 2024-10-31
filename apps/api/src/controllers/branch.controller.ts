@@ -56,4 +56,13 @@ export class BranchController {
       next(error);
     }
   }
+
+  async unassignAdmin(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await BranchService.unassignAdmin(req);
+      return res.send(responseHandle('Success unassign admin', data));
+    } catch (error) {
+      next(error);
+    }
+  }
 }

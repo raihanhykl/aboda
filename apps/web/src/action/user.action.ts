@@ -67,10 +67,11 @@ export const crudUserAddress = async (
 
     const dataFinal = {
       street: updatedAddress.address.street,
-      cityId: updatedAddress.address.cityId,
+      cityId: updatedAddress.address.City.id,
       lon: updatedAddress.address.lon,
       lat: updatedAddress.address.lat,
       addressId: updatedAddress.address.id,
+      isDefault: updatedAddress.isDefault,
     };
 
     console.log(dataFinal, 'ini data final');
@@ -106,5 +107,85 @@ export const crudUserAddress = async (
     }
     console.log('gagal crud address');
     throw new Error('Get User Addresses Gagal. ');
+  }
+};
+
+export const fetchData = async (
+  url: string,
+  setter: React.Dispatch<React.SetStateAction<any[]>>,
+  token?: string,
+) => {
+  try {
+    const res = await api.get(url, {
+      headers: {
+        Authorization: 'Bearer ' + token,
+      },
+    });
+    setter(res.data.data);
+  } catch (error) {
+    console.error(`Error fetching ${url}:`, error);
+  }
+};
+
+export const deleteUserAddress = async (id: number, token: string) => {
+  try {
+    const res = await api.patch(
+      `/address/delete-user-address`,
+      { id },
+      {
+        headers: {
+          Authorization: 'Bearer ' + token,
+        },
+      },
+    );
+    return {
+      message: 'Delete User Address Berhasil',
+      data: res.data,
+    };
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const errorMessage = error.response?.data.message;
+      throw new Error(errorMessage);
+    }
+    throw new Error('Delete User Address Gagal. ');
+  }
+};
+
+export const setDefaultUserAddress = async (id: number, token: string) => {
+  try {
+    const res = await api.patch(
+      'address/set-default-user-address',
+      { userAddressId: id },
+      {
+        headers: {
+          Authorization: 'Bearer ' + token,
+        },
+      },
+    );
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const errorMessage = error.response?.data.message;
+      throw new Error(errorMessage);
+    }
+    throw new Error('Delete User Address Gagal. ');
+  }
+};
+
+export const changePassword = async (
+  values: { oldPassword: string; newPassword: string },
+  token: string,
+) => {
+  try {
+    const res = await api.patch('/user/change-password', values, {
+      headers: {
+        Authorization: 'Bearer ' + token,
+      },
+    });
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const errorMessage = error.response?.data.message;
+      throw new Error(errorMessage);
+    }
+    throw new Error('Failed change password. ');
   }
 };

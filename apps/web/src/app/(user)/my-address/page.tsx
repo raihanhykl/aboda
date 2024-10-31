@@ -17,10 +17,18 @@ import { PlusIcon, Edit } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Address, UserAddress } from '@/interfaces/branch';
-import DeleteBranch from '@/app/(SuperAdmin)/components/deleteBranch';
 import { useSession } from 'next-auth/react';
-import { crudUserAddress, getUserAddressesAction } from '@/action/user.action';
-import { api } from '@/config/axios.config';
+import {
+  crudUserAddress,
+  deleteUserAddress,
+  fetchData,
+  getUserAddressesAction,
+  setDefaultUserAddress,
+} from '@/action/user.action';
+import RenderSelect from '@/components/cityProvince/renderSelect';
+import DeleteUserAddress from './components/deleteUserAddress';
+import SetMainAddressButton from './components/setMainAddress';
+import { add, set } from 'cypress/types/lodash';
 
 L.Icon.Default.mergeOptions({
   iconRetinaUrl:
@@ -36,10 +44,12 @@ export default function Component() {
   const [addresses, setAddresses] = useState<UserAddress[]>([]);
   const [selectedAddress, setSelectedAddress] = useState<UserAddress | null>();
   const [isAdding, setIsAdding] = useState(false);
-  const [selectedProvice, setSelectedProvince] = useState<any[]>([]);
-  const [selectedCities, setSelectedCities] = useState<any[]>([]);
+  const [provinces, setProvinces] = useState<any[]>([]);
+  const [cities, setCities] = useState<any[]>([]);
 
-  const { handleSubmit, reset, control } = useForm<UserAddress>();
+  const { handleSubmit, reset, watch, control } = useForm<UserAddress>();
+
+  const selectedProvince = watch('address.City.Province.id');
 
   useEffect(() => {
     if (selectedAddress) {
@@ -53,17 +63,35 @@ export default function Component() {
     getUserAddressesAction(session.data?.user.access_token).then((res) => {
       const data = res.data.data as UserAddress[];
       setAddresses(data);
-      setSelectedAddress(data[0]);
-      setPosition([data[0].address.lat, data[0].address.lon]);
-      reset(data[0]);
+      if (data.length > 0) {
+        setSelectedAddress(data[0]);
+        setPosition([data[0].address.lat, data[0].address.lon]);
+        reset(data[0]);
+      }
     });
+    fetchData(
+      '/address/get-provinces',
+      setProvinces,
+      session.data.user.access_token,
+    );
   }, [session.data?.user]);
+
+  useEffect(() => {
+    if (!session.data?.user) return;
+    selectedProvince &&
+      fetchData(
+        `/address/get-city-by-province?provinceId=${selectedProvince}`,
+        setCities,
+        session.data.user?.access_token,
+      );
+  }, [selectedProvince]);
 
   const handleAddAddress = () => {
     const newAddress: UserAddress = {
-      id: addresses[addresses.length - 1].id + 1,
-      userId: addresses[0].userId,
-      addressId: addresses[0].addressId,
+      id: addresses.length > 0 ? addresses[addresses.length - 1].id + 1 : 1,
+      userId: addresses.length > 0 ? addresses[0].userId : 1,
+      addressId: addresses.length > 0 ? addresses[0].addressId : 1,
+      isDefault: addresses.length > 0 ? 0 : 1,
       address: {
         id: Date.now(),
         cityId: 0,
@@ -86,25 +114,33 @@ export default function Component() {
     setAddresses([...addresses, newAddress]);
     setSelectedAddress(newAddress);
   };
+
+  const handleSetMainAddress = async () => {
+    await setDefaultUserAddress(
+      selectedAddress?.id!,
+      session.data?.user.access_token!,
+    ).then(() => {
+      if (selectedAddress) {
+        setSelectedAddress((prev) => ({ ...prev!, isDefault: 1 }));
+        setAddresses((prevAddresses) =>
+          prevAddresses.map((address) => ({
+            ...address,
+            isDefault: address.id === selectedAddress.id ? 1 : 0,
+          })),
+        );
+      }
+    });
+  };
   const MapUpdater = () => {
     const map = useMap();
     useEffect(() => {
       if (position) {
-        map.setView(position, 13); // Memusatkan peta ke posisi baru
+        map.setView(position, 13);
       }
     }, [position, map]);
+
     return null;
   };
-
-  const handleBranchClick = (address: UserAddress) => {
-    if (isAdding) {
-      handleCancelAdd();
-    }
-    setSelectedAddress(address);
-    setIsAdding(false);
-    setIsEditing(false);
-  };
-
   const handleCancelAdd = () => {
     if (
       isAdding &&
@@ -116,8 +152,24 @@ export default function Component() {
     setIsEditing(false);
   };
   const handleDelete = async (id: number) => {
-    setAddresses(addresses.filter((a) => a.id !== id));
-    setSelectedAddress(null);
+    await deleteUserAddress(id, session.data?.user?.access_token!)
+      .then(() => {
+        if (selectedAddress?.isDefault === 1) {
+          setAddresses((prevAddresses) =>
+            prevAddresses.map((address, index) => ({
+              ...address,
+              isDefault: index === 0 ? 1 : 0,
+            })),
+          );
+        }
+        setAddresses((prevAddresses) =>
+          prevAddresses.filter((a) => a.id !== id),
+        );
+        setSelectedAddress(null);
+        setIsAdding(false);
+        setIsEditing(false);
+      })
+      .catch(() => alert('failed'));
   };
 
   const onSubmit = async (data: UserAddress) => {
@@ -139,7 +191,6 @@ export default function Component() {
       isAdding,
     )
       .then(() => {
-        alert('success');
         setIsEditing(false);
         setSelectedAddress(updatedAddress);
         if (isAdding) {
@@ -154,10 +205,8 @@ export default function Component() {
         setIsAdding(false);
       })
       .catch(() => alert('failed'));
-
     setSelectedAddress(updatedAddress);
   };
-
   const MapEvents = () => {
     useMapEvents({
       click: (e) => {
@@ -174,7 +223,12 @@ export default function Component() {
       <Card className="w-full md:w-1/3">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Addresses</CardTitle>
-          <Button size="icon" variant="outline" onClick={handleAddAddress}>
+          <Button
+            disabled={isAdding}
+            size="icon"
+            variant="outline"
+            onClick={handleAddAddress}
+          >
             <PlusIcon className="h-4 w-4" />
           </Button>
         </CardHeader>
@@ -184,18 +238,25 @@ export default function Component() {
               addresses.map((address) => (
                 <div
                   key={address.address.id}
-                  className={`p-3 rounded-lg cursor-pointer ${selectedAddress?.address.id === address.address.id ? 'bg-green-100 text-green-800' : 'hover:bg-gray-100'}`}
+                  className={`p-3 rounded-lg flex justify-between items-center cursor-pointer ${selectedAddress?.address.id === address.address.id ? 'bg-green-100 text-green-800' : 'hover:bg-gray-100'}`}
                   onClick={() => {
                     setSelectedAddress(address);
                     handleCancelAdd();
                   }}
                 >
-                  <div className="font-medium">
-                    {address.address.street || 'New Address'}
+                  <div>
+                    <div className="font-medium">
+                      {address.address.street || 'New Address'}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {address.address.City.city}
+                    </div>
                   </div>
-                  <div className="text-sm text-muted-foreground">
-                    {address.address.City.city}
-                  </div>
+                  {address.isDefault == 1 && (
+                    <div className=" flex items-end text-xs px-4 py-1 h-fit rounded-md bg-green-300 text-green-900">
+                      Main
+                    </div>
+                  )}
                 </div>
               ))}
           </div>
@@ -206,7 +267,13 @@ export default function Component() {
         <Card className="w-full md:w-2/3">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Address Details</CardTitle>
-            <div className={`space-x-2`}>
+            <SetMainAddressButton
+              isMainAddress={
+                selectedAddress && Boolean(selectedAddress.isDefault)
+              }
+              onSetMainAddress={handleSetMainAddress}
+            />
+            <div className={`space-x-2 flex`}>
               {!isEditing ? (
                 <>
                   <Button
@@ -217,10 +284,10 @@ export default function Component() {
                     <Edit className="h-4 w-4 mr-2" />
                     Edit
                   </Button>
-                  <DeleteBranch
-                  // branchName={selectedBranch.branch_name}
-                  // id={selectedBranch.id}
-                  // handler={handleDeleteBranch}
+                  <DeleteUserAddress
+                    street={selectedAddress.address.street}
+                    id={selectedAddress.id}
+                    handler={handleDelete}
                   />
                 </>
               ) : (
@@ -259,22 +326,26 @@ export default function Component() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>City</Label>
-                    <Controller
+                    <RenderSelect
+                      name="address.City.id"
+                      placeholder={selectedAddress.address.City.city}
+                      items={cities}
+                      valueKey="id"
+                      labelKey="city"
                       control={control}
-                      name="address.City.city"
-                      render={({ field }) => (
-                        <Input {...field} disabled={!isEditing} />
-                      )}
+                      disabled={!isEditing}
                     />
                   </div>
                   <div className="space-y-2">
                     <Label>Province</Label>
-                    <Controller
+                    <RenderSelect
+                      name="address.City.Province.id"
+                      placeholder={selectedAddress.address.City.Province.name}
+                      items={provinces}
+                      valueKey="id"
+                      labelKey="name"
                       control={control}
-                      name="address.City.Province.name"
-                      render={({ field }) => (
-                        <Input {...field} disabled={!isEditing} />
-                      )}
+                      disabled={!isEditing}
                     />
                   </div>
                 </div>
@@ -282,20 +353,14 @@ export default function Component() {
 
               <div className="h-[300px] relative">
                 <MapContainer
-                  center={[
-                    selectedAddress.address.lat,
-                    selectedAddress.address.lon,
-                  ]}
+                  center={position}
                   zoom={13}
                   className="h-full w-full z-0"
                 >
-                  <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                  <Marker
-                    position={[
-                      selectedAddress.address.lat,
-                      selectedAddress.address.lon,
-                    ]}
-                  />
+                  <TileLayer
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                  />{' '}
                   <MapEvents />
                   <MapUpdater />
                 </MapContainer>

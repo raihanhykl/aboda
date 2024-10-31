@@ -21,6 +21,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { setAddresses } from '@/state/addresses/addressesSlice';
 import { AddressFormData } from '@/interfaces/address';
 import RenderSelect from '@/components/cityProvince/renderSelect';
+import { fetchData } from '@/action/user.action';
 
 L.Icon.Default.mergeOptions({
   iconRetinaUrl:
@@ -83,27 +84,17 @@ export default function AddAddress() {
   const selectedProvince = watch('selectedProvince');
 
   useEffect(() => {
-    const fetchData = async (
-      url: string,
-      setter: React.Dispatch<React.SetStateAction<any[]>>,
-    ) => {
-      try {
-        const res = await api.get(url, {
-          headers: {
-            Authorization: 'Bearer ' + session?.user.access_token,
-          },
-        });
-        setter(res.data.data);
-      } catch (error) {
-        console.error(`Error fetching ${url}:`, error);
-      }
-    };
-
-    session && fetchData('/address/get-provinces', setProvinces);
+    if (!session) return;
+    fetchData(
+      '/address/get-provinces',
+      setProvinces,
+      session.user.access_token,
+    );
     selectedProvince &&
       fetchData(
         `/address/get-city-by-province?provinceId=${selectedProvince}`,
         setCities,
+        session.user.access_token,
       );
   }, [session, selectedProvince]);
 
@@ -180,6 +171,7 @@ export default function AddAddress() {
           valueKey="id"
           labelKey="name"
           control={control}
+          disabled={false}
         />
         {errors.selectedProvince && (
           <p className="text-red-500 text-sm">

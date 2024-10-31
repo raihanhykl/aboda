@@ -31,6 +31,11 @@ export class UserRouter {
       validateToken,
       this.userController.editProfile,
     );
+    this.router.patch(
+      '/change-password',
+      validateToken,
+      this.userController.changePassword,
+    );
   }
 
   public getRouter() {

@@ -19,17 +19,19 @@ export function FeaturedProducts() {
   );
 
   useEffect(() => {
-    const fetchMoreProducts = async () => {
-      // Replace this with your actual API call
-      const response = await api.get(
-        `/product?page=1&limit=6&lat=${latitude}&long=${longitude}`,
-      );
-      const newProducts = response.data.data.data;
-      setProducts(newProducts);
-      setLoading(false);
-    };
+    if (latitude != 0 || longitude != 0) {
+      const fetchMoreProducts = async () => {
+        // Replace this with your actual API call
+        const response = await api.get(
+          `/product?page=1&limit=6&lat=${latitude}&long=${longitude}`,
+        );
+        const newProducts = response.data.data.data;
+        setProducts(newProducts);
+        setLoading(false);
+      };
 
-    fetchMoreProducts();
+      fetchMoreProducts();
+    }
   }, [longitude, latitude]);
 
   return (

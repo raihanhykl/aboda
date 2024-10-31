@@ -10,12 +10,13 @@ import {
 } from '../ui/select';
 
 type Props = {
-  name: keyof AddressFormData;
+  name: any;
   placeholder: string;
   items: any[];
   valueKey: string;
   labelKey: string;
   control: any;
+  disabled: boolean;
 };
 
 export default function RenderSelect({
@@ -25,13 +26,14 @@ export default function RenderSelect({
   valueKey,
   labelKey,
   control,
+  disabled,
 }: Props) {
   return (
     <Controller
       name={name}
       control={control}
       render={({ field }) => (
-        <Select onValueChange={field.onChange}>
+        <Select onValueChange={field.onChange} disabled={disabled}>
           <SelectTrigger>
             <SelectValue placeholder={placeholder} />
           </SelectTrigger>

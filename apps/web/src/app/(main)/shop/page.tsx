@@ -17,15 +17,60 @@ import { api } from '@/config/axios.config';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/state/store';
 
-const categories = [
-  'Vegetables',
-  'Fresh Fruits',
-  'Milk & Eggs',
-  'Bakery',
-  'House Hold',
-  'Dry Fruits',
-  'Drinks',
-];
+// const categories = [
+//   'Vegetables',
+//   'Fresh Fruits',
+//   'Milk & Eggs',
+//   'Bakery',
+//   'House Hold',
+//   'Dry Fruits',
+//   'Drinks',
+// ];
+interface Product {
+  id: number;
+  categoryId: number; // Keep if needed for mapping
+  product_name: string;
+  description: string;
+  price: number;
+  weight: number;
+  storeAdminId: number;
+  createdAt: string;
+  updatedAt: string;
+  image: string; // Add this
+  category?: string; // Add this if you have a mapping for categoryId
+}
+
+interface ProductStock {
+  id: number;
+  productId: number;
+  branchId: number;
+  stock: number;
+  Product: Product;
+}
+
+interface Branch {
+  id: number;
+  branch_name: string;
+  addressId: number;
+  isActive: number;
+  address: {
+    id: number;
+    cityId: number;
+    street: string;
+    lon: number;
+    lat: number;
+  };
+  ProductStocks: ProductStock[];
+}
+
+interface ApiResponse {
+  message: string;
+  data: {
+    data: Branch[];
+    total: number;
+  };
+  success: boolean;
+}
 
 export default function ShopPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -39,23 +84,43 @@ export default function ShopPage() {
   );
 
   const performSearch = async () => {
-    try {
-      const res = await api.get(
-        `/product?page=${currentPage}&limit=${itemsPerPage}&lat=${latitude}&long=${longitude}&name=${searchQuery}`,
-      );
-      console.log(res, 'ini ressss');
-      setProducts(res.data.data.data);
-      setTotalPages(Math.ceil(Number(res.data.data.total) / itemsPerPage));
-    } catch (error) {
-      console.error('Error fetching products:', error);
-    } finally {
-      setIsLoading(false);
+    if (longitude != 0 && latitude != 0) {
+      try {
+        const res = await api.get(
+          `/product?page=${currentPage}&limit=${itemsPerPage}&lat=${latitude}&long=${longitude}&name=${searchQuery}`,
+        );
+        console.log(res.data.data, 'ini ressss.data');
+        console.log(
+          res.data.data.data.ProductStocks,
+          'ini ressss.data proddukstok',
+        );
+        const allProducts = res.data.data.data.flatMap((branch: Branch) =>
+          branch.ProductStocks.map((stock) => ({
+            id: stock.Product.id,
+            branchId: stock.branchId,
+            product_name: stock.Product.product_name,
+            description: stock.Product.description,
+            price: stock.Product.price,
+            weight: stock.Product.weight,
+            stock: stock.stock,
+            image: stock.Product.image, // Ensure image is included if available
+            category: stock.Product.categoryId, // Update if you have a mapping for categoryId to category string
+          })),
+        );
+        console.log(allProducts, 'ini all products');
+        setProducts(allProducts);
+        setTotalPages(Math.ceil(Number(res.data.data.total) / itemsPerPage));
+      } catch (error) {
+        console.error('Error fetching products:', error);
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
   useEffect(() => {
     performSearch();
-  }, [currentPage, longitude, latitude, searchQuery]);
+  }, [currentPage, longitude, latitude, searchQuery, longitude, latitude]);
 
   const handlePageChange = (newPage: number) => {
     if (newPage > 0 && newPage <= totalPages) {
@@ -72,7 +137,7 @@ export default function ShopPage() {
             <h2 className="text-xl font-semibold mb-4">Filter Options</h2>
             <div className="space-y-4">
               <div>
-                <h3 className="font-medium mb-2">Category</h3>
+                {/* <h3 className="font-medium mb-2">Category</h3>
                 <ul className="space-y-2">
                   {categories.map((category) => (
                     <li key={category}>
@@ -82,7 +147,7 @@ export default function ShopPage() {
                       </label>
                     </li>
                   ))}
-                </ul>
+                </ul> */}
               </div>
               <div>
                 <h3 className="font-medium mb-2">Availability</h3>
@@ -128,15 +193,16 @@ export default function ShopPage() {
             </Select>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {isLoading
-              ? Array.from({ length: 6 }).map((_, index) => (
-                  <ProductCardSkeleton key={index} />
-                ))
-              : products.map((branch: any) =>
-                  branch.ProductStocks.map((product: any) => (
-                    <ProductCard key={product.id} {...product.Product} />
-                  )),
-                )}
+            {
+              isLoading
+                ? Array.from({ length: 6 }).map((_, index) => (
+                    <ProductCardSkeleton key={index} />
+                  ))
+                : products.map((product: any) => (
+                    <ProductCard key={product.id} {...product} />
+                  ))
+              // )
+            }
           </div>
 
           {/* Pagination */}

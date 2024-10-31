@@ -67,7 +67,7 @@ export class BranchService {
                 id: branchData.addressId,
               },
               data: {
-                cityId: branchData.address.cityId,
+                cityId: Number(branchData.address.City.id),
                 street: branchData.address.street,
                 lon: branchData.address.lon,
                 lat: branchData.address.lat,
@@ -165,6 +165,22 @@ export class BranchService {
         },
       });
       return await returnBranch();
+    });
+  }
+
+  static async unassignAdmin(req: Request) {
+    return prisma.$transaction(async (prisma) => {
+      if (req.user.roleId != 2)
+        throw new ErrorHandler('Unauthorized, Super admin only!', 400);
+      const id = req.params.id;
+      return await prisma.adminDetail.update({
+        where: {
+          id: Number(id),
+        },
+        data: {
+          branchId: null,
+        },
+      });
     });
   }
 }

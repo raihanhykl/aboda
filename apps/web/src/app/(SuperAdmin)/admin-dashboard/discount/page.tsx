@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -23,7 +22,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { toast } from '@/components/ui/use-toast';
 import {
   Table,
   TableBody,
@@ -47,6 +45,7 @@ import {
 } from '@/components/ui/popover';
 import { CalendarIcon } from '@radix-ui/react-icons';
 
+// Validation schema for discount form
 const discountSchema = z.object({
   id: z.number().optional(),
   productId: z.string().min(1, { message: 'Product is required' }),
@@ -63,14 +62,16 @@ type Product = {
   product_name: string;
 };
 
-export function DiscountManagement() {
+export default function DiscountManagement() {
   const [discounts, setDiscounts] = useState<Discount[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDiscount, setEditingDiscount] = useState<Discount | null>(null);
   const [isBOGO, setIsBOGO] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Setting up the form with validation
   const form = useForm<Discount>({
     resolver: zodResolver(discountSchema),
     defaultValues: {
@@ -82,11 +83,13 @@ export function DiscountManagement() {
     },
   });
 
+  // Fetch discounts and products on component mount
   useEffect(() => {
     fetchDiscounts();
     fetchProducts();
   }, []);
 
+  // Reset form values when editing a discount
   useEffect(() => {
     if (editingDiscount) {
       form.reset({
@@ -99,42 +102,41 @@ export function DiscountManagement() {
     }
   }, [editingDiscount, form]);
 
+  // Fetch all discounts from the API
   async function fetchDiscounts() {
     try {
-      const response = await fetch('/api/discounts');
+      const response = await fetch('/api/discount');
       if (!response.ok) throw new Error('Failed to fetch discounts');
       const data = await response.json();
       setDiscounts(data);
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to fetch discounts. Please try again.',
-        variant: 'destructive',
-      });
+      console.error('Failed to fetch discounts:', error);
+      setErrorMessage('Failed to load discounts. Please try again later.');
     }
   }
 
+  // Fetch all products from the API
   async function fetchProducts() {
     try {
-      const response = await fetch('/api/products');
+      const response = await fetch('/api/product');
       if (!response.ok) throw new Error('Failed to fetch products');
       const data = await response.json();
       setProducts(data);
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to fetch products. Please try again.',
-        variant: 'destructive',
-      });
+      console.error('Failed to fetch products:', error);
+      setErrorMessage('Failed to load products. Please try again later.');
     }
   }
 
+  // Handle form submission
   async function onSubmit(values: Discount) {
     setIsLoading(true);
+    setErrorMessage(null); // Reset error message
+
     try {
       const url = editingDiscount
-        ? `/api/discounts/${editingDiscount.id}`
-        : '/api/discounts';
+        ? `/api/discount/${editingDiscount.id}`
+        : '/api/discount';
       const method = editingDiscount ? 'PUT' : 'POST';
 
       const response = await fetch(url, {
@@ -156,57 +158,46 @@ export function DiscountManagement() {
         throw new Error(errorData.message || 'Failed to save discount');
       }
 
-      toast({
-        title: editingDiscount ? 'Discount updated' : 'Discount created',
-        description: `The discount has been ${editingDiscount ? 'updated' : 'created'} successfully.`,
-      });
-
+      console.log(
+        `${editingDiscount ? 'Discount updated' : 'Discount created'} successfully.`,
+      );
       setIsDialogOpen(false);
       setEditingDiscount(null);
       form.reset();
       fetchDiscounts();
     } catch (error) {
-      toast({
-        title: 'Error',
-        description:
-          error instanceof Error
-            ? error.message
-            : 'There was a problem saving the discount. Please try again.',
-        variant: 'destructive',
-      });
+      console.error('Failed to save discount:', error);
+      setErrorMessage(
+        error instanceof Error ? error.message : 'An error occurred.',
+      );
     } finally {
       setIsLoading(false);
     }
   }
 
+  // Handle discount deletion
   async function deleteDiscount(id: number) {
     if (!confirm('Are you sure you want to delete this discount?')) return;
 
     try {
-      const response = await fetch(`/api/discounts/${id}`, {
+      const response = await fetch(`/api/discount/${id}`, {
         method: 'DELETE',
       });
 
       if (!response.ok) throw new Error('Failed to delete discount');
 
-      toast({
-        title: 'Discount deleted',
-        description: 'The discount has been deleted successfully.',
-      });
-
+      console.log('The discount has been deleted successfully.');
       fetchDiscounts();
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to delete discount. Please try again.',
-        variant: 'destructive',
-      });
+      console.error('Failed to delete discount:', error);
+      setErrorMessage('Failed to delete the discount. Please try again later.');
     }
   }
 
   return (
     <div className="container mx-auto py-10">
       <h1 className="text-2xl font-bold mb-5">Discount Management</h1>
+      {errorMessage && <div className="text-red-500 mb-4">{errorMessage}</div>}
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogTrigger asChild>
@@ -285,16 +276,15 @@ export function DiscountManagement() {
                 name="discount_value"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Discount Value</FormLabel>
+                    <FormLabel>
+                      Discount Value {isBOGO && '(Set value to 0)'}
+                    </FormLabel>
                     <FormControl>
                       <Input
-                        type="number"
-                        placeholder={
-                          isBOGO ? 'N/A for BOGO' : 'Enter discount value'
-                        }
+                        type="text"
+                        placeholder={isBOGO ? '0' : 'Enter value'}
                         {...field}
                         disabled={isBOGO}
-                        value={isBOGO ? '' : field.value}
                       />
                     </FormControl>
                     <FormMessage />
@@ -305,37 +295,26 @@ export function DiscountManagement() {
                 control={form.control}
                 name="start_date"
                 render={({ field }) => (
-                  <FormItem className="flex flex-col">
+                  <FormItem>
                     <FormLabel>Start Date</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant={'outline'}
-                            className={`w-[240px] pl-3 text-left font-normal ${!field.value && 'text-muted-foreground'}`}
-                          >
-                            {field.value ? (
-                              format(field.value, 'PPP')
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
+                        <Button variant="outline" className="w-full">
+                          <CalendarIcon className="mr-2" />
+                          {format(field.value, 'PPP')}
+                        </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
+                      <PopoverContent>
                         <Calendar
                           mode="single"
                           selected={field.value}
-                          onSelect={field.onChange}
-                          disabled={(date) =>
-                            date < new Date() || date > new Date('2100-01-01')
-                          }
+                          onDayClick={(day) => {
+                            field.onChange(day);
+                          }}
                           initialFocus
                         />
                       </PopoverContent>
                     </Popover>
-                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -343,46 +322,31 @@ export function DiscountManagement() {
                 control={form.control}
                 name="end_date"
                 render={({ field }) => (
-                  <FormItem className="flex flex-col">
+                  <FormItem>
                     <FormLabel>End Date</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant={'outline'}
-                            className={`w-[240px] pl-3 text-left font-normal ${!field.value && 'text-muted-foreground'}`}
-                          >
-                            {field.value ? (
-                              format(field.value, 'PPP')
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
+                        <Button variant="outline" className="w-full">
+                          <CalendarIcon className="mr-2" />
+                          {format(field.value, 'PPP')}
+                        </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
+                      <PopoverContent>
                         <Calendar
                           mode="single"
                           selected={field.value}
-                          onSelect={field.onChange}
-                          disabled={(date) =>
-                            date < new Date() || date > new Date('2100-01-01')
-                          }
+                          onDayClick={(day) => {
+                            field.onChange(day);
+                          }}
                           initialFocus
                         />
                       </PopoverContent>
                     </Popover>
-                    <FormMessage />
                   </FormItem>
                 )}
               />
               <Button type="submit" disabled={isLoading}>
-                {isLoading
-                  ? 'Saving...'
-                  : editingDiscount
-                    ? 'Update Discount'
-                    : 'Create Discount'}
+                {isLoading ? 'Saving...' : 'Save Discount'}
               </Button>
             </form>
           </Form>
@@ -393,8 +357,8 @@ export function DiscountManagement() {
         <TableHeader>
           <TableRow>
             <TableHead>Product</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>Value</TableHead>
+            <TableHead>Discount Type</TableHead>
+            <TableHead>Discount Value</TableHead>
             <TableHead>Start Date</TableHead>
             <TableHead>End Date</TableHead>
             <TableHead>Actions</TableHead>
@@ -405,7 +369,7 @@ export function DiscountManagement() {
             <TableRow key={discount.id}>
               <TableCell>
                 {
-                  products.find((p) => p.id.toString() === discount.productId)
+                  products.find((p) => p.id === +discount.productId)
                     ?.product_name
                 }
               </TableCell>
@@ -419,8 +383,6 @@ export function DiscountManagement() {
               </TableCell>
               <TableCell>
                 <Button
-                  variant="outline"
-                  className="mr-2"
                   onClick={() => {
                     setEditingDiscount(discount);
                     setIsDialogOpen(true);
@@ -430,7 +392,13 @@ export function DiscountManagement() {
                 </Button>
                 <Button
                   variant="destructive"
-                  onClick={() => deleteDiscount(discount.id!)}
+                  onClick={() => {
+                    if (discount.id !== undefined) {
+                      deleteDiscount(discount.id);
+                    } else {
+                      console.error('Discount ID is undefined, cannot delete.');
+                    }
+                  }}
                 >
                   Delete
                 </Button>

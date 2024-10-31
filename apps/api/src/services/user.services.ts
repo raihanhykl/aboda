@@ -3,6 +3,7 @@ import { IUser } from '@/interfaces/user';
 import { generateToken } from '@/lib/jwt';
 import prisma from '@/prisma';
 import { Prisma } from '@prisma/client';
+import { compare, hash } from 'bcrypt';
 import { Request } from 'express';
 
 export class UserService {
@@ -22,6 +23,7 @@ export class UserService {
       return await prisma.userAddress.findMany({
         where: {
           userId: Number(req.user.id),
+          isActive: 1,
         },
         include: {
           address: {
@@ -86,6 +88,40 @@ export class UserService {
       } catch (error) {
         throw new ErrorHandler('Error editing user profile', 400);
       }
+    });
+  }
+
+  static async changePassword(req: Request) {
+    return prisma.$transaction(async (prisma) => {
+      const { oldPassword, newPassword } = req.body;
+
+      const user = await prisma.user.findUnique({
+        where: {
+          id: Number(req.user.id),
+        },
+      });
+
+      if (!user) {
+        throw new ErrorHandler('User not found', 404);
+      }
+
+      const checkPassword = await compare(oldPassword, user.password!);
+      if (!checkPassword) {
+        throw new ErrorHandler('Incorrect old password', 400);
+      }
+      const hashPassword = await hash(newPassword, 10);
+      const updatedUser = (await prisma.user.update({
+        where: {
+          id: Number(req.user.id),
+        },
+        data: {
+          password: hashPassword,
+        },
+      })) as IUser;
+
+      delete updatedUser.password;
+
+      return updatedUser;
     });
   }
 }

@@ -41,6 +41,16 @@ export class AddressRouter {
       validateToken,
       this.addressController.getUserAddressWithin10KiloFromBranch,
     );
+    this.router.patch(
+      '/delete-user-address',
+      validateToken,
+      this.addressController.deleteUserAddress,
+    );
+    this.router.patch(
+      '/set-default-user-address',
+      validateToken,
+      this.addressController.setDefaultUserAddress,
+    );
 
     // this.router.post('/add', validateToken, this.cartController.addToCart);
     // this.router.patch('/update', validateToken, this.cartController.updateCart);

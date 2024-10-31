@@ -37,4 +37,13 @@ export class UserController {
       next(error);
     }
   }
+
+  async changePassword(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await UserService.changePassword(req);
+      return res.send(responseHandle('Change Password Success', data));
+    } catch (error) {
+      next(error);
+    }
+  }
 }

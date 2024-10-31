@@ -61,4 +61,21 @@ export class AddressController {
       next(error);
     }
   }
+  async deleteUserAddress(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await AddressService.deleteUserAddress(req);
+      return res.send(responseHandle('Address deleted successfully', data));
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async setDefaultUserAddress(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await AddressService.setDefaultUserAddress(req);
+      return res.send(responseHandle('Address set as default', data));
+    } catch (error) {
+      next(error);
+    }
+  }
 }

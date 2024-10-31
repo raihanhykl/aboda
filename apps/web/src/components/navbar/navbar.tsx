@@ -142,12 +142,12 @@ export default function Navbar() {
             </div>
             <div className="flex-grow">
               <div className="relative w-[80%]">
-                <input
+                {/* <input
                   type="text"
                   placeholder="Search..."
                   className="w-full py-2 px-4 pr-10 rounded-md bg-[#39906D] focus:outline-none focus:ring-2 focus:ring-gray-300"
                 />
-                <Search className="absolute right-3 top-2.5 h-5 w-5 text-[#93C2AF]" />
+                <Search className="absolute right-3 top-2.5 h-5 w-5 text-[#93C2AF]" /> */}
               </div>
             </div>
           </div>
@@ -171,8 +171,8 @@ export default function Navbar() {
               'Order Management',
               'Branches Management',
               'Product Management',
-              'About Us',
-              'Blogs',
+              'Inventory Management',
+              // 'Blogs',
             ].map((item) => (
               <Link
                 key={item}
@@ -200,13 +200,13 @@ export default function Navbar() {
             </div>
             <div className="flex flex-col space-y-2 pb-4">
               {[
-                'Home',
-                'Shop',
-                'Fruit',
-                'Vegetable',
-                'Beverages',
-                'About Us',
-                'Blogs',
+                'Dashboard',
+                'Discount Management',
+                'Order Management',
+                'Branches Management',
+                'Product Management',
+                'Inventory Management',
+                // 'Blogs',
               ].map((item) => (
                 <a key={item} href="#" className="hover:text-green-200">
                   {item}

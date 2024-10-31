@@ -44,6 +44,11 @@ export class BranchRouter {
       validateToken,
       this.BranchController.deleteBranch,
     );
+    this.router.patch(
+      '/unassign-admin/:id',
+      validateToken,
+      this.BranchController.unassignAdmin,
+    );
   }
   public getRouter() {
     return this.router;

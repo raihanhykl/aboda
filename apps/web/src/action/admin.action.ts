@@ -67,3 +67,26 @@ export const createAdminAction = async (
     throw new Error('Gagal Get all unassigned admin');
   }
 };
+
+export const unassignAdminAction = async (id: number, token: string) => {
+  try {
+    const res = await api.patch(
+      `/branch/unassign-admin/${id}`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+    return {
+      message: 'success unassigned admin',
+      data: res.data,
+    };
+  } catch (error) {
+    if (error instanceof AxiosError) {
+      throw new Error(error.response?.data.message);
+    }
+    throw new Error('Failed unassigned admin');
+  }
+};

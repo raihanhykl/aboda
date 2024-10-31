@@ -12,16 +12,32 @@ export class ProductService {
       const page = Number(req.query.page) || 1;
       const limit = Number(req.query.limit) || 8;
       const skip = (page - 1) * limit;
-      const { lat, long } = req.query;
+      const { lat, long, name } = req.query;
       const maxDistance = 10;
+
+      // console.log(lat, 'ini lat', long, 'ini long', name, 'ini name');
+
+      // Filter produk berdasarkan nama jika ada
+      const productFilter = name
+        ? {
+            ProductStocks: {
+              some: {
+                Product: {
+                  product_name: {
+                    contains: String(name),
+                    // mode: 'insensitive',
+                  },
+                },
+              },
+            },
+          }
+        : {};
+
+      // Ambil cabang yang memiliki produk yang sesuai dengan filter
       const branches = await prisma.branch.findMany({
         include: {
           address: true,
-          ProductStocks: {
-            include: {
-              Product: true,
-            },
-          },
+          ProductStocks: true,
         },
         skip: skip,
         take: limit,
@@ -32,6 +48,7 @@ export class ProductService {
         distance: Infinity,
       };
 
+      // Filter cabang berdasarkan jarak dan hitung jarak terdekat
       const nearbyProduct = branches.filter((branch) => {
         const distance = getDistanceFromLatLonInKm(
           Number(lat),
@@ -40,39 +57,46 @@ export class ProductService {
           branch.address.lon,
         );
 
-        if (distance <= maxDistance) {
-          if (shortest?.distance > distance) {
-            shortest.branch = branch;
-            shortest.distance = distance;
-          }
-
-          return true;
+        if (distance <= maxDistance && distance < shortest.distance) {
+          shortest.branch = branch;
+          shortest.distance = distance;
         }
       });
 
-      // Menghitung total jumlah produk
-      const totalProducts = await prisma.productStock.count();
-
-      // Query untuk produk dengan pagination
-      const products = await prisma.productStock.findMany({
+      const branchesFiltered = await prisma.branch.findMany({
+        where: {
+          id: shortest.branch?.id,
+          ...productFilter,
+        },
         include: {
-          Product: true,
-          Branch: {
+          address: true,
+          ProductStocks: {
+            where: name
+              ? {
+                  Product: {
+                    product_name: {
+                      contains: String(name),
+                    },
+                  },
+                }
+              : {}, //
             include: {
-              address: true,
+              Product: true,
             },
           },
         },
         skip: skip,
         take: limit,
       });
+
+      const total = branchesFiltered.reduce(
+        (acc, branch) => acc + branch.ProductStocks.length,
+        0,
+      );
+
       return {
-        shortest,
-        data: nearbyProduct,
-        total: nearbyProduct.reduce(
-          (total, branch) => branch.ProductStocks.length + total,
-          0,
-        ),
+        data: branchesFiltered,
+        total,
       };
     } catch (error) {
       throw new ErrorHandler('Failed to fetch products', 500);
@@ -113,18 +137,18 @@ export class ProductService {
         where: {
           id: Number(id),
         },
-        // include: {
-        //   images: true,
-        //   ProductStocks: {
-        //     include: {
-        //       Branch: {
-        //         include: {
-        //           address: true,
-        //         },
-        //       },
-        //     },
-        //   },
-        // },
+        include: {
+          image: true,
+          ProductStocks: {
+            include: {
+              Branch: {
+                include: {
+                  address: true,
+                },
+              },
+            },
+          },
+        },
       });
 
       if (!product) {
@@ -136,37 +160,6 @@ export class ProductService {
       throw new ErrorHandler('Failed to fetch product', 500);
     }
   }
-  // Product Detail
-  // static async getProductDetail(req: Request) {
-  //   try {
-  //     const { id } = req.params;
-
-  //     const product = await prisma.product.findUnique({
-  //       where: {
-  //         id: Number(id),
-  //       },
-  //       include: {
-  //         category: true,
-  //         ProductStocks: true,
-  //         Discounts: true,
-  //       },
-  //     });
-
-  //     if (!product) {
-  //       throw new ErrorHandler('Product not found', 404);
-  //     }
-
-  //     const productWithImageUrl = {
-  //       ...product,
-  //       image: product.image ? `/images/product/${product.image}` : null,
-  //     };
-
-  //     return productWithImageUrl;
-  //   } catch (error) {
-  //     console.error('Error fetching product details:', error);
-  //     throw new ErrorHandler('Failed to fetch product details', 500);
-  //   }
-  // }
   static async getProductDetail(req: Request) {
     try {
       const { id } = req.params;

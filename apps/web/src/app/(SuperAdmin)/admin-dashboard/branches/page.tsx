@@ -16,13 +16,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { getAllBranch, getUnassignedAdmin } from '@/action/admin.action';
+import {
+  getAllBranch,
+  getUnassignedAdmin,
+  unassignAdminAction,
+} from '@/action/admin.action';
 import { IBranch, IAdminDetail } from '@/interfaces/branch';
 import { useSession } from 'next-auth/react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import CreateAdminPopover from '../../components/createAdmin';
 import { api } from '@/config/axios.config';
 import DeleteBranch from '../../components/deleteBranch';
+import UnassignAdmin from '../../components/unassignAdmin';
+import { fetchData } from '@/action/user.action';
+import RenderSelect from '@/components/cityProvince/renderSelect';
 
 L.Icon.Default.mergeOptions({
   iconRetinaUrl:
@@ -41,8 +48,12 @@ export default function SuperAdminDashboard() {
   const [showAdminSuggestions, setShowAdminSuggestions] = useState(false);
   const [branchAdmin, setBranchAdmin] = useState<IAdminDetail[]>([]);
   const session = useSession();
+  const [provinces, setProvinces] = useState<any[]>([]);
+  const [cities, setCities] = useState<any[]>([]);
 
-  const { control, handleSubmit, reset } = useForm<IBranch>();
+  const { control, handleSubmit, reset, watch } = useForm<IBranch>();
+
+  const selectedProvince = watch('address.City.Province.id');
 
   useEffect(() => {
     if (isEditing || isAdding) {
@@ -66,8 +77,23 @@ export default function SuperAdminDashboard() {
         setPosition([data[0].address.lat, data[0].address.lon]);
         setBranchAdmin(data[0].AdminDetails);
       });
+      fetchData(
+        '/address/get-provinces',
+        setProvinces,
+        session.data.user.access_token,
+      );
     }
   }, [session]);
+
+  useEffect(() => {
+    if (!session.data?.user) return;
+    selectedProvince &&
+      fetchData(
+        `/address/get-city-by-province?provinceId=${selectedProvince}`,
+        setCities,
+        session.data.user?.access_token,
+      );
+  }, [selectedProvince]);
 
   const MapUpdater = () => {
     const map = useMap();
@@ -109,6 +135,7 @@ export default function SuperAdminDashboard() {
   };
 
   const handleSaveBranch = async (data: IBranch) => {
+    alert(JSON.stringify(data));
     const updatedBranch = {
       ...data,
       address: {
@@ -150,6 +177,13 @@ export default function SuperAdminDashboard() {
     setIsEditing(false);
   };
 
+  const handleDeleteAdmin = async (id: number) => {
+    await unassignAdminAction(id, session.data?.user.access_token!).then(() => {
+      setBranchAdmin(branchAdmin.filter((admin) => admin.id !== id));
+      fetchAvailableAdmins();
+      setIsEditing(false);
+    });
+  };
   const handleDeleteBranch = async (id: number) => {
     await api
       .put(
@@ -351,30 +385,28 @@ export default function SuperAdminDashboard() {
                       </div>
                       <div>
                         <Label htmlFor="city">City</Label>
-                        <Controller
-                          name="address.City.city"
+                        <RenderSelect
+                          name="address.City.id"
+                          placeholder={selectedBranch.address.City.city}
+                          items={cities}
+                          valueKey="id"
+                          labelKey="city"
                           control={control}
-                          render={({ field }) => (
-                            <Input
-                              {...field}
-                              disabled={!isEditing}
-                              className="mt-1"
-                            />
-                          )}
+                          disabled={!isEditing || !selectedProvince}
                         />
                       </div>
                       <div>
                         <Label htmlFor="province">Province</Label>
-                        <Controller
-                          name="address.City.Province.name"
+                        <RenderSelect
+                          name="address.City.Province.id"
+                          placeholder={
+                            selectedBranch.address.City.Province.name
+                          }
+                          items={provinces}
+                          valueKey="id"
+                          labelKey="name"
                           control={control}
-                          render={({ field }) => (
-                            <Input
-                              {...field}
-                              disabled={!isEditing}
-                              className="mt-1"
-                            />
-                          )}
+                          disabled={!isEditing}
                         />
                       </div>
                     </div>
@@ -413,14 +445,11 @@ export default function SuperAdminDashboard() {
                       >
                         {admin.User.first_name} {admin.User.last_name}
                         {isEditing && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-500 hover:text-red-700"
-                            // onClick={() => handleDeleteAdmin(admin.id)} // Add a function to handle admin deletion
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <UnassignAdmin
+                            adminName={admin.User.first_name}
+                            id={admin.id}
+                            handler={handleDeleteAdmin}
+                          />
                         )}
                       </li>
                     ))}

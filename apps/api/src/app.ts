@@ -20,6 +20,7 @@ import { OrderRouter } from './routers/order.router';
 import { CategoryRouter } from './routers/category.admin.router';
 import { BranchRouter } from './routers/branch.router';
 import { StockRouter } from './routers/stock.router';
+import { DiscountRouter } from './routers/discount.router';
 export default class App {
   private app: Express;
 
@@ -74,6 +75,7 @@ export default class App {
     this.app.use('/api/stocks', new StockRouter().getRouter());
     this.app.use('/api/category', new CategoryRouter().getRouter());
     this.app.use('/api/branch', new BranchRouter().getRouter());
+    this.app.use('/api/discount', new DiscountRouter().getRouter());
   }
 
   public start(): void {

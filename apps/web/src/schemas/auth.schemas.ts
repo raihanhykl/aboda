@@ -85,3 +85,61 @@ export const createAdminSchema = z.object({
       message: 'Mohon masukan nomor telepon yang valid.',
     }),
 });
+
+export const changePasswordSchema = z
+  .object({
+    oldPassword: z
+      .string({ message: 'Mohon masukan kata sandi Anda.' })
+      .min(6, {
+        message:
+          'Mohon masukan kata sandi anda sebagai Kata sandi minimal harus 6 karakter, berisi huruf dan angka',
+      })
+      .regex(/[a-zA-Z]/, {
+        message:
+          'Mohon masukan kata sandi anda sebagai Kata sandi minimal harus 6 karakter, berisi huruf dan angka',
+      })
+      .regex(/[0-9]/, {
+        message:
+          'Mohon masukan kata sandi anda sebagai Kata sandi minimal harus 6 karakter, berisi huruf dan angka',
+      })
+      .trim(),
+    newPassword: z
+      .string({ message: 'Mohon masukan kata sandi Anda.' })
+      .min(6, {
+        message:
+          'Mohon masukan kata sandi anda sebagai Kata sandi minimal harus 6 karakter, berisi huruf dan angka',
+      })
+      .regex(/[a-zA-Z]/, {
+        message:
+          'Mohon masukan kata sandi anda sebagai Kata sandi minimal harus 6 karakter, berisi huruf dan angka',
+      })
+      .regex(/[0-9]/, {
+        message:
+          'Mohon masukan kata sandi anda sebagai Kata sandi minimal harus 6 karakter, berisi huruf dan angka',
+      })
+      .trim(),
+    confirmPassword: z
+      .string({ message: 'Mohon masukan kata sandi Anda.' })
+      .min(6, {
+        message:
+          'Mohon masukan kata sandi anda sebagai Kata sandi minimal harus 6 karakter, berisi huruf dan angka',
+      })
+      .regex(/[a-zA-Z]/, {
+        message:
+          'Mohon masukan kata sandi anda sebagai Kata sandi minimal harus 6 karakter, berisi huruf dan angka',
+      })
+      .regex(/[0-9]/, {
+        message:
+          'Mohon masukan kata sandi anda sebagai Kata sandi minimal harus 6 karakter, berisi huruf dan angka',
+      })
+      .trim(),
+  })
+  .superRefine(({ newPassword, confirmPassword }, ctx) => {
+    if (newPassword !== confirmPassword) {
+      ctx.addIssue({
+        code: 'custom',
+        message: "Confirm password doesn't match with your new password",
+        path: ['confirmPassword'],
+      });
+    }
+  });
