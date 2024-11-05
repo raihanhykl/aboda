@@ -14,6 +14,7 @@ export class StockRouter {
       '/:branchId/products/:productId/update-stock',
       StockController.updateStock,
     );
+    this.router.get('/history', new StockController().getHistory);
     this.router.post('/create', StockController.createStock);
     this.router.delete('/:stockId/delete', StockController.deleteStock);
   }

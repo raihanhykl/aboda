@@ -78,7 +78,7 @@ export class DiscountService {
             discount_value: Number(discount_value),
             start_date: new Date(start_date),
             end_date: new Date(end_date),
-            productId: productId ? Number(productId) : null, // Optional productId
+            productId: productId ? Number(productId) : null,
           },
         });
 
@@ -119,6 +119,37 @@ export class DiscountService {
   static async getAllDiscounts(): Promise<Discount[]> {
     try {
       return await prisma.discount.findMany({
+        include: {
+          Product: true,
+          Branch: true,
+        },
+      });
+    } catch (error) {
+      throw new ErrorHandler('Failed to retrieve discounts', 500);
+    }
+  }
+
+  static async getSelectedProduct(req: Request) {
+    try {
+      const branchId = req.query.branchId;
+      const productId = req.query.productId;
+      // const branchId = req.query.branchId;
+      // const productId,  = req.query.productId;
+
+      console.log(productId, branchId, 'bakekok');
+      console.log(new Date(new Date().getTime() + 7 * 60 * 60 * 1000));
+
+      return await prisma.discount.findMany({
+        where: {
+          productId: Number(productId),
+          branchId: Number(branchId),
+          start_date: {
+            lte: new Date(new Date().getTime() + 7 * 60 * 60 * 1000),
+          },
+          end_date: {
+            gte: new Date(new Date().getTime() + 7 * 60 * 60 * 1000),
+          },
+        },
         include: {
           Product: true, // Include related Product data if needed
           Branch: true, // Include related Branch data if needed

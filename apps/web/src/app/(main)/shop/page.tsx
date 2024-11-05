@@ -16,6 +16,8 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { api } from '@/config/axios.config';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/state/store';
+import useDebounce from '@/hooks/useDebounce';
+import { RenderPaginationButtons } from '../components/pagination';
 
 // const categories = [
 //   'Vegetables',
@@ -36,8 +38,14 @@ interface Product {
   storeAdminId: number;
   createdAt: string;
   updatedAt: string;
-  image: string; // Add this
+  image: Image[]; // Add this
   category?: string; // Add this if you have a mapping for categoryId
+}
+
+interface Image {
+  id: number;
+  imageUrl: string;
+  productId: number;
 }
 
 interface ProductStock {
@@ -48,7 +56,7 @@ interface ProductStock {
   Product: Product;
 }
 
-interface Branch {
+export interface Branch {
   id: number;
   branch_name: string;
   addressId: number;
@@ -78,10 +86,12 @@ export default function ShopPage() {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [searchQuery, setSearchQuery] = useState<string>(''); // State for search input
-  const itemsPerPage = 2;
+  const itemsPerPage = 1;
+  const { debounce } = useDebounce();
   const { longitude, latitude } = useSelector(
     (state: RootState) => state.position,
   );
+  9;
 
   const performSearch = async () => {
     if (longitude != 0 && latitude != 0) {
@@ -89,11 +99,7 @@ export default function ShopPage() {
         const res = await api.get(
           `/product?page=${currentPage}&limit=${itemsPerPage}&lat=${latitude}&long=${longitude}&name=${searchQuery}`,
         );
-        console.log(res.data.data, 'ini ressss.data');
-        console.log(
-          res.data.data.data.ProductStocks,
-          'ini ressss.data proddukstok',
-        );
+        console.log(res.data.data.total, 'ini ressss.data', searchQuery);
         const allProducts = res.data.data.data.flatMap((branch: Branch) =>
           branch.ProductStocks.map((stock) => ({
             id: stock.Product.id,
@@ -103,8 +109,8 @@ export default function ShopPage() {
             price: stock.Product.price,
             weight: stock.Product.weight,
             stock: stock.stock,
-            image: stock.Product.image, // Ensure image is included if available
-            category: stock.Product.categoryId, // Update if you have a mapping for categoryId to category string
+            image: stock.Product.image[0].imageUrl,
+            category: stock.Product.categoryId,
           })),
         );
         console.log(allProducts, 'ini all products');
@@ -118,9 +124,12 @@ export default function ShopPage() {
     }
   };
 
+  const debouncedSearch = debounce(performSearch, 500);
+
   useEffect(() => {
-    performSearch();
-  }, [currentPage, longitude, latitude, searchQuery, longitude, latitude]);
+    // performSearch();
+    debouncedSearch();
+  }, [currentPage, longitude, latitude, searchQuery]);
 
   const handlePageChange = (newPage: number) => {
     if (newPage > 0 && newPage <= totalPages) {
@@ -130,25 +139,15 @@ export default function ShopPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-4 text-center">Shop</h1>
+      <h1 className="text-3xl font-bold mb-4 text-center">
+        Shop {currentPage} of {totalPages}
+      </h1>
       <div className="flex flex-col md:flex-row gap-8">
         <aside className="w-full md:w-1/4">
           <div className="sticky top-32">
             <h2 className="text-xl font-semibold mb-4">Filter Options</h2>
             <div className="space-y-4">
-              <div>
-                {/* <h3 className="font-medium mb-2">Category</h3>
-                <ul className="space-y-2">
-                  {categories.map((category) => (
-                    <li key={category}>
-                      <Checkbox id={category} />
-                      <label htmlFor={category} className="ml-2 text-sm">
-                        {category}
-                      </label>
-                    </li>
-                  ))}
-                </ul> */}
-              </div>
+              <div></div>
               <div>
                 <h3 className="font-medium mb-2">Availability</h3>
                 <ul className="space-y-2">
@@ -193,20 +192,15 @@ export default function ShopPage() {
             </Select>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {
-              isLoading
-                ? Array.from({ length: 6 }).map((_, index) => (
-                    <ProductCardSkeleton key={index} />
-                  ))
-                : products.map((product: any) => (
-                    <ProductCard key={product.id} {...product} />
-                  ))
-              // )
-            }
+            {isLoading
+              ? Array.from({ length: 6 }).map((_, index) => (
+                  <ProductCardSkeleton key={index} />
+                ))
+              : products.map((product: any) => (
+                  <ProductCard key={product.id} {...product} />
+                ))}
           </div>
-
-          {/* Pagination */}
-          <div className="flex justify-center items-center space-x-2 mt-5">
+          {/* <div className="flex justify-center items-center space-x-2 mt-5">
             <Button
               variant="outline"
               size="icon"
@@ -216,8 +210,6 @@ export default function ShopPage() {
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-
-            {/* Showing only first, last, and nearby pages */}
             {currentPage > 1 && (
               <>
                 <Button
@@ -265,6 +257,29 @@ export default function ShopPage() {
                 </Button>
               </>
             )}
+
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div> */}
+          <div className="flex justify-center items-center space-x-2 mt-5">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+
+            {RenderPaginationButtons(totalPages, currentPage, handlePageChange)}
 
             <Button
               variant="outline"

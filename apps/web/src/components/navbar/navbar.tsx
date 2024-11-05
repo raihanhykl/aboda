@@ -68,6 +68,7 @@ export default function Navbar() {
     );
 
   useEffect(() => {
+    getCurrentPosition();
     const fetchAddresses = async () => {
       api
         .get('/user/get-all-user-addresses', {
@@ -83,13 +84,25 @@ export default function Navbar() {
             street: item.address.street,
           }));
           dispatch(setAddresses(formattedAddresses));
+          for (let i = 0; i < response.data.data.length; i++) {
+            if (response.data.data[i].isDefault == 1) {
+              dispatch(
+                setPosition({
+                  longitude: response.data.data[i].address.lon,
+                  latitude: response.data.data[i].address.lat,
+                  city: response.data.data[i].address.City.city,
+                  street: response.data.data[i].address.street,
+                }),
+              );
+              break;
+            }
+          }
         });
     };
 
     if (session.status === 'authenticated') {
       fetchAddresses();
     }
-    getCurrentPosition();
   }, [session]);
 
   return (
@@ -140,21 +153,21 @@ export default function Navbar() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-            <div className="flex-grow">
-              <div className="relative w-[80%]">
-                {/* <input
+            {/* <div className="flex-grow"> */}
+            {/* <div className="relative w-[80%]"> */}
+            {/* <input
                   type="text"
                   placeholder="Search..."
                   className="w-full py-2 px-4 pr-10 rounded-md bg-[#39906D] focus:outline-none focus:ring-2 focus:ring-gray-300"
                 />
                 <Search className="absolute right-3 top-2.5 h-5 w-5 text-[#93C2AF]" /> */}
-              </div>
-            </div>
+            {/* </div> */}
+            {/* </div> */}
           </div>
           <div className="flex items-center space-x-11">
             <NavbarButton />
             <button
-              className="md:hidden"
+              className={`md:hidden ${session.data?.user.roleId == 1 ? 'hidden' : ''}`}
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
               <Menu className="h-6 w-6" />
@@ -163,7 +176,7 @@ export default function Navbar() {
         </div>
 
         {/* Bottom bar - Desktop */}
-        {session.data?.user.roleId == 1 ? null : (
+        {session.data?.user && session.data?.user.roleId != 1 ? (
           <div className="hidden md:flex justify-between py-2">
             {[
               'Dashboard',
@@ -183,7 +196,7 @@ export default function Navbar() {
               </Link>
             ))}
           </div>
-        )}
+        ) : null}
 
         {/* Mobile menu */}
         {isMenuOpen && (

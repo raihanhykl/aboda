@@ -108,7 +108,7 @@ export default function SignIn() {
                 <Button
                   type="submit"
                   disabled={isSubmitting}
-                  className=" text-white"
+                  className=" text-white text-xs md:text-md"
                 >
                   SIGN IN
                 </Button>
@@ -116,6 +116,7 @@ export default function SignIn() {
                 <Button
                   onClick={onGoogleSubmit}
                   disabled={form.formState.isSubmitting}
+                  className=" text-xs md:text-md"
                 >
                   {form.formState.isSubmitting ? (
                     <Loader2 className="animate-spin" />
@@ -142,7 +143,7 @@ export default function SignIn() {
             <div>
               <h2 className="text-3xl font-bold mb-2">Welcome to Aboda</h2>
               <p className="mb-6">Freshness and Quality at Your Fingertips</p>
-              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center">
+              <div className="w-16 h-16 bg-white rounded-full md:flex items-center justify-center hidden">
                 <svg
                   className="w-12 h-12 text-[#1B8057]"
                   fill="currentColor"
@@ -156,18 +157,23 @@ export default function SignIn() {
                 </svg>
               </div>
             </div>
-            <Button
-              variant="outline"
-              className="bg-white text-[#1B8057] hover:bg-green-50"
-              onClick={() => {
-                setIsVisible(false);
-                setTimeout(() => {
-                  router.push('/signup');
-                }, 500);
-              }}
-            >
-              {isSubmitting ? 'Signing in...' : 'SIGN UP'}
-            </Button>
+            <div className=" w-full">
+              <p className=" text-sm text-gray-100 mb-1">
+                Don't have an account?
+              </p>
+              <Button
+                variant="outline"
+                className="bg-white text-[#1B8057] hover:bg-green-50 w-full"
+                onClick={() => {
+                  setIsVisible(false);
+                  setTimeout(() => {
+                    router.push('/signup');
+                  }, 500);
+                }}
+              >
+                {isSubmitting ? 'Signing in...' : 'SIGN UP'}
+              </Button>
+            </div>
           </div>
         </div>
       </div>

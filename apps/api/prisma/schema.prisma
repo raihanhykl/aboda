@@ -110,7 +110,7 @@ model UserAddress {
 model Category {
   id       Int       @id @default(autoincrement())
   name     String
-  image    String
+  image    String    @default("")
   Products Product[]
 
   @@map("categories")

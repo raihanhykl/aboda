@@ -31,12 +31,13 @@ export default function SetMainAddressButton({
         <Button
           variant={isMainAddress ? 'default' : 'outline'}
           disabled={isMainAddress}
-          className="w-fit"
+          className={`w-fit text-xs md:text-sm px-3 mx-3 ${!isMainAddress && 'mx-2'}`}
         >
           {isMainAddress ? (
             <div className=" flex items-center">
               {/* <div className=" flex items-center text-green-800 bg-green-100"> */}
-              <Check className="mr-2 h-4 w-4" /> Main address
+              <Check className="mr-1 h-4 w-4 md:mr-2 md:h-4 md:w-4" /> Main
+              address
             </div>
           ) : (
             'Set as main address'

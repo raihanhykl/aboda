@@ -22,31 +22,7 @@ import {
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-
-// Mock data - replace with actual API calls
-const initialProducts = [
-  {
-    id: 1,
-    name: 'Product 1',
-    description: 'Description 1',
-    price: 10,
-    categoryId: 1,
-    images: ['image1.jpg', 'image2.jpg'],
-  },
-  {
-    id: 2,
-    name: 'Product 2',
-    description: 'Description 2',
-    price: 20,
-    categoryId: 2,
-    images: ['image3.jpg', 'image4.jpg'],
-  },
-];
-
-const initialCategories = [
-  { id: 1, name: 'Category 1' },
-  { id: 2, name: 'Category 2' },
-];
+import { api } from '@/config/axios.config';
 
 type Product = {
   id: number;
@@ -63,42 +39,58 @@ type Category = {
 };
 
 export default function ProductManagement() {
-  const [products, setProducts] = useState<Product[]>(initialProducts);
-  const [categories, setCategories] = useState<Category[]>(initialCategories);
+  const [product, setProduct] = useState<Product[]>([]);
+  const [category, setCategory] = useState<Category[]>([]);
   const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
   const [currentCategory, setCurrentCategory] = useState<Category | null>(null);
-  const [isMainAdmin, setIsMainAdmin] = useState(true); // Set this based on user role
   const [newImages, setNewImages] = useState<File[]>([]);
   const [previewImages, setPreviewImages] = useState<string[]>([]);
 
   useEffect(() => {
-    // Fetch products and categories from API
-    // setProducts(fetchedProducts)
-    // setCategories(fetchedCategories)
+    const fetchProduct = async () => {
+      try {
+        const response = await api.get('/product/all');
+        console.log('Fetched products:', response.data.data);
+        setProduct(response.data.data);
+      } catch (error) {
+        console.error('Error fetching product:', error);
+      }
+    };
+
+    const fetchCategory = async () => {
+      try {
+        const response = await api.get('/category');
+        console.log('Fetched category:', response.data.data);
+        setCategory(response.data.data);
+      } catch (error) {
+        console.error('Error fetching category:', error);
+      }
+    };
+
+    fetchProduct();
+    fetchCategory();
   }, []);
 
-  const validateProduct = (product: Omit<Product, 'id'>) => {
+  const validateProduct = (productData: Omit<Product, 'id'>) => {
     if (
-      products.some(
-        (p) => p.name === product.name && p.id !== currentProduct?.id,
+      product.some(
+        (p) => p.name === productData.name && p.id !== currentProduct?.id,
       )
     ) {
-      // Removed toast notification
       console.error('A product with this name already exists.');
       return false;
     }
     return true;
   };
 
-  const validateCategory = (category: Omit<Category, 'id'>) => {
+  const validateCategory = (categoryData: Omit<Category, 'id'>) => {
     if (
-      categories.some(
-        (c) => c.name === category.name && c.id !== currentCategory?.id,
+      category.some(
+        (c) => c.name === categoryData.name && c.id !== currentCategory?.id,
       )
     ) {
-      // Removed toast notification
       console.error('A category with this name already exists.');
       return false;
     }
@@ -110,7 +102,6 @@ export default function ProductManagement() {
     const maxSize = 1024 * 1024; // 1MB
 
     if (!validTypes.includes(file.type)) {
-      // Removed toast notification
       console.error(
         'Invalid file type. Only jpg, jpeg, png, and gif are allowed.',
       );
@@ -118,7 +109,6 @@ export default function ProductManagement() {
     }
 
     if (file.size > maxSize) {
-      // Removed toast notification
       console.error('File size exceeds 1MB limit.');
       return false;
     }
@@ -126,7 +116,9 @@ export default function ProductManagement() {
     return true;
   };
 
-  const handleProductSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleProductSubmit = async (
+    event: React.FormEvent<HTMLFormElement>,
+  ) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const productData = {
@@ -139,18 +131,19 @@ export default function ProductManagement() {
 
     if (!validateProduct(productData)) return;
 
-    // Here you would typically upload the images and get their URLs
     const newImageUrls = newImages.map((file) => URL.createObjectURL(file));
     productData.images = [...productData.images, ...newImageUrls];
 
     if (currentProduct) {
-      setProducts(
-        products.map((p) =>
+      setProduct(
+        product.map((p) =>
           p.id === currentProduct.id ? { ...productData, id: p.id } : p,
         ),
       );
+      await api.put(`/product/${currentProduct.id}`, productData);
     } else {
-      setProducts([...products, { ...productData, id: products.length + 1 }]);
+      const response = await api.post('/product', productData);
+      setProduct([...product, { ...productData, id: response.data.id }]);
     }
 
     setIsProductDialogOpen(false);
@@ -158,7 +151,9 @@ export default function ProductManagement() {
     setPreviewImages([]);
   };
 
-  const handleCategorySubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleCategorySubmit = async (
+    event: React.FormEvent<HTMLFormElement>,
+  ) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const categoryData = {
@@ -168,29 +163,28 @@ export default function ProductManagement() {
     if (!validateCategory(categoryData)) return;
 
     if (currentCategory) {
-      setCategories(
-        categories.map((c) =>
+      setCategory(
+        category.map((c) =>
           c.id === currentCategory.id ? { ...categoryData, id: c.id } : c,
         ),
       );
+      await api.put(`/category/${currentCategory.id}`, categoryData);
     } else {
-      setCategories([
-        ...categories,
-        { ...categoryData, id: categories.length + 1 },
-      ]);
+      const response = await api.post('/category', categoryData);
+      setCategory([...category, { ...categoryData, id: response.data.id }]);
     }
 
     setIsCategoryDialogOpen(false);
   };
 
-  const deleteProduct = (productId: number) => {
-    setProducts(products.filter((product) => product.id !== productId));
-    // Also delete from API
+  const deleteProduct = async (productId: number) => {
+    setProduct(product.filter((prod) => prod.id !== productId));
+    await api.delete(`/product/${productId}`);
   };
 
-  const deleteCategory = (categoryId: number) => {
-    setCategories(categories.filter((category) => category.id !== categoryId));
-    // Also delete from API
+  const deleteCategory = async (categoryId: number) => {
+    setCategory(category.filter((cat) => cat.id !== categoryId));
+    await api.delete(`/category/${categoryId}`);
   };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -223,24 +217,22 @@ export default function ProductManagement() {
         Product Management
       </h1>
 
-      <Tabs defaultValue="products" className="space-y-4">
+      <Tabs defaultValue="product" className="space-y-4">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="products">Products</TabsTrigger>
-          <TabsTrigger value="categories">Categories</TabsTrigger>
+          <TabsTrigger value="product">Product</TabsTrigger>
+          <TabsTrigger value="category">Category</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="products">
-          {isMainAdmin && (
-            <Button
-              onClick={() => {
-                setCurrentProduct(null);
-                setIsProductDialogOpen(true);
-              }}
-              className="mb-4"
-            >
-              <Plus className="mr-2 h-4 w-4" /> Add Product
-            </Button>
-          )}
+        <TabsContent value="product">
+          <Button
+            onClick={() => {
+              setCurrentProduct(null);
+              setIsProductDialogOpen(true);
+            }}
+            className="mb-4"
+          >
+            <Plus className="mr-2 h-4 w-4" /> Add Product
+          </Button>
 
           <div className="overflow-x-auto">
             <Table>
@@ -255,118 +247,117 @@ export default function ProductManagement() {
                     Category
                   </TableHead>
                   <TableHead className="hidden lg:table-cell">Images</TableHead>
-                  {isMainAdmin && <TableHead>Actions</TableHead>}
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {products.map((product) => (
-                  <TableRow key={product.id}>
-                    <TableCell className="font-medium">
-                      {product.name}
+                {product.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center">
+                      No products available.
                     </TableCell>
-                    <TableCell className="hidden sm:table-cell">
-                      {product.description}
-                    </TableCell>
-                    <TableCell>${product.price}</TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      {
-                        categories.find((cat) => cat.id === product.categoryId)
-                          ?.name
-                      }
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      {product.images.map((image, index) => (
-                        <img
-                          key={index}
-                          src={image}
-                          alt={product.name}
-                          className="h-16 w-16 object-cover"
-                        />
-                      ))}
-                    </TableCell>
-                    {isMainAdmin && (
+                  </TableRow>
+                ) : (
+                  product.map((prod) => (
+                    <TableRow key={prod.id}>
+                      <TableCell>{prod.name}</TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        {prod.description}
+                      </TableCell>
+                      <TableCell>RP. {prod.price}</TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        {
+                          category.find((cat) => cat.id === prod.categoryId)
+                            ?.name
+                        }
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        {prod.images.length} images
+                      </TableCell>
                       <TableCell>
                         <Button
+                          variant="outline"
                           onClick={() => {
-                            setCurrentProduct(product);
+                            setCurrentProduct(prod);
                             setIsProductDialogOpen(true);
                           }}
-                          variant="outline"
-                          className="mr-2"
                         >
-                          <Edit className="h-4 w-4" />
+                          <Edit className="mr-2 h-4 w-4" /> Edit
                         </Button>
                         <Button
                           variant="outline"
-                          className="text-red-500"
-                          onClick={() => deleteProduct(product.id)}
+                          className="ml-2"
+                          onClick={() => deleteProduct(prod.id)}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="mr-2 h-4 w-4" /> Delete
                         </Button>
                       </TableCell>
-                    )}
-                  </TableRow>
-                ))}
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </div>
         </TabsContent>
 
-        <TabsContent value="categories">
-          {isMainAdmin && (
-            <Button
-              onClick={() => {
-                setCurrentCategory(null);
-                setIsCategoryDialogOpen(true);
-              }}
-              className="mb-4"
-            >
-              <Plus className="mr-2 h-4 w-4" /> Add Category
-            </Button>
-          )}
+        <TabsContent value="category">
+          <Button
+            onClick={() => {
+              setCurrentCategory(null);
+              setIsCategoryDialogOpen(true);
+            }}
+            className="mb-4"
+          >
+            <Plus className="mr-2 h-4 w-4" /> Add Category
+          </Button>
+
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
-                  {isMainAdmin && <TableHead>Actions</TableHead>}
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {categories.map((category) => (
-                  <TableRow key={category.id}>
-                    <TableCell className="font-medium">
-                      {category.name}
+                {category.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={2} className="text-center">
+                      No categories available.
                     </TableCell>
-                    {isMainAdmin && (
+                  </TableRow>
+                ) : (
+                  category.map((cat) => (
+                    <TableRow key={cat.id}>
+                      <TableCell>{cat.name}</TableCell>
                       <TableCell>
                         <Button
+                          variant="outline"
                           onClick={() => {
-                            setCurrentCategory(category);
+                            setCurrentCategory(cat);
                             setIsCategoryDialogOpen(true);
                           }}
-                          variant="outline"
-                          className="mr-2"
                         >
-                          <Edit className="h-4 w-4" />
+                          <Edit className="mr-2 h-4 w-4" /> Edit
                         </Button>
                         <Button
                           variant="outline"
-                          className="text-red-500"
-                          onClick={() => deleteCategory(category.id)}
+                          className="ml-2"
+                          onClick={() => deleteCategory(cat.id)}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="mr-2 h-4 w-4" /> Delete
                         </Button>
                       </TableCell>
-                    )}
-                  </TableRow>
-                ))}
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </div>
         </TabsContent>
       </Tabs>
 
+      {/* Product Dialog */}
       <Dialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -377,11 +368,11 @@ export default function ProductManagement() {
           <form onSubmit={handleProductSubmit}>
             <div className="grid gap-4">
               <div>
-                <Label htmlFor="name">Product Name</Label>
+                <Label htmlFor="name">Name</Label>
                 <Input
                   id="name"
                   name="name"
-                  defaultValue={currentProduct?.name || ''}
+                  defaultValue={currentProduct?.name}
                   required
                 />
               </div>
@@ -390,18 +381,19 @@ export default function ProductManagement() {
                 <Textarea
                   id="description"
                   name="description"
-                  defaultValue={currentProduct?.description || ''}
+                  defaultValue={currentProduct?.description}
                   required
                 />
               </div>
               <div>
                 <Label htmlFor="price">Price</Label>
                 <Input
+                  type="number"
                   id="price"
                   name="price"
-                  type="number"
-                  defaultValue={currentProduct?.price || ''}
+                  defaultValue={currentProduct?.price}
                   required
+                  step="0.01"
                 />
               </div>
               <div>
@@ -409,15 +401,15 @@ export default function ProductManagement() {
                 <select
                   id="categoryId"
                   name="categoryId"
-                  defaultValue={currentProduct?.categoryId || ''}
+                  defaultValue={currentProduct?.categoryId}
                   required
                 >
                   <option value="" disabled>
                     Select a category
                   </option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
+                  {category.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
                     </option>
                   ))}
                 </select>
@@ -432,15 +424,15 @@ export default function ProductManagement() {
                 />
                 <div className="flex flex-wrap mt-2">
                   {previewImages.map((image, index) => (
-                    <div key={index} className="relative mr-2 mb-2">
+                    <div key={index} className="relative w-24 h-24 mr-2 mb-2">
                       <img
                         src={image}
-                        alt="preview"
-                        className="h-16 w-16 object-cover"
+                        alt={`Preview ${index}`}
+                        className="object-cover w-full h-full rounded"
                       />
                       <button
                         type="button"
-                        className="absolute top-0 right-0 p-1 bg-red-500 text-white rounded-full"
+                        className="absolute top-0 right-0 text-red-500"
                         onClick={() => removeImage(index)}
                       >
                         <X className="h-4 w-4" />
@@ -448,10 +440,29 @@ export default function ProductManagement() {
                     </div>
                   ))}
                 </div>
+                {currentProduct &&
+                  currentProduct.images.map((image, index) => (
+                    <div key={index} className="relative w-24 h-24 mr-2 mb-2">
+                      <img
+                        src={image}
+                        alt={`Existing ${index}`}
+                        className="object-cover w-full h-full rounded"
+                      />
+                      <button
+                        type="button"
+                        className="absolute top-0 right-0 text-red-500"
+                        onClick={() => removeExistingImage(index)}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
               </div>
             </div>
             <DialogFooter>
-              <Button type="submit">Save</Button>
+              <Button type="submit">
+                {currentProduct ? 'Update Product' : 'Add Product'}
+              </Button>
               <Button
                 variant="outline"
                 onClick={() => setIsProductDialogOpen(false)}
@@ -463,6 +474,7 @@ export default function ProductManagement() {
         </DialogContent>
       </Dialog>
 
+      {/* Category Dialog */}
       <Dialog
         open={isCategoryDialogOpen}
         onOpenChange={setIsCategoryDialogOpen}
@@ -476,17 +488,19 @@ export default function ProductManagement() {
           <form onSubmit={handleCategorySubmit}>
             <div className="grid gap-4">
               <div>
-                <Label htmlFor="name">Category Name</Label>
+                <Label htmlFor="name">Name</Label>
                 <Input
                   id="name"
                   name="name"
-                  defaultValue={currentCategory?.name || ''}
+                  defaultValue={currentCategory?.name}
                   required
                 />
               </div>
             </div>
             <DialogFooter>
-              <Button type="submit">Save</Button>
+              <Button type="submit">
+                {currentCategory ? 'Update Category' : 'Add Category'}
+              </Button>
               <Button
                 variant="outline"
                 onClick={() => setIsCategoryDialogOpen(false)}

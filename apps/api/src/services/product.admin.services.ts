@@ -101,7 +101,7 @@ export class ProductAdminServices {
             categoryId: Number(categoryId),
             image: {
               create: {
-                imageUrl: image?.filename || undefined,
+                imageUrl: image?.filename || '',
               },
             },
           },

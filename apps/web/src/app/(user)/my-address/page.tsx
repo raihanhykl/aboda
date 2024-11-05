@@ -17,7 +17,7 @@ import { PlusIcon, Edit } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Address, UserAddress } from '@/interfaces/branch';
-import { useSession } from 'next-auth/react';
+import { signIn, useSession } from 'next-auth/react';
 import {
   crudUserAddress,
   deleteUserAddress,
@@ -46,6 +46,7 @@ export default function Component() {
   const [isAdding, setIsAdding] = useState(false);
   const [provinces, setProvinces] = useState<any[]>([]);
   const [cities, setCities] = useState<any[]>([]);
+  const [tempCities, setTempCities] = useState<any[]>([]);
 
   const { handleSubmit, reset, watch, control } = useForm<UserAddress>();
 
@@ -64,7 +65,10 @@ export default function Component() {
       const data = res.data.data as UserAddress[];
       setAddresses(data);
       if (data.length > 0) {
-        setSelectedAddress(data[0]);
+        // setSelectedAddress(data[0]);
+        setSelectedAddress(
+          data.find((address) => address.isDefault === 1) || data[0],
+        );
         setPosition([data[0].address.lat, data[0].address.lon]);
         reset(data[0]);
       }
@@ -84,7 +88,39 @@ export default function Component() {
         setCities,
         session.data.user?.access_token,
       );
+    // .then(() => {
+    //   setCities(tempCities);
+    //   setSelectedAddress((prev) => ({
+    //     ...prev!,
+    //     address: {
+    //       ...prev!.address,
+    //       City: {
+    //         ...prev!.address.City,
+    //         city: tempCities.length > 0 && tempCities[0].city,
+    //         id: tempCities.length > 0 && tempCities[0].id,
+    //       },
+    //     },
+    //   }));
+    // });
   }, [selectedProvince]);
+
+  // useEffect(() => {
+  //   if (tempCities.length > 0) {
+  //     setCities(tempCities);
+  //     selectedAddress &&
+  //       setSelectedAddress((prev) => ({
+  //         ...prev!,
+  //         address: {
+  //           ...prev!.address,
+  //           City: {
+  //             ...prev!.address.City,
+  //             city: tempCities[0].city,
+  //             id: tempCities[0].id,
+  //           },
+  //         },
+  //       }));
+  //   }
+  // }, [tempCities]);
 
   const handleAddAddress = () => {
     const newAddress: UserAddress = {
@@ -129,6 +165,10 @@ export default function Component() {
           })),
         );
       }
+    });
+    await signIn('credentials', {
+      access_token: session.data?.user.access_token,
+      redirect: false,
     });
   };
   const MapUpdater = () => {
@@ -175,7 +215,11 @@ export default function Component() {
   const onSubmit = async (data: UserAddress) => {
     const updatedAddress = {
       ...data,
-      address: { ...data.address, lat: position[0], lon: position[1] },
+      address: {
+        ...data.address,
+        lat: position[0],
+        lon: position[1],
+      },
     };
     setAddresses(
       addresses.map((a) =>
@@ -189,22 +233,24 @@ export default function Component() {
       position,
       session.data?.user.access_token,
       isAdding,
-    )
-      .then(() => {
-        setIsEditing(false);
-        setSelectedAddress(updatedAddress);
-        if (isAdding) {
-          setAddresses([...addresses.slice(0, -1), updatedAddress]);
-        } else {
-          setAddresses(
-            addresses.map((address) =>
-              address.id === updatedAddress.id ? updatedAddress : address,
-            ),
-          );
-        }
-        setIsAdding(false);
-      })
-      .catch(() => alert('failed'));
+    ).then(() => {
+      setIsEditing(false);
+      setSelectedAddress(updatedAddress);
+      if (isAdding) {
+        setAddresses([...addresses.slice(0, -1), updatedAddress]);
+      } else {
+        setAddresses(
+          addresses.map((address) =>
+            address.id === updatedAddress.id ? updatedAddress : address,
+          ),
+        );
+      }
+      setIsAdding(false);
+    });
+    await signIn('credentials', {
+      access_token: session.data?.user.access_token,
+      redirect: false,
+    }).catch(() => alert('failed'));
     setSelectedAddress(updatedAddress);
   };
   const MapEvents = () => {
@@ -281,8 +327,8 @@ export default function Component() {
                     size="sm"
                     onClick={() => setIsEditing(true)}
                   >
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit
+                    <Edit className="h-4 w-4 md:mr-2" />
+                    <span className=" hidden md:block">Edit</span>
                   </Button>
                   <DeleteUserAddress
                     street={selectedAddress.address.street}

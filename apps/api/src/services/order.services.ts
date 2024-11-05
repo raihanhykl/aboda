@@ -418,175 +418,13 @@ export class OrderService {
     }
   }
 
-  // static async getOrder(req: Request) {
-  //   try {
-  //     // const { page = '1', limit = '5', search = '', status } = req.query;
-  //     const page = Number(req.query.page) || 1;
-  //     const limit = Number(req.query.limit) || 5;
-  //     const search = String(req.query.search);
-  //     const status = req.query.status;
-  //     const pageNumber = page;
-  //     const limitNumber = limit;
-  //     const skip = (pageNumber - 1) * limitNumber;
-
-  //     console.log(page, 'ini page');
-  //     console.log(limit, 'ini limit');
-  //     console.log(search, 'ini search');
-  //     console.log(status, 'ini status');
-
-  //     const whereClause: any = {
-  //       userId: Number(req.user.id),
-  //     };
-
-  //     if (status && status !== 'all') {
-  //       whereClause.status = status;
-  //     }
-
-  //     if (search) {
-  //       whereClause.OR = [
-  //         { invoice: { contains: search } },
-  //         {
-  //           OrderItem: {
-  //             some: {
-  //               Product: {
-  //                 product_name: {
-  //                   contains: search,
-  //                 },
-  //               },
-  //             },
-  //           },
-  //         },
-  //       ];
-  //     }
-
-  //     const [orders, totalCount] = await Promise.all([
-  //       prisma.order.findMany({
-  //         where: whereClause,
-  //         include: {
-  //           OrderItem: {
-  //             include: {
-  //               Product: true,
-  //             },
-  //           },
-  //           ShippingDetail: true,
-  //           Address: {
-  //             include: {
-  //               City: {
-  //                 include: {
-  //                   Province: true,
-  //                 },
-  //               },
-  //             },
-  //           },
-  //         },
-  //         orderBy: {
-  //           invoice: 'desc',
-  //         },
-  //         skip,
-  //         take: limitNumber,
-  //       }),
-  //       prisma.order.count({ where: whereClause }),
-  //     ]);
-
-  //     const totalPages = Math.ceil(totalCount / limitNumber);
-
-  //     return {
-  //       data: orders,
-  //       totalPages,
-  //       currentPage: pageNumber,
-  //       totalItems: totalCount,
-  //     };
-  //   } catch (error) {
-  //     console.error('Error in getOrder:', error);
-  //     throw error;
-  //   }
-  // }
-
-  // static async getOrder(req: Request) {
-  //   try {
-  //     const { page = '1', limit = '5', search = '', status } = req.query;
-  //     const pageNumber = parseInt(page as string, 10);
-  //     const limitNumber = parseInt(limit as string, 10);
-  //     const skip = (pageNumber - 1) * limitNumber;
-
-  //     const whereClause: any = {
-  //       userId: Number(req.user.id),
-  //     };
-
-  //     if (status && status !== 'all') {
-  //       whereClause.status = status;
-  //     }
-
-  //     if (search) {
-  //       whereClause.OR = [
-  //         { invoice: { contains: search as string, mode: 'insensitive' } },
-  //         {
-  //           OrderItem: {
-  //             some: {
-  //               Product: {
-  //                 product_name: {
-  //                   contains: search as string,
-  //                   mode: 'insensitive',
-  //                 },
-  //               },
-  //             },
-  //           },
-  //         },
-  //       ];
-  //     }
-
-  //     const [orders, totalCount] = await Promise.all([
-  //       prisma.order.findMany({
-  //         where: whereClause,
-  //         include: {
-  //           OrderItem: {
-  //             include: {
-  //               Product: true,
-  //             },
-  //           },
-  //           ShippingDetail: true,
-  //           Address: {
-  //             include: {
-  //               City: {
-  //                 include: {
-  //                   Province: true,
-  //                 },
-  //               },
-  //             },
-  //           },
-  //         },
-  //         orderBy: {
-  //           invoice: 'desc',
-  //         },
-  //         skip,
-  //         take: limitNumber,
-  //       }),
-  //       prisma.order.count({ where: whereClause }),
-  //     ]);
-
-  //     const totalPages = Math.ceil(totalCount / limitNumber);
-
-  //     return {
-  //       data: orders,
-  //       totalPages,
-  //       currentPage: pageNumber,
-  //       totalItems: totalCount,
-  //     };
-  //   } catch (error) {
-  //     console.error('Error in getOrder:', error);
-  //     throw error;
-  //   }
-  // }
-
   static async addOrder(req: Request) {
     const {
       origin,
       destination,
-      // weight,
       courier,
       service,
       user_voucher_id,
-      // shipping_price,
       payment_id,
       user_address_id,
       expedition,
@@ -595,30 +433,24 @@ export class OrderService {
 
     try {
       // Check if user is authenticated
-
-      console.log(req.body, 'ini req body');
       if (!req.user) {
         throw new ErrorHandler('Unauthorized user', 401);
       }
+
       const cartItems = await prisma.cart.findMany({
-        where: {
-          userId: req.user.id,
-        },
+        where: { userId: req.user.id },
         include: {
           ProductStock: {
-            include: {
-              Product: true,
-            },
+            include: { Product: true },
           },
         },
       });
-
-      console.log(cartItems, 'ini cartitem');
 
       if (!cartItems.length) {
         throw new ErrorHandler('Keranjang belanja kosong', 400);
       }
 
+      // Check stock availability
       for (const cartItem of cartItems) {
         const productStock = cartItem.ProductStock;
         const quantity = cartItem.quantity || 1;
@@ -633,24 +465,49 @@ export class OrderService {
 
       let totalPrice = 0;
       let totalWeight = 0;
-      const orderItems = cartItems.map((cartItem) => {
-        const product = cartItem.ProductStock?.Product;
-        const quantity = cartItem.quantity || 1;
-        const subtotal = (product?.price || 0) * quantity;
 
-        totalPrice += subtotal;
-        totalWeight += (product?.weight || 0) * quantity;
+      // Use Promise.all to fetch discounts concurrently
+      const orderItems = await Promise.all(
+        cartItems.map(async (cartItem) => {
+          const product = cartItem.ProductStock?.Product;
+          const quantity = cartItem.quantity || 1;
+          const subtotal = (product?.price || 0) * quantity;
 
-        return {
-          productId: product?.id || 0,
-          quantity,
-          price: product?.price || 0,
-          subtotal,
-        };
-      });
+          // Initialize subtotal for this item
+          let itemSubtotal = subtotal;
 
-      console.log(totalWeight, 'ini shippingcost response');
+          // Check for discounts on the product
+          const discount = await prisma.discount.findFirst({
+            where: {
+              productId: product?.id,
+              start_date: { lte: new Date() },
+              end_date: { gte: new Date() },
+              Branch: { id: cartItem.ProductStock?.branchId },
+            },
+          });
 
+          // Apply the discounts
+          if (discount) {
+            if (discount.discount_type === 'percentage') {
+              itemSubtotal -= (itemSubtotal * discount.discount_value) / 100;
+            } else if (discount.discount_type === 'fixed') {
+              itemSubtotal -= discount.discount_value;
+            }
+          }
+
+          totalPrice += itemSubtotal;
+          totalWeight += (product?.weight || 0) * quantity;
+
+          return {
+            productId: product?.id || 0,
+            quantity,
+            price: product?.price || 0,
+            subtotal: itemSubtotal, // Use the discounted subtotal
+          };
+        }),
+      );
+
+      // Apply user voucher discount
       if (user_voucher_id) {
         const userVoucher = await prisma.userVoucher.findFirst({
           where: { id: user_voucher_id, userId: req.user.id, is_valid: 1 },
@@ -676,6 +533,7 @@ export class OrderService {
         }
       }
 
+      // Calculate shipping costs
       const shippingCostResponse = await axios.post(
         'https://api.rajaongkir.com/starter/cost',
         {
@@ -687,15 +545,11 @@ export class OrderService {
         {
           headers: {
             key: '6217fa0987d802058e79fa9a345c6923',
-            // "process.env.RAJAONGKIR_API_KEY," // ensure you've set this in your .env file
             'content-type': 'application/x-www-form-urlencoded',
           },
         },
       );
 
-      console.log(shippingCostResponse, 'ini shippingcost response');
-
-      // Find the correct service and its cost from RajaOngkir response
       const selectedService =
         shippingCostResponse.data.rajaongkir.results[0].costs.find(
           (c: any) => c.service === service,
@@ -706,7 +560,6 @@ export class OrderService {
       }
 
       const shippingCost = selectedService.cost[0].value;
-
       totalPrice += shippingCost;
 
       const address = await prisma.userAddress.findFirst({
@@ -739,19 +592,19 @@ export class OrderService {
         },
       });
 
+      // Update stock and create stock history
       for (const cartItem of cartItems) {
         const productStock = cartItem.ProductStock;
         const quantity = cartItem.quantity || 1;
 
         if (productStock) {
-          // Decrease the stock
           const newStock = productStock.stock - quantity;
           await prisma.productStock.update({
             where: { id: productStock.id },
             data: { stock: newStock },
           });
 
-          // Record the stock change in StockHistory
+          // Record stock change in StockHistory
           await prisma.stockHistory.create({
             data: {
               productStockId: productStock.id,
@@ -766,6 +619,7 @@ export class OrderService {
         }
       }
 
+      // Schedule order cancellation
       cancelOrder.add(
         {
           user: req.user.id,
@@ -776,13 +630,221 @@ export class OrderService {
         },
       );
 
+      // Clear cart
       await prisma.cart.deleteMany({ where: { userId: req.user.id } });
 
       return { message: 'Order berhasil dibuat' };
     } catch (error) {
+      console.error(error); // Log the actual error for debugging
       throw new ErrorHandler('Terjadi kesalahan saat menambahkan order', 400);
     }
   }
+
+  // static async addOrder(req: Request) {
+  //   const {
+  //     origin,
+  //     destination,
+  //     // weight,
+  //     courier,
+  //     service,
+  //     user_voucher_id,
+  //     // shipping_price,
+  //     payment_id,
+  //     user_address_id,
+  //     expedition,
+  //     expedition_detail,
+  //   } = req.body;
+
+  //   try {
+  //     // Check if user is authenticated
+
+  //     console.log(req.body, 'ini req body');
+  //     if (!req.user) {
+  //       throw new ErrorHandler('Unauthorized user', 401);
+  //     }
+  //     const cartItems = await prisma.cart.findMany({
+  //       where: {
+  //         userId: req.user.id,
+  //       },
+  //       include: {
+  //         ProductStock: {
+  //           include: {
+  //             Product: true,
+  //           },
+  //         },
+  //       },
+  //     });
+
+  //     console.log(cartItems, 'ini cartitem');
+
+  //     if (!cartItems.length) {
+  //       throw new ErrorHandler('Keranjang belanja kosong', 400);
+  //     }
+
+  //     for (const cartItem of cartItems) {
+  //       const productStock = cartItem.ProductStock;
+  //       const quantity = cartItem.quantity || 1;
+
+  //       if (productStock && quantity > productStock.stock) {
+  //         throw new ErrorHandler(
+  //           `Jumlah yang diminta untuk produk "${productStock.Product?.product_name}" melebihi stok yang tersedia`,
+  //           400,
+  //         );
+  //       }
+  //     }
+
+  //     let totalPrice = 0;
+  //     let totalWeight = 0;
+  //     const orderItems = cartItems.map((cartItem) => {
+  //       const product = cartItem.ProductStock?.Product;
+  //       const quantity = cartItem.quantity || 1;
+  //       const subtotal = (product?.price || 0) * quantity;
+
+  //       totalPrice += subtotal;
+  //       totalWeight += (product?.weight || 0) * quantity;
+
+  //       return {
+  //         productId: product?.id || 0,
+  //         quantity,
+  //         price: product?.price || 0,
+  //         subtotal,
+  //       };
+  //     });
+
+  //     console.log(totalWeight, 'ini shippingcost response');
+
+  //     if (user_voucher_id) {
+  //       const userVoucher = await prisma.userVoucher.findFirst({
+  //         where: { id: user_voucher_id, userId: req.user.id, is_valid: 1 },
+  //         include: { Voucher: true },
+  //       });
+
+  //       if (userVoucher) {
+  //         const voucher = userVoucher.Voucher;
+  //         if (totalPrice >= voucher.min_purchase) {
+  //           if (voucher.type === 'percentage') {
+  //             totalPrice -= (totalPrice * voucher.value) / 100;
+  //           } else if (voucher.type === 'fixed') {
+  //             totalPrice -= voucher.value;
+  //           }
+  //         } else {
+  //           throw new ErrorHandler(
+  //             'Pembelian tidak memenuhi syarat voucher',
+  //             400,
+  //           );
+  //         }
+  //       } else {
+  //         throw new ErrorHandler('Voucher tidak valid', 400);
+  //       }
+  //     }
+
+  //     const shippingCostResponse = await axios.post(
+  //       'https://api.rajaongkir.com/starter/cost',
+  //       {
+  //         origin: origin,
+  //         destination: destination,
+  //         weight: totalWeight,
+  //         courier: courier,
+  //       },
+  //       {
+  //         headers: {
+  //           key: '6217fa0987d802058e79fa9a345c6923',
+  //           // "process.env.RAJAONGKIR_API_KEY," // ensure you've set this in your .env file
+  //           'content-type': 'application/x-www-form-urlencoded',
+  //         },
+  //       },
+  //     );
+
+  //     console.log(shippingCostResponse, 'ini shippingcost response');
+
+  //     // Find the correct service and its cost from RajaOngkir response
+  //     const selectedService =
+  //       shippingCostResponse.data.rajaongkir.results[0].costs.find(
+  //         (c: any) => c.service === service,
+  //       );
+
+  //     if (!selectedService) {
+  //       throw new ErrorHandler('Service not found', 404);
+  //     }
+
+  //     const shippingCost = selectedService.cost[0].value;
+
+  //     totalPrice += shippingCost;
+
+  //     const address = await prisma.userAddress.findFirst({
+  //       where: { id: user_address_id, userId: req.user.id },
+  //       include: { address: true },
+  //     });
+
+  //     const order = await prisma.order.create({
+  //       data: {
+  //         userId: req.user.id,
+  //         total_price: totalPrice,
+  //         addressId: Number(address?.id),
+  //         paymentId: payment_id,
+  //         branchId: cartItems[0].ProductStock?.branchId,
+  //         voucherId: user_voucher_id || null,
+  //         discount_voucher: user_voucher_id ? 1 : 0,
+  //         invoice: `INV-${Date.now()}`,
+  //         status: 'pending_payment',
+  //         OrderItem: {
+  //           create: orderItems,
+  //         },
+  //         ShippingDetail: {
+  //           create: {
+  //             price: shippingCost,
+  //             total_weight: totalWeight,
+  //             expedition,
+  //             expedition_detail,
+  //           },
+  //         },
+  //       },
+  //     });
+
+  //     for (const cartItem of cartItems) {
+  //       const productStock = cartItem.ProductStock;
+  //       const quantity = cartItem.quantity || 1;
+
+  //       if (productStock) {
+  //         // Decrease the stock
+  //         const newStock = productStock.stock - quantity;
+  //         await prisma.productStock.update({
+  //           where: { id: productStock.id },
+  //           data: { stock: newStock },
+  //         });
+
+  //         // Record the stock change in StockHistory
+  //         await prisma.stockHistory.create({
+  //           data: {
+  //             productStockId: productStock.id,
+  //             stock_id: productStock.id,
+  //             status: 'out',
+  //             reference: `Order ID: ${order.id}`,
+  //             quantity,
+  //             stock_before: productStock.stock,
+  //             stock_after: newStock,
+  //           },
+  //         });
+  //       }
+  //     }
+
+  //     cancelOrder.add(
+  //       {
+  //         user: req.user.id,
+  //         id: order.id,
+  //       },
+  //       {
+  //         delay: 300000,
+  //       },
+  //     );
+
+  //     await prisma.cart.deleteMany({ where: { userId: req.user.id } });
+
+  //     return { message: 'Order berhasil dibuat' };
+  //   } catch (error) {
+  //     throw new ErrorHandler('Terjadi kesalahan saat menambahkan order', 400);
+  //   }
+  // }
 
   static async getByInvoice(req: Request) {
     try {
@@ -815,27 +877,6 @@ export class OrderService {
       throw new ErrorHandler('Terjadi kesalahan saat mengambil order', 400);
     }
   }
-  //
-
-  // static async updatePaymentProof(req: Request) {
-  //   try {
-  //     const { id } = req.body;
-  //     const image = req.file;
-
-  //     return await prisma.order.update({
-  //       where: {
-  //         id: Number(id),
-  //         userId: req.user.id,
-  //       },
-  //       data: {
-  //         payment_proof: image?.filename || '',
-  //         status: 'awaiting_confirmation',
-  //       },
-  //     });
-  //   } catch (error) {
-  //     throw new Error('Failed to update payment proof!');
-  //   }
-  // }
 
   static async updateFromMidtrans(req: Request) {
     try {

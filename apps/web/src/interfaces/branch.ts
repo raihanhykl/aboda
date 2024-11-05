@@ -76,5 +76,5 @@ export interface UserAddress {
   addressId: number;
   userId: number;
   address: Address;
-  isDefault: number; //kalo error, grgr ini
+  isDefault: number;
 }

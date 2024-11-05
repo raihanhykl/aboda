@@ -95,4 +95,31 @@ export class StockService {
       throw new ErrorHandler('Failed to delete stock', 500);
     }
   }
+  static async getHistory(req: Request) {
+    try {
+      const { branchId, productId } = req.query;
+
+      const stockHistory = await prisma.stockHistory.findMany({
+        where: {
+          ...(branchId && { ProductStock: { branchId: Number(branchId) } }),
+          ...(productId && { ProductStock: { productId: Number(productId) } }),
+        },
+        include: {
+          ProductStock: {
+            include: {
+              Product: true,
+              Branch: true,
+            },
+          },
+        },
+        orderBy: {
+          created_at: 'desc',
+        },
+      });
+
+      return stockHistory;
+    } catch (error) {
+      throw new ErrorHandler('Failed to retrieve stock history', 500);
+    }
+  }
 }

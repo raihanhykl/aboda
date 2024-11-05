@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Plus, Minus, Trash2, Edit } from 'lucide-react';
+import { useState, useEffect, ReactNode } from 'react';
+import { Trash2, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -26,115 +26,120 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { api } from '@/config/axios.config';
+import { useSession } from 'next-auth/react';
 
-// Mock data - replace with actual API calls
-const stores = [
-  { id: 1, name: 'Store A' },
-  { id: 2, name: 'Store B' },
-  { id: 3, name: 'Store C' },
-];
-
-const initialProducts = [
-  { id: 1, name: 'Product 1', stock: { 1: 100, 2: 150, 3: 200 } },
-  { id: 2, name: 'Product 2', stock: { 1: 50, 2: 75, 3: 100 } },
-  { id: 3, name: 'Product 3', stock: { 1: 200, 2: 250, 3: 300 } },
-];
-
-type Product = {
+interface Store {
+  branch_name: ReactNode;
   id: number;
   name: string;
-  stock: { [key: number]: number };
-};
+}
 
-type StockJournal = {
+interface Product {
   id: number;
-  productId: number;
-  storeId: number;
-  quantity: number;
-  type: 'addition' | 'reduction';
-  date: Date;
-};
+  name: string;
+  stock: number;
+}
 
 export default function InventoryManagement() {
-  const [products, setProducts] = useState<Product[]>(initialProducts);
-  const [selectedStore, setSelectedStore] = useState<number>(1);
-  const [stockJournal, setStockJournal] = useState<StockJournal[]>([]);
-  const [isMainAdmin, setIsMainAdmin] = useState(true); // Set this based on user role
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
-  const [stockChange, setStockChange] = useState(0);
+  const [branches, setBranches] = useState<Store[]>([]);
+  const [product2, setProduct2] = useState<any[]>([]);
+  const [branchId, setBranchId] = useState<number>(1);
+  const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
+  const [currentProduct, setCurrentProduct] = useState<any | null>(null);
+  const [stockChange, setStockChange] = useState<number>(0);
+
+  const session = useSession();
 
   useEffect(() => {
-    // Fetch products and stock journal from API
-    // setProducts(fetchedProducts)
-    // setStockJournal(fetchedStockJournal)
-  }, []);
+    fetchBranches();
+  }, [session]);
 
-  const handleStoreChange = (storeId: string) => {
-    setSelectedStore(Number(storeId));
+  const fetchBranches = async () => {
+    try {
+      const response = await api.get(`/branch/get-all-branch`, {
+        headers: {
+          Authorization: 'Bearer ' + session?.data?.user.access_token,
+        },
+      });
+      setBranches(response.data.data);
+      console.log(response.data.data, 'ini response branches');
+    } catch (error) {
+      console.error('Failed to fetch branches:');
+    }
   };
 
-  const openStockUpdateDialog = (product: Product) => {
+  useEffect(() => {
+    fetchProduct();
+  }, [branchId]);
+
+  const fetchProduct = async (): Promise<void> => {
+    try {
+      const response = await api.get(`stocks/${branchId}/stocks`);
+      setProduct2(response.data);
+    } catch (error) {
+      console.error('Failed to fetch product:', error);
+    }
+  };
+
+  const handleBranchChange = (branchId: string): void => {
+    setBranchId(Number(branchId));
+  };
+
+  const openStockUpdateDialog = (
+    product: Product,
+    defaultStock: number,
+  ): void => {
+    console.log(product, 'ini product ya maniez');
     setCurrentProduct(product);
-    setStockChange(0);
+    setStockChange(defaultStock);
     setIsDialogOpen(true);
   };
 
-  const handleStockUpdate = () => {
+  const handleStockUpdate = async (): Promise<void> => {
     if (!currentProduct) return;
 
-    const newJournalEntry: StockJournal = {
-      id: stockJournal.length + 1,
-      productId: currentProduct.id,
-      storeId: selectedStore,
-      quantity: Math.abs(stockChange),
-      type: stockChange > 0 ? 'addition' : 'reduction',
-      date: new Date(),
-    };
-
-    setStockJournal([...stockJournal, newJournalEntry]);
-
-    const updatedProducts = products.map((product) => {
-      if (product.id === currentProduct.id) {
-        const newStock = { ...product.stock };
-        newStock[selectedStore] = (newStock[selectedStore] || 0) + stockChange;
-        return { ...product, stock: newStock };
-      }
-      return product;
-    });
-
-    setProducts(updatedProducts);
-    setIsDialogOpen(false);
+    try {
+      await api.put(
+        `stocks/${branchId}/products/${currentProduct.id}/update-stock`,
+        { stockChange },
+      );
+      await fetchProduct();
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error('Failed to update stock:', error);
+    }
   };
 
-  const deleteProduct = (productId: number) => {
-    setProducts(products.filter((product) => product.id !== productId));
-    // Also delete from API
+  const deleteProduct = async (StockId: number): Promise<void> => {
+    try {
+      await api.delete(`stocks/${StockId}/delete`);
+      await fetchProduct();
+    } catch (error) {
+      console.error('Failed to delete product:', error);
+    }
   };
 
   return (
     <div className="container mx-auto p-8">
       <h1 className="text-3xl font-bold mb-8">Inventory Management</h1>
 
-      {isMainAdmin && (
-        <div className="mb-4">
-          <Select onValueChange={handleStoreChange}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Select store" />
-            </SelectTrigger>
-            <SelectContent>
-              {stores.map((store) => (
-                <SelectItem key={store.id} value={store.id.toString()}>
-                  {store.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
+      <div className="mb-4">
+        <Select onValueChange={handleBranchChange}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Select branch" />
+          </SelectTrigger>
+          <SelectContent>
+            {branches.map((branch) => (
+              <SelectItem key={branch.id} value={branch.id.toString()}>
+                {branch.branch_name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
       <Table>
         <TableHeader>
@@ -145,16 +150,16 @@ export default function InventoryManagement() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {products.map((product) => (
+          {product2.map((product) => (
             <TableRow key={product.id}>
-              <TableCell>{product.name}</TableCell>
-              <TableCell>{product.stock[selectedStore] || 0}</TableCell>
+              <TableCell>{product.Product.product_name}</TableCell>
+              <TableCell>{product.stock}</TableCell>
               <TableCell>
                 <Button
                   variant="outline"
                   size="icon"
                   className="mr-2"
-                  onClick={() => openStockUpdateDialog(product)}
+                  onClick={() => openStockUpdateDialog(product, product.stock)}
                 >
                   <Edit className="h-4 w-4" />
                 </Button>
@@ -174,10 +179,10 @@ export default function InventoryManagement() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Update Stock</DialogTitle>
+            <DialogTitle>Update Stock {branchId}</DialogTitle>
             <DialogDescription>
-              Update the stock for {currentProduct?.name} in{' '}
-              {stores.find((store) => store.id === selectedStore)?.name}
+              Update the stock for {currentProduct?.Product.product_name} on{' '}
+              {currentProduct?.Branch.branch_name}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -199,34 +204,6 @@ export default function InventoryManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <h2 className="text-2xl font-bold mt-8 mb-4">Stock Journal</h2>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Date</TableHead>
-            <TableHead>Product</TableHead>
-            <TableHead>Store</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>Quantity</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {stockJournal.map((entry) => (
-            <TableRow key={entry.id}>
-              <TableCell>{entry.date.toLocaleString()}</TableCell>
-              <TableCell>
-                {products.find((p) => p.id === entry.productId)?.name}
-              </TableCell>
-              <TableCell>
-                {stores.find((s) => s.id === entry.storeId)?.name}
-              </TableCell>
-              <TableCell>{entry.type}</TableCell>
-              <TableCell>{entry.quantity}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
     </div>
   );
 }

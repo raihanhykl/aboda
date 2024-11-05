@@ -66,4 +66,31 @@ export class ProductController {
       next(error);
     }
   }
+
+  // Product Management
+  async getAllProductsManagement(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const data = await ProductService.getAllProductsManagement(req);
+      return res.send(responseHandle('Get Product  Success', data));
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getProductStockByBranch(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const data = await ProductService.getProductStockByBranch(req);
+      return res.send(responseHandle('Get Product Stock Success', data));
+    } catch (error) {
+      next(error);
+    }
+  }
 }

@@ -39,8 +39,8 @@ export class ProductService {
           address: true,
           ProductStocks: true,
         },
-        skip: skip,
-        take: limit,
+        // skip: skip,
+        // take: limit,
       });
 
       const shortest: { branch: Branch | undefined; distance: number } = {
@@ -65,7 +65,8 @@ export class ProductService {
 
       const branchesFiltered = await prisma.branch.findMany({
         where: {
-          id: shortest.branch?.id,
+          // id: 1,
+          id: shortest.branch?.id || 1,
           ...productFilter,
         },
         include: {
@@ -81,21 +82,66 @@ export class ProductService {
                 }
               : {}, //
             include: {
-              Product: true,
+              Product: {
+                include: {
+                  image: true,
+                },
+              },
+            },
+            skip: skip,
+            take: limit,
+          },
+        },
+        // skip: skip,
+        // take: limit,
+      });
+
+      // const total = branchesFiltered.reduce(
+      //   (acc, branch) => acc + branch.ProductStocks.length,
+      //   0,
+      // );
+
+      const total = await prisma.productStock.count({
+        where: {
+          // branchId: 1,
+          branchId: shortest.branch?.id,
+          Product: {
+            product_name: {
+              contains: name ? String(name) : '',
             },
           },
         },
-        skip: skip,
-        take: limit,
       });
 
-      const total = branchesFiltered.reduce(
-        (acc, branch) => acc + branch.ProductStocks.length,
-        0,
-      );
+      // const testing = await prisma.branch.findMany({
+      //   where: {
+      //     id: 1,
+      //   },
+      //   include: {
+      //     ProductStocks: {
+      //       where: {
+      //         Product: {
+      //           product_name: {
+      //             contains: '',
+      //           },
+      //         },
+      //       },
+      //       include: {
+      //         Product: {
+      //           include: {
+      //             image: true,
+      //           },
+      //         },
+      //       },
+      //       skip: skip,
+      //       take: limit,
+      //     },
+      //   },
+      // });
 
       return {
         data: branchesFiltered,
+        // data: testing,
         total,
       };
     } catch (error) {
@@ -196,5 +242,98 @@ export class ProductService {
       console.error('Error fetching product details:', error);
       throw new ErrorHandler('Failed to fetch product details', 500);
     }
+  }
+  // Product Management
+  static async getAllProductsManagement(req: Request) {
+    try {
+      const products = await prisma.product.findMany({
+        include: {
+          ProductStocks: {
+            include: {
+              Branch: {
+                select: {
+                  id: true,
+                  branch_name: true,
+                },
+              },
+            },
+          },
+          image: true,
+        },
+      });
+
+      if (products.length === 0) {
+        throw new ErrorHandler('No products found', 404);
+      }
+
+      const formattedProducts = products.map((product) => ({
+        id: product.id,
+        name: product.product_name,
+        description: product.description,
+        price: product.price,
+        category: product.categoryId,
+        images: product.image.map((img) => ({
+          imageUrl: `/images/product/${img.imageUrl}`,
+        })),
+        branches: product.ProductStocks.map((stock) => ({
+          branchId: stock.Branch.id,
+          branchName: stock.Branch.branch_name,
+        })),
+      }));
+
+      return formattedProducts;
+    } catch (error) {
+      console.error('Error fetching all products for management:', error);
+      throw new ErrorHandler('Failed to fetch products for management', 500);
+    }
+  }
+
+  static async getProductStockByBranch(req: Request) {
+    try {
+      let stock;
+      const maxDistance = 10;
+      const { lat, long, productId } = req.query;
+
+      const branches = await prisma.branch.findMany({
+        include: {
+          address: true,
+          ProductStocks: true,
+        },
+      });
+
+      const shortest: { branch: Branch | undefined; distance: number } = {
+        branch: undefined,
+        distance: Infinity,
+      };
+
+      // Filter cabang berdasarkan jarak dan hitung jarak terdekat
+      const nearbyProduct = branches.filter(async (branch) => {
+        const distance = getDistanceFromLatLonInKm(
+          Number(lat),
+          Number(long),
+          branch.address.lat,
+          branch.address.lon,
+        );
+
+        if (distance <= maxDistance && distance < shortest.distance) {
+          shortest.branch = branch;
+          shortest.distance = distance;
+        }
+        console.log(shortest.branch?.id, 'ini id');
+        console.log(shortest.branch?.branch_name);
+        console.log(productId, 'ini product_id');
+      });
+      return await prisma.productStock.findFirst({
+        include: {
+          Branch: true,
+        },
+        where: {
+          branchId: shortest.branch?.id,
+          productId: Number(productId),
+        },
+      });
+
+      return stock;
+    } catch (error) {}
   }
 }

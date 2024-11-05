@@ -93,18 +93,23 @@ export default function SignUp() {
                 </svg>
               </div>
             </div>
-            <Button
-              variant="outline"
-              className="bg-white text-[#1B8057] hover:bg-green-50"
-              onClick={() => {
-                setIsVisible(false);
-                setTimeout(() => {
-                  router.push('/signin');
-                }, 500);
-              }}
-            >
-              SIGN IN
-            </Button>
+            <div className=" w-full">
+              <p className=" text-sm text-gray-100 mb-1">
+                Already have an account?
+              </p>
+              <Button
+                variant="outline"
+                className="bg-white text-[#1B8057] hover:bg-green-50 w-full"
+                onClick={() => {
+                  setIsVisible(false);
+                  setTimeout(() => {
+                    router.push('/signin');
+                  }, 500);
+                }}
+              >
+                SIGN IN
+              </Button>
+            </div>
           </div>
 
           {/* Right side - Sign up form */}

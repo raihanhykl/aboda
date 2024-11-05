@@ -10,6 +10,7 @@ import { set } from 'cypress/types/lodash';
 import ProductCardSkeleton from '@/components/card/skeleton.product';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/state/store';
+import { Branch } from '../shop/page';
 
 export function FeaturedProducts() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -26,7 +27,19 @@ export function FeaturedProducts() {
           `/product?page=1&limit=6&lat=${latitude}&long=${longitude}`,
         );
         const newProducts = response.data.data.data;
-        setProducts(newProducts);
+        const newProducts2 = newProducts[0].ProductStocks.map((stock: any) => ({
+          id: stock.Product.id,
+          branchId: stock.branchId,
+          product_name: stock.Product.product_name,
+          description: stock.Product.description,
+          price: stock.Product.price,
+          weight: stock.Product.weight,
+          stock: stock.stock,
+          image: stock.Product.image[0].imageUrl, // Ensure image is included if available
+          category: stock.Product.categoryId,
+        }));
+        console.log(newProducts2, 'coyyy');
+        setProducts(newProducts2);
         setLoading(false);
       };
 
@@ -57,13 +70,11 @@ export function FeaturedProducts() {
                   <ProductCardSkeleton button={false} />
                 </div>
               ))
-            : products.map((branch: any) =>
-                branch.ProductStocks.map((product: any, index: number) => (
-                  <div key={index} className="flex-none w-64 sm:w-72 md:w-80">
-                    <ProductCard key={product.id} {...product.Product} />
-                  </div>
-                )),
-              )}
+            : products.map((branch: any) => (
+                <div key={branch.id} className="flex-none w-64 sm:w-72 md:w-80">
+                  <ProductCard key={branch.id} {...branch} />
+                </div>
+              ))}
         </div>
       </div>
     </section>

@@ -28,8 +28,8 @@ export default function DeleteUserAddress({ street, id, handler }: any) {
     <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
       <AlertDialogTrigger asChild>
         <Button variant="destructive" size={'sm'}>
-          <Trash2 className="mr-2 h-4 w-4" />
-          Delete Address
+          <Trash2 className=" md:mr-2 h-4 w-4" />
+          <span className=" hidden md:block">Delete Address</span>
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>

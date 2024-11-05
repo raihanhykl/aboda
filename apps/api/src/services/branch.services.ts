@@ -6,6 +6,8 @@ import { Request } from 'express';
 
 export class BranchService {
   static async getAllBranch(req: Request) {
+    console.log(req.user.roleId), 'ini role';
+
     if (req.user.roleId != 2)
       throw new ErrorHandler('Unauthorized, Super Admin only!.', 400);
 

@@ -55,6 +55,9 @@ export default function ProfileMenu({ image, name }: ProfileMenuProps) {
         <DropdownMenuItem onClick={() => router.push('/my-address')}>
           My Address
         </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => router.push('/order')}>
+          My Order
+        </DropdownMenuItem>
         <DropdownMenuItem>Settings</DropdownMenuItem>
         <DropdownMenuSeparator />
         <AlertDialog>

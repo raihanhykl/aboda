@@ -1,27 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { format } from 'date-fns';
+import { Plus, Edit, Trash2, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import {
   Table,
   TableBody,
@@ -33,380 +16,370 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
-import { Calendar } from '@/components/ui/calendar';
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { CalendarIcon } from '@radix-ui/react-icons';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { api } from '@/config/axios.config';
 
-// Validation schema for discount form
-const discountSchema = z.object({
-  id: z.number().optional(),
-  productId: z.string().min(1, { message: 'Product is required' }),
-  discount_type: z.enum(['percentage', 'fixed', 'bogo']),
-  discount_value: z.string().min(1, { message: 'Discount value is required' }),
-  start_date: z.date({ required_error: 'Start date is required' }),
-  end_date: z.date({ required_error: 'End date is required' }),
-});
-
-type Discount = z.infer<typeof discountSchema>;
+type Discount = {
+  id: number;
+  branchId: number;
+  discount_type: 'PERCENTAGE' | 'FIXED' | 'BUY_ONE_GET_ONE';
+  discount_value: number;
+  start_date: string;
+  end_date: string;
+  productId: number | null;
+  min_purchase_amount?: number;
+  max_discount_amount?: number;
+};
 
 type Product = {
   id: number;
-  product_name: string;
+  name: string;
+  price: number;
 };
 
 export default function DiscountManagement() {
   const [discounts, setDiscounts] = useState<Discount[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingDiscount, setEditingDiscount] = useState<Discount | null>(null);
-  const [isBOGO, setIsBOGO] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isDiscountDialogOpen, setIsDiscountDialogOpen] = useState(false);
+  const [currentDiscount, setCurrentDiscount] = useState<Discount | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
-  // Setting up the form with validation
-  const form = useForm<Discount>({
-    resolver: zodResolver(discountSchema),
-    defaultValues: {
-      productId: '',
-      discount_type: 'percentage',
-      discount_value: '',
-      start_date: new Date(),
-      end_date: new Date(),
-    },
-  });
-
-  // Fetch discounts and products on component mount
   useEffect(() => {
     fetchDiscounts();
     fetchProducts();
   }, []);
 
-  // Reset form values when editing a discount
-  useEffect(() => {
-    if (editingDiscount) {
-      form.reset({
-        ...editingDiscount,
-        start_date: new Date(editingDiscount.start_date),
-        end_date: new Date(editingDiscount.end_date),
-      });
-    } else {
-      form.reset();
-    }
-  }, [editingDiscount, form]);
-
-  // Fetch all discounts from the API
-  async function fetchDiscounts() {
-    try {
-      const response = await fetch('/api/discount');
-      if (!response.ok) throw new Error('Failed to fetch discounts');
-      const data = await response.json();
-      setDiscounts(data);
-    } catch (error) {
-      console.error('Failed to fetch discounts:', error);
-      setErrorMessage('Failed to load discounts. Please try again later.');
-    }
-  }
-
-  // Fetch all products from the API
-  async function fetchProducts() {
-    try {
-      const response = await fetch('/api/product');
-      if (!response.ok) throw new Error('Failed to fetch products');
-      const data = await response.json();
-      setProducts(data);
-    } catch (error) {
-      console.error('Failed to fetch products:', error);
-      setErrorMessage('Failed to load products. Please try again later.');
-    }
-  }
-
-  // Handle form submission
-  async function onSubmit(values: Discount) {
+  const fetchDiscounts = async () => {
     setIsLoading(true);
-    setErrorMessage(null); // Reset error message
-
+    setError(null);
     try {
-      const url = editingDiscount
-        ? `/api/discount/${editingDiscount.id}`
-        : '/api/discount';
-      const method = editingDiscount ? 'PUT' : 'POST';
-
-      const response = await fetch(url, {
-        method: method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...values,
-          start_date: values.start_date.toISOString(),
-          end_date: values.end_date.toISOString(),
-          discount_value:
-            values.discount_type === 'bogo' ? '0' : values.discount_value,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to save discount');
-      }
-
-      console.log(
-        `${editingDiscount ? 'Discount updated' : 'Discount created'} successfully.`,
-      );
-      setIsDialogOpen(false);
-      setEditingDiscount(null);
-      form.reset();
-      fetchDiscounts();
+      const response = await api.get('/discount');
+      console.log(response.data, 'ini response discount');
+      setDiscounts(response.data);
     } catch (error) {
-      console.error('Failed to save discount:', error);
-      setErrorMessage(
-        error instanceof Error ? error.message : 'An error occurred.',
-      );
+      console.error('Error fetching discounts:', error);
+      setError('Failed to fetch discounts. Please try again.');
     } finally {
       setIsLoading(false);
     }
-  }
+  };
 
-  // Handle discount deletion
-  async function deleteDiscount(id: number) {
-    if (!confirm('Are you sure you want to delete this discount?')) return;
+  const fetchProducts = async () => {
+    try {
+      const response = await api.get('/product/all');
+      console.log(response.data, 'ini response product');
+      setProducts(response.data.data);
+    } catch (error) {
+      console.error('Failed to fetch products:', error);
+    }
+  };
+
+  const handleDiscountSubmit = async (
+    event: React.FormEvent<HTMLFormElement>,
+  ) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const productId = formData.get('productId') as string;
+    const discountData = {
+      branchId: Number(formData.get('branchId')),
+      discount_type: formData.get('discount_type') as
+        | 'PERCENTAGE'
+        | 'FIXED'
+        | 'BUY_ONE_GET_ONE',
+      discount_value: Number(formData.get('discount_value')),
+      start_date: formData.get('start_date') as string,
+      end_date: formData.get('end_date') as string,
+      productId: productId === 'all' ? null : Number(productId),
+      min_purchase_amount: formData.get('min_purchase_amount')
+        ? Number(formData.get('min_purchase_amount'))
+        : undefined,
+      max_discount_amount: formData.get('max_discount_amount')
+        ? Number(formData.get('max_discount_amount'))
+        : undefined,
+    };
 
     try {
-      const response = await fetch(`/api/discount/${id}`, {
-        method: 'DELETE',
-      });
+      if (currentDiscount) {
+        await api.put(`/discount/${currentDiscount.id}`, discountData);
+      } else {
+        await api.post('/discount', discountData);
+      }
+      fetchDiscounts();
+      setIsDiscountDialogOpen(false);
+    } catch (error) {
+      console.error('Error submitting discount:', error);
+      setError('Failed to submit discount. Please try again.');
+    }
+  };
 
-      if (!response.ok) throw new Error('Failed to delete discount');
-
-      console.log('The discount has been deleted successfully.');
+  const deleteDiscount = async (discountId: number) => {
+    try {
+      await api.delete(`/discount/${discountId}`);
       fetchDiscounts();
     } catch (error) {
-      console.error('Failed to delete discount:', error);
-      setErrorMessage('Failed to delete the discount. Please try again later.');
+      console.error('Error deleting discount:', error);
+      setError('Failed to delete discount. Please try again.');
     }
+  };
+
+  const filteredDiscounts = discounts.filter((discount) =>
+    discount.productId
+      ? products
+          .find((p) => p.id === discount.productId)
+          ?.name.toLowerCase()
+          .includes(searchTerm.toLowerCase())
+      : true,
+  );
+
+  if (isLoading) {
+    return <div className="text-center p-4">Loading...</div>;
   }
 
   return (
-    <div className="container mx-auto py-10">
-      <h1 className="text-2xl font-bold mb-5">Discount Management</h1>
-      {errorMessage && <div className="text-red-500 mb-4">{errorMessage}</div>}
+    <div className="container mx-auto p-4 sm:p-6 lg:p-8">
+      <h1 className="text-2xl sm:text-3xl font-bold mb-6">
+        Discount Management
+      </h1>
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogTrigger asChild>
-          <Button onClick={() => setEditingDiscount(null)} className="mb-5">
-            Create Discount
-          </Button>
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-[425px]">
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      <div className="flex justify-between items-center mb-4">
+        <div className="relative"></div>
+        <Button
+          onClick={() => {
+            setCurrentDiscount(null);
+            setIsDiscountDialogOpen(true);
+          }}
+        >
+          <Plus className="mr-2 h-4 w-4" /> Add Discount
+        </Button>
+      </div>
+
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Type</TableHead>
+              <TableHead>Value</TableHead>
+              <TableHead>Start Date</TableHead>
+              <TableHead>End Date</TableHead>
+              <TableHead>Product</TableHead>
+              <TableHead>Min Purchase</TableHead>
+              <TableHead>Max Discount</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredDiscounts.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center">
+                  No discounts available.
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredDiscounts.map((discount) => (
+                <TableRow key={discount.id}>
+                  <TableCell>{discount.discount_type}</TableCell>
+                  <TableCell>{discount.discount_value}</TableCell>
+                  <TableCell>
+                    {new Date(discount.start_date).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    {new Date(discount.end_date).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    {discount.productId
+                      ? products.find((p) => p.id === discount.productId)?.name
+                      : 'All Products'}
+                  </TableCell>
+                  <TableCell>{discount.min_purchase_amount || 'N/A'}</TableCell>
+                  <TableCell>{discount.max_discount_amount || 'N/A'}</TableCell>
+                  <TableCell>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setCurrentDiscount(discount);
+                        setIsDiscountDialogOpen(true);
+                      }}
+                      className="mr-2"
+                    >
+                      <Edit className="mr-2 h-4 w-4" /> Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => deleteDiscount(discount.id)}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" /> Delete
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <Dialog
+        open={isDiscountDialogOpen}
+        onOpenChange={setIsDiscountDialogOpen}
+      >
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingDiscount ? 'Edit Discount' : 'Create Discount'}
+              {currentDiscount ? 'Edit Discount' : 'Add Discount'}
             </DialogTitle>
           </DialogHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              <FormField
-                control={form.control}
-                name="productId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Product</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a product" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {products.map((product) => (
-                          <SelectItem
-                            key={product.id}
-                            value={product.id.toString()}
-                          >
-                            {product.product_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="discount_type"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Discount Type</FormLabel>
-                    <Select
-                      onValueChange={(value) => {
-                        field.onChange(value);
-                        setIsBOGO(value === 'bogo');
-                      }}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select discount type" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="percentage">Percentage</SelectItem>
-                        <SelectItem value="fixed">Fixed Amount</SelectItem>
-                        <SelectItem value="bogo">Buy One Get One</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="discount_value"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Discount Value {isBOGO && '(Set value to 0)'}
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        type="text"
-                        placeholder={isBOGO ? '0' : 'Enter value'}
-                        {...field}
-                        disabled={isBOGO}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="start_date"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Start Date</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full">
-                          <CalendarIcon className="mr-2" />
-                          {format(field.value, 'PPP')}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent>
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onDayClick={(day) => {
-                            field.onChange(day);
-                          }}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="end_date"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>End Date</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full">
-                          <CalendarIcon className="mr-2" />
-                          {format(field.value, 'PPP')}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent>
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onDayClick={(day) => {
-                            field.onChange(day);
-                          }}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </FormItem>
-                )}
-              />
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? 'Saving...' : 'Save Discount'}
+          <form onSubmit={handleDiscountSubmit}>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="discount_type" className="text-right">
+                  Type
+                </Label>
+                <Select
+                  name="discount_type"
+                  defaultValue={currentDiscount?.discount_type}
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Select discount type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PERCENTAGE">Percentage</SelectItem>
+                    <SelectItem value="FIXED">Fixed Amount</SelectItem>
+                    <SelectItem value="BUY_ONE_GET_ONE">
+                      Buy One Get One
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="discount_value" className="text-right">
+                  Value
+                </Label>
+                <Input
+                  id="discount_value"
+                  name="discount_value"
+                  type="number"
+                  defaultValue={currentDiscount?.discount_value}
+                  className="col-span-3"
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="start_date" className="text-right">
+                  Start Date
+                </Label>
+                <Input
+                  id="start_date"
+                  name="start_date"
+                  type="date"
+                  defaultValue={currentDiscount?.start_date?.split('T')[0]}
+                  className="col-span-3"
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="end_date" className="text-right">
+                  End Date
+                </Label>
+                <Input
+                  id="end_date"
+                  name="end_date"
+                  type="date"
+                  defaultValue={currentDiscount?.end_date?.split('T')[0]}
+                  className="col-span-3"
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="productId" className="text-right">
+                  Product
+                </Label>
+                <Select
+                  name="productId"
+                  defaultValue={currentDiscount?.productId?.toString() || 'all'}
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Select a product (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Products</SelectItem>
+                    {products.map((product) => (
+                      <SelectItem
+                        key={product.id}
+                        value={product.id.toString()}
+                      >
+                        {product.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="min_purchase_amount" className="text-right">
+                  Min Purchase
+                </Label>
+                <Input
+                  id="min_purchase_amount"
+                  name="min_purchase_amount"
+                  type="number"
+                  defaultValue={currentDiscount?.min_purchase_amount}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="max_discount_amount" className="text-right">
+                  Max Discount
+                </Label>
+                <Input
+                  id="max_discount_amount"
+                  name="max_discount_amount"
+                  type="number"
+                  defaultValue={currentDiscount?.max_discount_amount}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="branchId" className="text-right">
+                  Branch ID
+                </Label>
+                <Input
+                  id="branchId"
+                  name="branchId"
+                  type="number"
+                  defaultValue={currentDiscount?.branchId}
+                  className="col-span-3"
+                  required
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="submit">
+                {currentDiscount ? 'Update Discount' : 'Add Discount'}
               </Button>
-            </form>
-          </Form>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
-
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Product</TableHead>
-            <TableHead>Discount Type</TableHead>
-            <TableHead>Discount Value</TableHead>
-            <TableHead>Start Date</TableHead>
-            <TableHead>End Date</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {discounts.map((discount) => (
-            <TableRow key={discount.id}>
-              <TableCell>
-                {
-                  products.find((p) => p.id === +discount.productId)
-                    ?.product_name
-                }
-              </TableCell>
-              <TableCell>{discount.discount_type}</TableCell>
-              <TableCell>{discount.discount_value}</TableCell>
-              <TableCell>
-                {format(new Date(discount.start_date), 'PPP')}
-              </TableCell>
-              <TableCell>
-                {format(new Date(discount.end_date), 'PPP')}
-              </TableCell>
-              <TableCell>
-                <Button
-                  onClick={() => {
-                    setEditingDiscount(discount);
-                    setIsDialogOpen(true);
-                  }}
-                >
-                  Edit
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() => {
-                    if (discount.id !== undefined) {
-                      deleteDiscount(discount.id);
-                    } else {
-                      console.error('Discount ID is undefined, cannot delete.');
-                    }
-                  }}
-                >
-                  Delete
-                </Button>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
     </div>
   );
 }

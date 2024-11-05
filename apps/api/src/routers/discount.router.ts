@@ -22,6 +22,8 @@ export class DiscountRouter {
 
     // Delete a discount
     this.router.delete('/:id', validateToken, this.discountController.delete);
+
+    this.router.get('/get-product', this.discountController.getSelectedProduct);
   }
 
   public getRouter() {

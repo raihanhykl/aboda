@@ -5,6 +5,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Minus, Plus } from 'lucide-react';
 import { api } from '@/config/axios.config';
 import Image from 'next/image';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/state/store';
+import { useToast } from '@/hooks/use-toast';
+import { useSession } from 'next-auth/react';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '@/state/store'; // Adjust the path based on your project structure
+import { fetchCart, selectCart } from '@/state/cart/cartSlice';
 
 type Props = {
   params: {
@@ -15,6 +22,63 @@ type Props = {
 export default function ProductPage({ params }: Props) {
   const [quantity, setQuantity] = useState(1);
   const [product, setProduct] = useState<any>(null);
+  const [productStock, setProductStock] = useState<any>(null);
+  const { toast } = useToast();
+  const session = useSession();
+  const dispatch = useDispatch<AppDispatch>();
+  const cart = useSelector(selectCart);
+  // const session = useSession();
+
+  const { longitude, latitude } = useSelector(
+    (state: RootState) => state.position,
+  );
+
+  const handleAddToCart = async () => {
+    try {
+      // const res = await api.post('/cart/add', {
+      //   productStockId: productStock.id,
+      //   quantityInput: quantity,
+      // });
+
+      const res = await api.post(
+        '/cart/add',
+        { productStockId: productStock.id, quantityInput: quantity },
+        {
+          headers: {
+            Authorization: 'Bearer ' + session.data?.user?.access_token,
+          },
+        },
+      );
+      if (session.data?.user?.access_token) {
+        dispatch(fetchCart(session.data.user.access_token));
+      }
+
+      toast({
+        description: 'Product added to cart successfully',
+      });
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (latitude != 0 || longitude != 0) {
+      const fetchMoreProducts = async () => {
+        // Replace this with your actual API call
+        console.log(latitude, longitude, 'ini ya');
+
+        const response = await api.get(
+          `/product/get-branch?lat=${latitude}&long=${longitude}&productId=${params.product_id}`,
+        );
+
+        console.log(response.data.data, 'ini response.data');
+
+        setProductStock(response.data.data);
+      };
+
+      fetchMoreProducts();
+    }
+  }, [longitude, latitude]);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -69,12 +133,12 @@ export default function ProductPage({ params }: Props) {
       <div className="flex flex-col md:flex-row gap-8">
         <div className="md:w-1/2">
           {/* Product Image */}
-          {product.images && product.images.length > 0 ? (
+          {product.image && product.image.length > 0 ? (
             <Image
               width={500}
               height={500}
               // src={product.images[0].imageUrl} // Display main product image
-              src={`http://localhost:8000/product/${product.images[0].imageUrl}`}
+              src={`http://localhost:8000/product/${product.image[0].imageUrl}`}
               alt={product.product_name}
               className="aspect-square object-cover mb-4"
             />
@@ -111,6 +175,13 @@ export default function ProductPage({ params }: Props) {
           </div>
 
           <p className="text-gray-600 mb-6">{product.description}</p>
+          <p className="text-gray-600 mb-2">
+            Branch:{' '}
+            {productStock?.Branch?.branch_name || 'Branch not available'}
+          </p>
+          <p className="text-gray-600 mb-6">
+            Stock: {productStock?.stock ?? 'Stock not available'}
+          </p>
 
           <div className="flex items-center mb-6">
             <Button variant="outline" size="icon" onClick={decrementQuantity}>
@@ -122,7 +193,13 @@ export default function ProductPage({ params }: Props) {
             </Button>
           </div>
 
-          <Button className="bg-green-600 hover:bg-green-700">
+          <Button
+            className="bg-green-600 hover:bg-green-700"
+            onClick={handleAddToCart}
+            disabled={
+              session.status !== 'authenticated' || productStock?.stock <= 0
+            } // Disables if the user is not logged in
+          >
             Add To Cart
           </Button>
         </div>

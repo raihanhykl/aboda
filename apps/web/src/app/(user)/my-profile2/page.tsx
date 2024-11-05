@@ -64,7 +64,7 @@ export default function MyProfile() {
           }`,
       );
     }
-  }, [session?.data?.user]);
+  }, [session]);
 
   const onSubmit = async (data: z.infer<typeof editProfileSchema>) => {
     setIsSubmitting(true);

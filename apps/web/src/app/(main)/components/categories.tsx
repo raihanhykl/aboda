@@ -88,7 +88,7 @@ import { api } from '@/config/axios.config';
 import { useState, useEffect } from 'react';
 
 type Category = {
-  id: number; // Assuming there's an id in your category object
+  id: number;
   name: string;
   productCount: number;
   image: string;
@@ -103,8 +103,8 @@ export default function FeaturedCategories() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await api.get('/category'); // Adjust the endpoint as necessary
-        setCategories(response.data); // Adjust based on your response structure
+        const response = await api.get('/category');
+        setCategories(response.data.data);
       } catch (err) {
         setError('Failed to fetch categories');
       } finally {
@@ -142,7 +142,7 @@ export default function FeaturedCategories() {
           {categories.map((category) => (
             <Link
               href={`/shop/${category.slug}`}
-              key={category.id} // Use unique identifier for the key
+              key={category.id}
               className="group"
             >
               <div className="flex flex-col items-center">
@@ -158,9 +158,6 @@ export default function FeaturedCategories() {
                 <h3 className="text-md font-semibold text-center">
                   {category.name}
                 </h3>
-                <p className="text-sm text-gray-500">
-                  {category.productCount} Products
-                </p>
               </div>
             </Link>
           ))}

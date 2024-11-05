@@ -9,8 +9,6 @@ export async function middleware(request: NextRequest) {
   const session = await auth();
   const user = session?.user;
   const { pathname } = request.nextUrl;
-
-  console.log(user, 'ini userrrrrr');
   // if (session?.user.access_token) {
   //   console.log('masukkk refresh');
   //   // await signIn('credentials', {
@@ -30,6 +28,9 @@ export async function middleware(request: NextRequest) {
     ) {
       return NextResponse.redirect(new URL('/my-order', request.url));
     }
+  }
+  if (user?.roleId == 1 && pathname.startsWith('/admin-dashboard')) {
+    return NextResponse.redirect(new URL('/', request.url));
   }
   if (user?.roleId == 2) {
     if (
@@ -86,5 +87,6 @@ export const config = {
     '/my-order',
     '/all-branch-orders',
     '/branch-orders',
+    '/admin-dashboard/:path*',
   ],
 };

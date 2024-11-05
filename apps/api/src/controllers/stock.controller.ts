@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { StockService } from '@/services/stock.services';
+import { responseHandle } from '@/helpers/response';
 
 export class StockController {
   static async getStockByBranch(
@@ -37,6 +38,14 @@ export class StockController {
     try {
       const deletedStock = await StockService.deleteStock(req);
       res.json(deletedStock);
+    } catch (error) {
+      next(error);
+    }
+  }
+  async getHistory(req: Request, res: Response, next: NextFunction) {
+    try {
+      const getHistory = await StockService.getHistory(req);
+      res.json(getHistory);
     } catch (error) {
       next(error);
     }

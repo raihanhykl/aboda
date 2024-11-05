@@ -81,7 +81,7 @@ export class AuthService {
             email: email,
           },
         });
-        if (user) throw new ErrorHandler('User already exists coy', 400);
+        if (user) throw new ErrorHandler('User already exists!', 400);
         const data: Prisma.UserCreateInput = {
           first_name,
           last_name: last_name || '',

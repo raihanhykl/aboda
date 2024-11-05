@@ -6,11 +6,25 @@ import { Request } from 'express';
 export class CartService {
   static async countCart(req: Request) {
     try {
-      return await prisma.cart.count({
+      const count = await prisma.cart.count({
         where: {
           userId: Number(req.user.id),
         },
       });
+      const branch = await prisma.cart.findFirst({
+        where: {
+          userId: Number(req.user.id),
+        },
+        include: {
+          ProductStock: {
+            include: {
+              Branch: true,
+            },
+          },
+        },
+      });
+
+      return { count, branch };
     } catch (error) {}
   }
   static async getCart(req: Request) {
@@ -38,7 +52,7 @@ export class CartService {
   static async addToCart(req: Request) {
     try {
       const { productStockId, quantityInput } = req.body;
-
+      let addedCart;
       if (!req.user || !req.user.is_verified) {
         throw new ErrorHandler(
           'User belum terverifikasi atau tidak teregistrasi',
@@ -105,7 +119,7 @@ export class CartService {
           );
         }
 
-        await prisma.cart.update({
+        addedCart = await prisma.cart.update({
           where: {
             id: existingCartItem.id,
           },
@@ -114,7 +128,7 @@ export class CartService {
           },
         });
       } else {
-        await prisma.cart.create({
+        addedCart = await prisma.cart.create({
           data: {
             quantity: quantityInput,
             ProductStock: {
@@ -131,7 +145,10 @@ export class CartService {
         });
       }
 
-      return { message: 'Produk berhasil ditambahkan ke keranjang' };
+      return {
+        data: addedCart,
+        message: 'Produk berhasil ditambahkan ke keranjang',
+      };
     } catch (error) {
       throw new ErrorHandler(
         'Terjadi kesalahan saat menambahkan ke keranjang',

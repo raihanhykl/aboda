@@ -11,7 +11,12 @@ export class ProductRouter {
   }
 
   private routes() {
+    this.router.get(
+      '/get-branch',
+      this.productController.getProductStockByBranch,
+    );
     this.router.get('/', this.productController.getAllProducts);
+    this.router.get('/all', this.productController.getAllProductsManagement);
     this.router.get('/search', this.productController.searchProducts);
     this.router.post(
       '/',
@@ -23,7 +28,7 @@ export class ProductRouter {
     this.router.put(
       '/:id',
       validateToken,
-      this.imageUploader.single('image'),
+      Uploader('product', 'product').single('image'),
       this.productController.updateProduct,
     );
     this.router.delete(

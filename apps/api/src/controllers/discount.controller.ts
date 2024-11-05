@@ -43,4 +43,13 @@ export class DiscountController {
       next(error);
     }
   }
+
+  async getSelectedProduct(req: Request, res: Response, next: NextFunction) {
+    try {
+      const deletedDiscount = await DiscountService.getSelectedProduct(req);
+      res.json(deletedDiscount);
+    } catch (error) {
+      next(error);
+    }
+  }
 }
