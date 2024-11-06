@@ -60,6 +60,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { BASE_API_URL } from '@/config';
 import { identity } from 'cypress/types/lodash';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -90,7 +91,7 @@ export default function ProductCard({
       <Card className="overflow-hidden" key={id}>
         <CardHeader className="p-0">
           <Image
-            src={`http://localhost:8000/product/${image}`}
+            src={`${BASE_API_URL}/product/${image}`}
             alt={product_name}
             width={400}
             height={200}

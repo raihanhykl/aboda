@@ -56,7 +56,6 @@ export class ProductService {
           branch.address.lat,
           branch.address.lon,
         );
-
         if (distance <= maxDistance && distance < shortest.distance) {
           shortest.branch = branch;
           shortest.distance = distance;
@@ -66,7 +65,7 @@ export class ProductService {
       const branchesFiltered = await prisma.branch.findMany({
         where: {
           // id: 1,
-          id: shortest.branch?.id || 1,
+          id: shortest.branch?.id || 0,
           ...productFilter,
         },
         include: {
@@ -104,7 +103,7 @@ export class ProductService {
       const total = await prisma.productStock.count({
         where: {
           // branchId: 1,
-          branchId: shortest.branch?.id,
+          branchId: shortest.branch?.id || 0,
           Product: {
             product_name: {
               contains: name ? String(name) : '',

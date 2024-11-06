@@ -12,6 +12,7 @@ import { useSession } from 'next-auth/react';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/state/store'; // Adjust the path based on your project structure
 import { fetchCart, selectCart } from '@/state/cart/cartSlice';
+import { BASE_API_URL } from '@/config';
 
 type Props = {
   params: {
@@ -138,7 +139,7 @@ export default function ProductPage({ params }: Props) {
               width={500}
               height={500}
               // src={product.images[0].imageUrl} // Display main product image
-              src={`http://localhost:8000/product/${product.image[0].imageUrl}`}
+              src={`${BASE_API_URL}/product/${product.image[0].imageUrl}`}
               alt={product.product_name}
               className="aspect-square object-cover mb-4"
             />
@@ -159,8 +160,7 @@ export default function ProductPage({ params }: Props) {
                 />
               </div>
             ))}
-          </div>
-         */}
+          </div> */}
         </div>
 
         <div className="md:w-1/2">
@@ -197,7 +197,9 @@ export default function ProductPage({ params }: Props) {
             className="bg-green-600 hover:bg-green-700"
             onClick={handleAddToCart}
             disabled={
-              session.status !== 'authenticated' || productStock?.stock <= 0
+              session.status !== 'authenticated' ||
+              productStock?.stock <= 0 ||
+              session.data.user.roleId !== 1
             } // Disables if the user is not logged in
           >
             Add To Cart

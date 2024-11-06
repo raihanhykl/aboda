@@ -112,6 +112,7 @@ model Category {
   name     String
   image    String    @default("")
   Products Product[]
+  isActive Int       @default(1)
 
   @@map("categories")
 }
@@ -147,6 +148,7 @@ model Product {
   storeAdminId  Int            @default(0)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+  isActive      Int            @default(1)
 
   @@map("products")
 }
@@ -230,6 +232,7 @@ model Discount {
   discount_value Int
   start_date     DateTime
   end_date       DateTime
+  isActive       Int          @default(1)
   Product        Product?     @relation(fields: [productId], references: [id])
   productId      Int?
   Branch         Branch       @relation(fields: [branchId], references: [id])

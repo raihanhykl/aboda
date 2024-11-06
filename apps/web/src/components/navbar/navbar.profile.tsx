@@ -21,6 +21,7 @@ import {
 import { actionLogout } from '@/action/auth.action';
 import { useRouter } from 'next/navigation';
 import MyProfile from '@/app/(user)/my-profile/component/my-profile';
+import { BASE_API_URL } from '@/config';
 
 interface ProfileMenuProps {
   image?: string;
@@ -31,16 +32,17 @@ export default function ProfileMenu({ image, name }: ProfileMenuProps) {
   const displayName = name || 'User';
   const initials = displayName.charAt(0).toUpperCase();
   const router = useRouter();
-
+  let avatar = `${BASE_API_URL}/profile/${image}`;
+  if (image?.startsWith('http')) {
+    avatar = image;
+  }
+  //  `http://localhost:8000/profile/${image}`
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild className=" bg-[#1B8057]">
         <Button variant="outline" className="flex items-center gap-2 px-3 py-2">
           <Avatar className="w-6 h-6">
-            <AvatarImage
-              src={`http://localhost:8000/profile/${image}`}
-              alt={displayName}
-            />
+            <AvatarImage src={avatar} alt={displayName} />
             <AvatarFallback className=" text-[#1B8057]">
               {initials}
             </AvatarFallback>

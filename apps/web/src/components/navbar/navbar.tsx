@@ -68,6 +68,7 @@ export default function Navbar() {
     );
 
   useEffect(() => {
+    if (!session.data?.user) return;
     getCurrentPosition();
     const fetchAddresses = async () => {
       api

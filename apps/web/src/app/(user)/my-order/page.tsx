@@ -147,11 +147,6 @@ export default function EnhancedCustomerOrderList() {
 
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
 
-  // useEffect(() => {
-
-  //   fetchOrders();
-  // }, [session]);
-
   const filteredOrders = orders.filter(
     (order) =>
       (statusFilter === 'all' || order.status === statusFilter) &&
@@ -420,7 +415,7 @@ export default function EnhancedCustomerOrderList() {
               No orders found
             </h3>
             <p className="mt-1 text-sm text-gray-500">
-              Try adjusting your search or filter to find what you're looking
+              Try adjusting your search or filter to find what you are looking
               for.
             </p>
           </div>
@@ -531,21 +526,6 @@ export default function EnhancedCustomerOrderList() {
                       ) : null}
                       {order.status === 'shipped' ? (
                         <div className="py-1">
-                          {/* <Button
-                            className="ml mr-3"
-                            variant="outline"
-                            onClick={() =>
-                              handleCheckout(
-                                order.invoice,
-                                order.total_price,
-                                order.payment_method,
-                                order.midtrans_token,
-                              )
-                            }
-                          >
-                            Pay Now
-                          </Button> */}
-
                           <AlertModal
                             onConfirm={() => handleConfirm(order.invoice)}
                             triggerText="Confirm Order"

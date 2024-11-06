@@ -272,24 +272,35 @@ export default function ProductManagement() {
                         }
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
-                        {prod.images.length} images
+                        <div className="flex flex-wrap gap-1">
+                          {prod.images.map((image, index) => (
+                            <img
+                              key={index}
+                              src={image}
+                              alt="product"
+                              className="h-8 w-8 rounded-md object-cover"
+                            />
+                          ))}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Button
-                          variant="outline"
                           onClick={() => {
                             setCurrentProduct(prod);
+                            setPreviewImages(prod.images);
                             setIsProductDialogOpen(true);
                           }}
+                          size="icon"
+                          variant="ghost"
                         >
-                          <Edit className="mr-2 h-4 w-4" /> Edit
+                          <Edit className="h-4 w-4" />
                         </Button>
                         <Button
-                          variant="outline"
-                          className="ml-2"
                           onClick={() => deleteProduct(prod.id)}
+                          size="icon"
+                          variant="ghost"
                         >
-                          <Trash2 className="mr-2 h-4 w-4" /> Delete
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -298,6 +309,107 @@ export default function ProductManagement() {
               </TableBody>
             </Table>
           </div>
+
+          <Dialog
+            open={isProductDialogOpen}
+            onOpenChange={setIsProductDialogOpen}
+          >
+            <DialogContent>
+              <form onSubmit={handleProductSubmit}>
+                <DialogHeader>
+                  <DialogTitle>
+                    {currentProduct ? 'Edit Product' : 'Add Product'}
+                  </DialogTitle>
+                </DialogHeader>
+
+                <div className="grid gap-4 py-4">
+                  <Label htmlFor="name">Name</Label>
+                  <Input
+                    id="name"
+                    name="name"
+                    defaultValue={currentProduct?.name || ''}
+                    required
+                  />
+
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    name="description"
+                    defaultValue={currentProduct?.description || ''}
+                    required
+                  />
+
+                  <Label htmlFor="price">Price</Label>
+                  <Input
+                    type="number"
+                    id="price"
+                    name="price"
+                    defaultValue={currentProduct?.price || ''}
+                    required
+                  />
+
+                  <Label htmlFor="categoryId">Category</Label>
+                  <select
+                    id="categoryId"
+                    name="categoryId"
+                    defaultValue={currentProduct?.categoryId || ''}
+                    required
+                    className="border border-gray-300 rounded px-3 py-2 w-full"
+                  >
+                    {category.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+
+                  <Label>Images</Label>
+                  <div className="space-y-2">
+                    <Input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                    />
+                    <div className="flex flex-wrap gap-2">
+                      {previewImages.map((image, index) => (
+                        <div
+                          key={index}
+                          className="relative h-16 w-16 overflow-hidden rounded-md"
+                        >
+                          <img
+                            src={image}
+                            alt="product-preview"
+                            className="h-full w-full object-cover"
+                          />
+                          <button
+                            type="button"
+                            className="absolute right-0 top-0 m-1 rounded-full bg-red-500 p-1 text-white"
+                            onClick={() =>
+                              index < currentProduct?.images.length
+                                ? removeExistingImage(index)
+                                : removeImage(
+                                    index -
+                                      (currentProduct?.images.length || 0),
+                                  )
+                            }
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <DialogFooter>
+                  <Button type="submit">
+                    {currentProduct ? 'Update Product' : 'Create Product'}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
         <TabsContent value="category">
@@ -332,20 +444,21 @@ export default function ProductManagement() {
                       <TableCell>{cat.name}</TableCell>
                       <TableCell>
                         <Button
-                          variant="outline"
                           onClick={() => {
                             setCurrentCategory(cat);
                             setIsCategoryDialogOpen(true);
                           }}
+                          size="icon"
+                          variant="ghost"
                         >
-                          <Edit className="mr-2 h-4 w-4" /> Edit
+                          <Edit className="h-4 w-4" />
                         </Button>
                         <Button
-                          variant="outline"
-                          className="ml-2"
                           onClick={() => deleteCategory(cat.id)}
+                          size="icon"
+                          variant="ghost"
                         >
-                          <Trash2 className="mr-2 h-4 w-4" /> Delete
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -354,163 +467,39 @@ export default function ProductManagement() {
               </TableBody>
             </Table>
           </div>
+
+          <Dialog
+            open={isCategoryDialogOpen}
+            onOpenChange={setIsCategoryDialogOpen}
+          >
+            <DialogContent>
+              <form onSubmit={handleCategorySubmit}>
+                <DialogHeader>
+                  <DialogTitle>
+                    {currentCategory ? 'Edit Category' : 'Add Category'}
+                  </DialogTitle>
+                </DialogHeader>
+
+                <div className="grid gap-4 py-4">
+                  <Label htmlFor="categoryName">Name</Label>
+                  <Input
+                    id="categoryName"
+                    name="name"
+                    defaultValue={currentCategory?.name || ''}
+                    required
+                  />
+                </div>
+
+                <DialogFooter>
+                  <Button type="submit">
+                    {currentCategory ? 'Update Category' : 'Create Category'}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         </TabsContent>
       </Tabs>
-
-      {/* Product Dialog */}
-      <Dialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {currentProduct ? 'Edit Product' : 'Add Product'}
-            </DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleProductSubmit}>
-            <div className="grid gap-4">
-              <div>
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  defaultValue={currentProduct?.name}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  name="description"
-                  defaultValue={currentProduct?.description}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="price">Price</Label>
-                <Input
-                  type="number"
-                  id="price"
-                  name="price"
-                  defaultValue={currentProduct?.price}
-                  required
-                  step="0.01"
-                />
-              </div>
-              <div>
-                <Label htmlFor="categoryId">Category</Label>
-                <select
-                  id="categoryId"
-                  name="categoryId"
-                  defaultValue={currentProduct?.categoryId}
-                  required
-                >
-                  <option value="" disabled>
-                    Select a category
-                  </option>
-                  {category.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <Label>Images</Label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleImageUpload}
-                />
-                <div className="flex flex-wrap mt-2">
-                  {previewImages.map((image, index) => (
-                    <div key={index} className="relative w-24 h-24 mr-2 mb-2">
-                      <img
-                        src={image}
-                        alt={`Preview ${index}`}
-                        className="object-cover w-full h-full rounded"
-                      />
-                      <button
-                        type="button"
-                        className="absolute top-0 right-0 text-red-500"
-                        onClick={() => removeImage(index)}
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                {currentProduct &&
-                  currentProduct.images.map((image, index) => (
-                    <div key={index} className="relative w-24 h-24 mr-2 mb-2">
-                      <img
-                        src={image}
-                        alt={`Existing ${index}`}
-                        className="object-cover w-full h-full rounded"
-                      />
-                      <button
-                        type="button"
-                        className="absolute top-0 right-0 text-red-500"
-                        onClick={() => removeExistingImage(index)}
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ))}
-              </div>
-            </div>
-            <DialogFooter>
-              <Button type="submit">
-                {currentProduct ? 'Update Product' : 'Add Product'}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setIsProductDialogOpen(false)}
-              >
-                Cancel
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Category Dialog */}
-      <Dialog
-        open={isCategoryDialogOpen}
-        onOpenChange={setIsCategoryDialogOpen}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {currentCategory ? 'Edit Category' : 'Add Category'}
-            </DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleCategorySubmit}>
-            <div className="grid gap-4">
-              <div>
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  defaultValue={currentCategory?.name}
-                  required
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button type="submit">
-                {currentCategory ? 'Update Category' : 'Add Category'}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setIsCategoryDialogOpen(false)}
-              >
-                Cancel
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

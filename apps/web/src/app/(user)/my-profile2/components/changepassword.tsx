@@ -122,7 +122,10 @@ export default function ChangePasswordButton() {
   return (
     <>
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogTrigger asChild>
+        <DialogTrigger
+          asChild
+          className={`${session.data?.user.provider ? 'hidden' : ''}`}
+        >
           <Button variant="default">Change Password</Button>
         </DialogTrigger>
         <DialogContent className="sm:max-w-[425px] w-[95%] max-w-md mx-auto">

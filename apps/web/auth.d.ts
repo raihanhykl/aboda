@@ -11,6 +11,7 @@ declare module 'next-auth' {
     UserDetails: IUserDetails;
     roleId: number | undefined;
     access_token: string;
+    provider: string | undefined;
   }
 
   interface IUserDetails {

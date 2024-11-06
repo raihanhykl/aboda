@@ -9,6 +9,7 @@ export interface IUser {
   is_verified: number;
   roleId: number;
   is_forgot: number;
+  provider: string;
 }
 
 export interface IUserDetail {

@@ -198,7 +198,7 @@ export class AuthService {
   static async socialRegister(req: Request) {
     return await prisma.$transaction(async (prisma) => {
       try {
-        const { email, provider, first_name, last_name, phone_number } =
+        const { email, provider, first_name, last_name, phone_number, image } =
           req.body;
         let user = await prisma.user.findFirst({
           include: {
@@ -230,6 +230,7 @@ export class AuthService {
               },
               provider,
               is_verified: 1,
+              image: image || '',
             },
           });
 

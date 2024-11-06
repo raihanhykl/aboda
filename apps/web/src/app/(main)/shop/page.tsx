@@ -127,7 +127,6 @@ export default function ShopPage() {
   const debouncedSearch = debounce(performSearch, 500);
 
   useEffect(() => {
-    // performSearch();
     debouncedSearch();
   }, [currentPage, longitude, latitude, searchQuery]);
 
@@ -192,13 +191,19 @@ export default function ShopPage() {
             </Select>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {isLoading
-              ? Array.from({ length: 6 }).map((_, index) => (
-                  <ProductCardSkeleton key={index} />
-                ))
-              : products.map((product: any) => (
-                  <ProductCard key={product.id} {...product} />
-                ))}
+            {isLoading ? (
+              Array.from({ length: 6 }).map((_, index) => (
+                <ProductCardSkeleton key={index} />
+              ))
+            ) : products.length > 0 ? (
+              products.map((product: any) => (
+                <ProductCard key={product.id} {...product} />
+              ))
+            ) : (
+              <div>
+                <p>No products found or out of service area!</p>
+              </div>
+            )}
           </div>
           {/* <div className="flex justify-center items-center space-x-2 mt-5">
             <Button

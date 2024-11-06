@@ -142,7 +142,7 @@ export class CategoryService {
     return prisma.$transaction(async (prisma) => {
       try {
         const { name } = req.body;
-        const image = req.file?.path || ''; // gunakan path jika menggunakan upload file
+        const image = req.file;
 
         if (!name || name.trim() === '') {
           throw new ErrorHandler('Nama kategori tidak boleh kosong', 400);
@@ -158,7 +158,7 @@ export class CategoryService {
         const newCategory = await prisma.category.create({
           data: {
             name,
-            image,
+            image: image?.filename,
           },
         });
 

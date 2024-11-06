@@ -73,9 +73,17 @@ export const { signIn, signOut, handlers, auth } = NextAuth({
           first_name: profile?.given_name as string,
           last_name: (profile?.family_name as string) || '',
           phone_number: (profile?.phone_number as string) || '',
+          image: profile?.picture as string,
         })
           .then((res) => {
+            // console.log(res);
+
+            const userr = jwtDecode<User>(res);
             user.access_token = res;
+            user.id = userr.id;
+            user.roleId = userr.roleId;
+            user.provider = userr.provider;
+            user.image = userr.image;
             return true;
           })
           .catch((err) => {
@@ -98,6 +106,7 @@ export const { signIn, signOut, handlers, auth } = NextAuth({
         session.user.image = token.image as string;
         session.user.access_token = token.access_token as string;
         session.user.name = session.user.name?.split(' ')[0] as string;
+        session.user.provider = token.provider as string;
       }
       return session;
     },
@@ -112,6 +121,7 @@ export const { signIn, signOut, handlers, auth } = NextAuth({
         token.UserDetails = user.UserDetails;
         token.roleId = Number(user.roleId);
         token.access_token = user.access_token;
+        token.provider = user.provider;
       }
 
       if (trigger === 'update' && session) {

@@ -126,7 +126,7 @@ export default function FeaturedCategories() {
   if (error) {
     return (
       <div className="flex items-center justify-center h-full py-12 px-4">
-        <div className="text-red-500">{error}</div> // Display error message
+        <div className="text-red-500">{error}</div>
       </div>
     );
   }
@@ -148,7 +148,8 @@ export default function FeaturedCategories() {
               <div className="flex flex-col items-center">
                 <div className="relative w-24 h-24 mb-2 rounded-full overflow-hidden group-hover:ring-4 group-hover:ring-green-500 transition-all duration-300">
                   <Image
-                    src={category.image}
+                    // src={category.image}
+                    src={`${}/category/${category.image}`}
                     alt={category.name}
                     fill
                     sizes="(max-width: 768px) 188px, 188px"
@@ -158,6 +159,7 @@ export default function FeaturedCategories() {
                 <h3 className="text-md font-semibold text-center">
                   {category.name}
                 </h3>
+                {/* <p>{category.image}</p> */}
               </div>
             </Link>
           ))}

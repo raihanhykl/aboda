@@ -99,6 +99,7 @@ export const socialRegister = async (values: {
   first_name: string;
   last_name: string;
   phone_number: string;
+  image: string;
 }) => {
   try {
     const data = { ...values };

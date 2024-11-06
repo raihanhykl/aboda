@@ -53,9 +53,9 @@ export class CartService {
     try {
       const { productStockId, quantityInput } = req.body;
       let addedCart;
-      if (!req.user || !req.user.is_verified) {
+      if (!req.user || !req.user.is_verified || req.user.roleId != 1) {
         throw new ErrorHandler(
-          'User belum terverifikasi atau tidak teregistrasi',
+          'User belum terverifikasi atau tidak teregistrasi / Unauthorized',
           403,
         );
       }

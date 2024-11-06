@@ -112,8 +112,8 @@ export default function NavbarButton({}: Props) {
           </Button>
 
           <ProfileMenu
-            image={session.data.user?.image!}
-            name={session.data.user?.first_name}
+            image={session.data?.user && session.data?.user?.image!}
+            name={session.data.user.name || session.data.user?.first_name}
           />
         </div>
       ) : (

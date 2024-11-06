@@ -90,6 +90,7 @@ export class OrderService {
   static async getOrderByBranch(req: Request) {
     try {
       const status = req.query.status ? String(req.query.status) : '';
+      const search = req.query.search ? String(req.query.search) : '';
       const branchIdFilter = req.query.branchFilter
         ? String(req.query.branchFilter)
         : '';
@@ -98,6 +99,29 @@ export class OrderService {
       const skip = (page - 1) * limit;
       const user = req.user;
       const dateFilter = req.query.date;
+
+      const searchFilter: Prisma.OrderWhereInput = search
+        ? {
+            OR: [
+              {
+                invoice: {
+                  contains: search,
+                } as Prisma.StringFilter,
+              },
+              {
+                OrderItem: {
+                  some: {
+                    Product: {
+                      product_name: {
+                        contains: search,
+                      } as Prisma.StringFilter,
+                    },
+                  },
+                },
+              },
+            ],
+          }
+        : {};
 
       const statusFilter: Prisma.OrderWhereInput =
         status && status !== 'all' ? { status: status as any } : {};
@@ -159,6 +183,7 @@ export class OrderService {
       }
       const order = await prisma.order.findMany({
         where: {
+          ...searchFilter,
           ...branchFilter,
           ...statusFilter,
           ...dateFilterCondition,
@@ -483,6 +508,7 @@ export class OrderService {
               start_date: { lte: new Date() },
               end_date: { gte: new Date() },
               Branch: { id: cartItem.ProductStock?.branchId },
+              isActive: 1,
             },
           });
 

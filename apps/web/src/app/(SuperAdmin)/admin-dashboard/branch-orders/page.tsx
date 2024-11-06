@@ -30,6 +30,7 @@ import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import AlertModal from '@/components/modal/modal';
 import { useRouter } from 'next/navigation';
+import { BASE_API_URL } from '@/config';
 
 type OrderItem = {
   id: number;
@@ -430,7 +431,7 @@ export default function AdminOrderList() {
                 <h4 className="text-sm font-medium mb-2">Payment Proof:</h4>
                 <Image
                   // src={selectedOrder.payment_proof}
-                  src={`http://localhost:8000/payment-proof/${selectedOrder.payment_proof}`}
+                  src={`${BASE_API_URL}/payment-proof/${selectedOrder.payment_proof}`}
                   alt="Payment Proof"
                   width={300}
                   height={300}

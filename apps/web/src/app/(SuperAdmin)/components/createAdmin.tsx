@@ -33,8 +33,6 @@ export default function CreateAdminPopover({ setAvailable }: any) {
   const onSubmit = async (value: z.infer<typeof createAdminSchema>) => {
     await createAdminAction(value, session.data?.user.access_token!)
       .then((res) => {
-        alert(`success: ${res.message}`);
-        console.log(res.data.data);
         setAvailable(res.data.data as IAdminDetail[]);
       })
       .catch((err) => {

@@ -2,14 +2,15 @@ import { returnAdminDetail, returnBranch } from '@/helpers/branch';
 import { ErrorHandler } from '@/helpers/response';
 import { IBranch } from '@/interfaces/branch';
 import prisma from '@/prisma';
+import { hash } from 'bcrypt';
 import { Request } from 'express';
 
 export class BranchService {
   static async getAllBranch(req: Request) {
     console.log(req.user.roleId), 'ini role';
 
-    if (req.user.roleId != 2)
-      throw new ErrorHandler('Unauthorized, Super Admin only!.', 400);
+    // if (req.user.roleId != 2)
+    //   throw new ErrorHandler('Unauthorized, Super Admin only!.', 400);
 
     return returnBranch();
   }
@@ -24,6 +25,7 @@ export class BranchService {
     return prisma.$transaction(async (prisma) => {
       if (req.user.roleId != 2)
         throw new ErrorHandler('Unauthorized, Super admin only!', 400);
+      const hashedpassword = await hash('admin123', 10);
 
       const { first_name, last_name, phone_number, email } = req.body;
       const newUser = prisma.user.create({
@@ -38,7 +40,7 @@ export class BranchService {
             },
           },
           is_verified: 1,
-          password: 'admin123',
+          password: hashedpassword,
         },
       });
 

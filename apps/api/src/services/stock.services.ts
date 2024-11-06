@@ -98,7 +98,9 @@ export class StockService {
   static async getHistory(req: Request) {
     try {
       const { branchId, productId } = req.query;
+      console.log(branchId, productId);
 
+      // Fetch stock history from the database, filtering by productId and branchId if provided
       const stockHistory = await prisma.stockHistory.findMany({
         where: {
           ...(branchId && { ProductStock: { branchId: Number(branchId) } }),
@@ -107,7 +109,7 @@ export class StockService {
         include: {
           ProductStock: {
             include: {
-              Product: true,
+              Product: true, // Access the Product model (not the productId directly here)
               Branch: true,
             },
           },
@@ -117,6 +119,33 @@ export class StockService {
         },
       });
 
+      // Create an object to store totals by productId
+      const stockByProduct: Record<
+        number,
+        { incomingStock: number; outgoingStock: number }
+      > = {};
+
+      // Iterate over the stock history and calculate incoming and outgoing stock by productId
+      stockHistory.forEach((history) => {
+        const productId = history.ProductStock?.productId; // Access productId correctly from ProductStock
+        const quantity = history.quantity;
+
+        // Initialize the product if it doesn't exist in the result object
+        if (productId) {
+          if (!stockByProduct[productId]) {
+            stockByProduct[productId] = { incomingStock: 0, outgoingStock: 0 };
+          }
+
+          // Add to incoming or outgoing based on the status
+          if (history.status === 'in') {
+            stockByProduct[productId].incomingStock += quantity;
+          } else if (history.status === 'out') {
+            stockByProduct[productId].outgoingStock += Math.abs(quantity); // Ensure outgoing is always positive
+          }
+        }
+      });
+
+      // Return the response with total incoming and outgoing stock by product
       return stockHistory;
     } catch (error) {
       throw new ErrorHandler('Failed to retrieve stock history', 500);

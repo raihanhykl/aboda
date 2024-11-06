@@ -135,7 +135,6 @@ export default function SuperAdminDashboard() {
   };
 
   const handleSaveBranch = async (data: IBranch) => {
-    alert(JSON.stringify(data));
     const updatedBranch = {
       ...data,
       address: {
@@ -526,3 +525,313 @@ export default function SuperAdminDashboard() {
     </div>
   );
 }
+
+// ------------------------------------------------------------------------------
+// Component: BranchDetails
+// ----------------------------------------------------------------------------
+
+// ('use client');
+
+// import { useState, useEffect } from 'react';
+// import { useSession } from 'next-auth/react';
+// import { getAllBranch } from '@/action/admin.action';
+// import { IBranch } from '@/interfaces/branch';
+// import BranchDetails from './branchDetails';
+// import BranchList from './branchList';
+// import { Session } from 'next-auth';
+
+// export default function SuperAdminDashboard() {
+//   const [branches, setBranches] = useState<IBranch[]>([]);
+//   const [selectedBranch, setSelectedBranch] = useState<IBranch | null>(null);
+//   const [isEditing, setIsEditing] = useState(false);
+//   const [isAdding, setIsAdding] = useState(false);
+//   const session = useSession();
+
+//   useEffect(() => {
+//     if (session.data?.user) {
+//       getAllBranch(session.data.user.access_token).then((res) => {
+//         const data = res?.data.data as IBranch[];
+//         setBranches(data);
+//         setSelectedBranch(data[0]);
+//       });
+//     }
+//   }, [session]);
+
+//   const handleBranchClick = (branch: IBranch) => {
+//     if (isAdding) {
+//       handleCancelAdd();
+//     }
+//     setSelectedBranch(branch);
+//     setIsAdding(false);
+//     setIsEditing(false);
+//   };
+
+//   const handleAddBranch = () => {
+//     const newBranch: IBranch = {
+//       id: branches[branches.length - 1].id + 1,
+//       branch_name: 'New Branch',
+//       addressId: 0,
+//       address: {
+//         id: 0,
+//         cityId: 457,
+//         street: '',
+//         lon: 0,
+//         lat: 0,
+//         City: {
+//           id: 457,
+//           provinceId: 3,
+//           city: '',
+//           Province: {
+//             id: 3,
+//             name: '',
+//           },
+//         },
+//       },
+//       AdminDetails: [],
+//       ProductStocks: [],
+//     };
+//     setBranches([...branches, newBranch]);
+//     setSelectedBranch(newBranch);
+//     setIsAdding(true);
+//     setIsEditing(true);
+//   };
+
+//   const handleCancelAdd = () => {
+//     if (isAdding && selectedBranch?.id === branches[branches.length - 1].id) {
+//       setBranches(branches.slice(0, -1));
+//     }
+//     setSelectedBranch(null);
+//     setIsAdding(false);
+//     setIsEditing(false);
+//   };
+
+//   const handleSaveBranch = async (updatedBranch: IBranch) => {
+//     alert(JSON.stringify(updatedBranch));
+//     if (isAdding) {
+//       setBranches([...branches.slice(0, -1), updatedBranch]);
+//       setIsAdding(false);
+//     } else {
+//       setBranches(
+//         branches.map((branch) =>
+//           branch.id === updatedBranch.id ? updatedBranch : branch,
+//         ),
+//       );
+//     }
+//     setSelectedBranch(updatedBranch);
+//     setIsEditing(false);
+//   };
+
+//   const handleDeleteBranch = async (id: number) => {
+//     setBranches(branches.filter((branch) => branch.id !== id));
+//     setSelectedBranch(null);
+//   };
+
+//   return (
+//     <div className="min-h-screen p-4">
+//       <div className="flex flex-col lg:flex-row gap-8">
+//         <BranchList
+//           branches={branches}
+//           selectedBranch={selectedBranch}
+//           onBranchClick={handleBranchClick}
+//           onAddBranch={handleAddBranch}
+//           isAdding={isAdding}
+//         />
+//         {selectedBranch && (
+//           <BranchDetails
+//             branch={selectedBranch}
+//             isEditing={isEditing}
+//             setIsEditing={setIsEditing}
+//             onSave={handleSaveBranch}
+//             onCancel={handleCancelAdd}
+//             onDelete={handleDeleteBranch}
+//             session={session}
+//           />
+//         )}
+//       </div>
+//     </div>
+//   );
+// }
+
+// 'use client';
+
+// import { useState, useEffect } from 'react';
+// import { useSession } from 'next-auth/react';
+// import { getAllBranch } from '@/action/admin.action';
+// import { IAdminDetail, IBranch } from '@/interfaces/branch';
+// import { fetchData } from '@/action/user.action';
+// import { api } from '@/config/axios.config';
+// import BranchList from './branchList';
+// import BranchDetails from './branchDetails';
+
+// export default function SuperAdminDashboard() {
+//   const [branches, setBranches] = useState<IBranch[]>([]);
+//   const [branchAdmin, setBranchAdmin] = useState<IAdminDetail[]>([]);
+//   const [selectedBranch, setSelectedBranch] = useState<IBranch | null>(null);
+//   const [isEditing, setIsEditing] = useState(false);
+//   const [isAdding, setIsAdding] = useState(false);
+//   const [provinces, setProvinces] = useState<any[]>([]);
+//   const [cities, setCities] = useState<any[]>([]);
+//   const session = useSession();
+
+//   useEffect(() => {
+//     if (session.data?.user) {
+//       getAllBranch(session.data.user.access_token).then((res) => {
+//         const data = res?.data.data as IBranch[];
+//         setBranches(data);
+//         setSelectedBranch(data[0]);
+//       });
+//       fetchData(
+//         '/address/get-provinces',
+//         setProvinces,
+//         session.data.user.access_token,
+//       );
+//     }
+//   }, [session]);
+
+//   useEffect(() => {
+//     if (!session.data?.user || !selectedBranch) return;
+//     fetchData(
+//       `/address/get-city-by-province?provinceId=${selectedBranch.address.City.Province.id}`,
+//       setCities,
+//       session.data.user?.access_token,
+//     );
+//   }, [selectedBranch, session]);
+
+//   const handleBranchClick = (branch: IBranch) => {
+//     // alert(branch.address.City.Province.name);
+//     if (isAdding) {
+//       handleCancelAdd();
+//     }
+//     setBranchAdmin(branch.AdminDetails);
+//     setSelectedBranch(branch);
+//     setIsAdding(false);
+//     setIsEditing(false);
+//   };
+
+//   const handleAddBranch = () => {
+//     const newBranch: IBranch = {
+//       id: branches[branches.length - 1].id + 1,
+//       branch_name: 'New Branch',
+//       addressId: 0,
+//       address: {
+//         id: 0,
+//         cityId: 457,
+//         street: '',
+//         lon: 0,
+//         lat: 0,
+//         City: {
+//           id: 457,
+//           provinceId: 3,
+//           city: '',
+//           Province: {
+//             id: 3,
+//             name: '',
+//           },
+//         },
+//       },
+//       AdminDetails: [],
+//       ProductStocks: [],
+//     };
+//     setBranches([...branches, newBranch]);
+//     setSelectedBranch(newBranch);
+//     setIsAdding(true);
+//     setIsEditing(true);
+//   };
+
+//   const handleCancelAdd = () => {
+//     if (isAdding && selectedBranch?.id === branches[branches.length - 1].id) {
+//       setBranches(branches.slice(0, -1));
+//     }
+//     setSelectedBranch(null);
+//     setIsAdding(false);
+//     setIsEditing(false);
+//   };
+
+//   const handleSaveBranch = async (updatedBranch: IBranch) => {
+//     alert(JSON.stringify(updatedBranch));
+//     if (isAdding) {
+//       try {
+//         await api.post(
+//           `/branch/create-branch`,
+//           { data: updatedBranch },
+//           {
+//             headers: {
+//               Authorization: 'Bearer ' + session.data?.user.access_token,
+//             },
+//           },
+//         );
+//         setBranches([...branches.slice(0, -1), updatedBranch]);
+//         setIsAdding(false);
+//       } catch (error) {
+//         console.error('Error creating branch:', error);
+//       }
+//     } else {
+//       try {
+//         await api.put(
+//           `/branch/update-branch`,
+//           { data: updatedBranch },
+//           {
+//             headers: {
+//               Authorization: 'Bearer ' + session.data?.user.access_token,
+//             },
+//           },
+//         );
+//         setBranches(
+//           branches.map((branch) =>
+//             branch.id === updatedBranch.id ? updatedBranch : branch,
+//           ),
+//         );
+//       } catch (error) {
+//         console.error('Error updating branch:', error);
+//       }
+//     }
+//     setSelectedBranch(updatedBranch);
+//     setIsEditing(false);
+//   };
+
+//   const handleDeleteBranch = async (id: number) => {
+//     try {
+//       await api.put(
+//         `branch/delete-branch/${id}`,
+//         {},
+//         {
+//           headers: {
+//             Authorization: 'Bearer ' + session.data?.user.access_token,
+//           },
+//         },
+//       );
+//       setBranches(branches.filter((branch) => branch.id !== id));
+//       setSelectedBranch(null);
+//     } catch (error) {
+//       console.error('Error deleting branch:', error);
+//     }
+//   };
+
+//   return (
+//     <div className="min-h-screen p-4">
+//       <div className="flex flex-col lg:flex-row gap-8">
+//         <BranchList
+//           branches={branches}
+//           selectedBranch={selectedBranch}
+//           onBranchClick={handleBranchClick}
+//           onAddBranch={handleAddBranch}
+//           isAdding={isAdding}
+//         />
+//         {selectedBranch && (
+//           <BranchDetails
+//             branch={selectedBranch}
+//             isEditing={isEditing}
+//             setIsEditing={setIsEditing}
+//             onSave={handleSaveBranch}
+//             onCancel={handleCancelAdd}
+//             onDelete={handleDeleteBranch}
+//             session={session}
+//             provinces={provinces}
+//             cities={cities}
+//             admins={branchAdmin}
+//           />
+//         )}
+//       </div>
+//     </div>
+//   );
+// }

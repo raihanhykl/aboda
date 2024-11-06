@@ -22,11 +22,9 @@ type Props = {
     invoice: string;
   };
 };
-
 type OrderData = {
   id: string;
   total_price: number;
-  // Add other fields as necessary
 };
 
 export default function PaymentPage({ params }: Props) {
@@ -69,7 +67,6 @@ export default function PaymentPage({ params }: Props) {
     const file = event.target.files?.[0];
     if (file) {
       setSelectedFile(file);
-
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreviewUrl(reader.result as string);
@@ -96,9 +93,7 @@ export default function PaymentPage({ params }: Props) {
           Authorization: 'Bearer ' + session?.data?.user.access_token,
         },
       });
-
       if (res.status === 200) {
-        // alert('Bukti pembayaran berhasil diunggah.');
         router.push('/order');
       } else {
         alert('Gagal mengunggah bukti pembayaran.');

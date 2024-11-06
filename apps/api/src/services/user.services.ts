@@ -93,6 +93,11 @@ export class UserService {
 
   static async changePassword(req: Request) {
     return prisma.$transaction(async (prisma) => {
+      if (req.user.provider === 'google')
+        throw new ErrorHandler(
+          'You cannot change your google account password here',
+          400,
+        );
       const { oldPassword, newPassword } = req.body;
 
       const user = await prisma.user.findUnique({

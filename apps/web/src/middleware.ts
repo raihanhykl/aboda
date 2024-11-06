@@ -36,7 +36,10 @@ export async function middleware(request: NextRequest) {
     if (
       pathname == '/order' ||
       pathname == '/my-order' ||
-      pathname == '/admin-dashboard/branch-orders'
+      pathname == '/admin-dashboard/branch-orders' ||
+      pathname == '/admin-dashboard/order' ||
+      pathname == '/checkout' ||
+      pathname == '/checkout-manual'
     ) {
       console.log('masuk');
       return NextResponse.redirect(
@@ -48,7 +51,10 @@ export async function middleware(request: NextRequest) {
     if (
       pathname == '/order' ||
       pathname == '/my-order' ||
-      pathname == '/admin-dashboard/all-branch-orders'
+      pathname == '/admin-dashboard/all-branch-orders' ||
+      pathname == '/admin-dashboard/order' ||
+      pathname == '/checkout' ||
+      pathname == '/checkout-manual'
     ) {
       return NextResponse.redirect(
         new URL('/admin-dashboard/branch-orders', request.url),

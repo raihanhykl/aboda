@@ -24,12 +24,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { ChevronLeft, ChevronRight, Package } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Package, Search } from 'lucide-react';
 import { api } from '@/config/axios.config';
 import { useSession } from 'next-auth/react';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import AlertModal from '@/components/modal/modal';
+import { Input } from '@/components/ui/input';
+import { BASE_API_URL } from '@/config';
 
 type OrderItem = {
   id: number;
@@ -75,6 +77,7 @@ export default function AdminOrderList() {
   const [statusFilter, setStatusFilter] = useState<Order['status'] | 'all'>(
     'all',
   );
+  const [searchTerm, setSearchTerm] = useState('');
   const [dateFilter, setDateFilter] = useState('all');
   const [branchFilter, setBranchFilter] = useState('all');
   const [totalPages, setTotalPages] = useState(1);
@@ -88,7 +91,14 @@ export default function AdminOrderList() {
   useEffect(() => {
     fetchBranches();
     fetchOrders();
-  }, [session, currentPage, statusFilter, dateFilter, branchFilter]);
+  }, [
+    session,
+    currentPage,
+    statusFilter,
+    dateFilter,
+    branchFilter,
+    searchTerm,
+  ]);
   const fetchBranches = async () => {
     try {
       const response = await api.get('/branch/get-all-branch', {
@@ -113,6 +123,7 @@ export default function AdminOrderList() {
         params: {
           page: currentPage,
           limit: ordersPerPage,
+          search: searchTerm,
           status: statusFilter === 'all' ? undefined : statusFilter,
           date: dateFilter === 'all' ? undefined : dateFilter,
           branchFilter: branchFilter === 'all' ? undefined : branchFilter,
@@ -156,12 +167,11 @@ export default function AdminOrderList() {
       }
     } catch (error) {
       console.error('Error fetching orders:', error);
-      // toast({
-      //   title: 'Error',
-      //   description: 'Failed to fetch orders. Please try again.',
-      //   variant: 'destructive',
-      // });
     }
+  };
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+    setCurrentPage(1);
   };
 
   const handleStatusChange = (value: string) => {
@@ -194,70 +204,6 @@ export default function AdminOrderList() {
     setSelectedOrder(order);
     setIsUpdateModalOpen(true);
   };
-
-  // const handleAcceptOrder = async () => {
-  //   if (selectedOrder) {
-  //     try {
-  //       await api.post(
-  //         `/order/update-status`,
-  //         {
-  //           orderId: selectedOrder.id,
-  //           status: 'processing',
-  //         },
-  //         {
-  //           headers: {
-  //             Authorization: 'Bearer ' + session?.data?.user.access_token,
-  //           },
-  //         },
-  //       );
-  //       toast({
-  //         title: 'Success',
-  //         description: 'Order status updated to processing.',
-  //       });
-  //       setIsUpdateModalOpen(false);
-  //       fetchOrders();
-  //     } catch (error) {
-  //       console.error('Error updating order status:', error);
-  //       toast({
-  //         title: 'Error',
-  //         description: 'Failed to update order status. Please try again.',
-  //         variant: 'destructive',
-  //       });
-  //     }
-  //   }
-  // };
-
-  // const handleRejectOrder = async () => {
-  //   if (selectedOrder) {
-  //     try {
-  //       await api.post(
-  //         `/order/update-status`,
-  //         {
-  //           orderId: selectedOrder.id,
-  //           status: 'pending_payment',
-  //         },
-  //         {
-  //           headers: {
-  //             Authorization: 'Bearer ' + session?.data?.user.access_token,
-  //           },
-  //         },
-  //       );
-  //       toast({
-  //         title: 'Success',
-  //         description: 'Payment proof rejected.',
-  //       });
-  //       setIsUpdateModalOpen(false);
-  //       fetchOrders();
-  //     } catch (error) {
-  //       console.error('Error updating order status:', error);
-  //       toast({
-  //         title: 'Error',
-  //         description: 'Failed to update order status. Please try again.',
-  //         variant: 'destructive',
-  //       });
-  //     }
-  //   }
-  // };
 
   const handleAcceptOrder = async () => {
     let status;
@@ -351,25 +297,38 @@ export default function AdminOrderList() {
     <Card className="w-full max-w-6xl mx-auto">
       <CardHeader>
         <CardTitle className="text-2xl font-bold">Order Management</CardTitle>
-        <div className="flex justify-between items-center gap-4">
-          <Select onValueChange={handleDateChange}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by Date" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Dates</SelectItem>
-              <SelectItem value="today">Today</SelectItem>
-              <SelectItem value="this_week">This Week</SelectItem>
-              <SelectItem value="this_month">This Month</SelectItem>
-              <SelectItem value="this_year">This Year</SelectItem>
-            </SelectContent>
-          </Select>
-          <div className="flex gap-2">
+
+        {/* Adjust filters to wrap on small screens */}
+        <div className="flex flex-wrap justify-between items-center gap-4">
+          <div className="flex items-center space-x-2 w-full sm:w-auto">
+            <Input
+              type="text"
+              placeholder="Search orders..."
+              value={searchTerm}
+              onChange={handleSearchChange}
+              className="w-full max-w-xs"
+            />
+            <Select onValueChange={handleDateChange}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Filter by Date" />
+              </SelectTrigger>
+              <SelectContent className="max-w-[90vw]">
+                <SelectItem value="all">All Dates</SelectItem>
+                <SelectItem value="today">Today</SelectItem>
+                <SelectItem value="this_week">This Week</SelectItem>
+                <SelectItem value="this_month">This Month</SelectItem>
+                <SelectItem value="this_year">This Year</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Branch and Status filters with responsive widths */}
+          <div className="flex items-center space-x-2 w-full sm:w-auto">
             <Select value={branchFilter} onValueChange={handleBranchChange}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Filter by Branch" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-w-[90vw]">
                 <SelectItem value="all">All Branches</SelectItem>
                 {branches.map((branch) => (
                   <SelectItem key={branch.id} value={branch.id.toString()}>
@@ -379,10 +338,10 @@ export default function AdminOrderList() {
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={handleStatusChange}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-w-[90vw]">
                 <SelectItem value="all">All Statuses</SelectItem>
                 <SelectItem value="pending_payment">Pending Payment</SelectItem>
                 <SelectItem value="awaiting_confirmation">
@@ -405,7 +364,7 @@ export default function AdminOrderList() {
               No orders found
             </h3>
             <p className="mt-1 text-sm text-gray-500">
-              Try adjusting your filters to find what you're looking for.
+              Try adjusting your filters to find what youre looking for.
             </p>
           </div>
         ) : (
@@ -523,49 +482,6 @@ export default function AdminOrderList() {
           </>
         )}
       </CardContent>
-      {/* <Dialog open={isUpdateModalOpen} onOpenChange={setIsUpdateModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Update Order Status</DialogTitle>
-            <DialogDescription>
-              Order #{selectedOrder?.invoice} -{' '}
-              {selectedOrder?.status.replace('_', ' ')}
-            </DialogDescription>
-          </DialogHeader>
-          {selectedOrder?.status === 'awaiting_confirmation' &&
-            selectedOrder.payment_proof && (
-              <div className="mt-4">
-                <h4 className="text-sm font-medium mb-2">Payment Proof:</h4>
-                <Image
-                  // src={selectedOrder.payment_proof}
-                  src={`/payment-proof/${selectedOrder.payment_proof}`}
-                  alt="Payment Proof"
-                  width={300}
-                  height={300}
-                  className="rounded-md"
-                />
-              </div>
-            )}
-          <div className="flex justify-end space-x-2 mt-4">
-            <Button
-              variant="outline"
-              onClick={() => setIsUpdateModalOpen(false)}
-            >
-              Cancel
-            </Button>
-            {selectedOrder?.status === 'awaiting_confirmation' && (
-              <>
-                <Button variant="destructive" onClick={handleRejectOrder}>
-                  Reject
-                </Button>
-                <Button variant="default" onClick={handleAcceptOrder}>
-                  Accept
-                </Button>
-              </>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog> */}
       <Dialog open={isUpdateModalOpen} onOpenChange={setIsUpdateModalOpen}>
         <DialogContent>
           <DialogHeader>
@@ -581,7 +497,7 @@ export default function AdminOrderList() {
                 <h4 className="text-sm font-medium mb-2">Payment Proof:</h4>
                 <Image
                   // src={selectedOrder.payment_proof}
-                  src={`http://localhost:8000/payment-proof/${selectedOrder.payment_proof}`}
+                  src={`${BASE_API_URL}/payment-proof/${selectedOrder.payment_proof}`}
                   alt="Payment Proof"
                   width={300}
                   height={300}
@@ -597,14 +513,6 @@ export default function AdminOrderList() {
                 <h4 className="text-sm text-center font-medium">
                   Update Status to Shipped?
                 </h4>
-                {/* <Image
-                  // src={selectedOrder.payment_proof}
-                  src={`http://localhost:8000/payment-proof/${selectedOrder.payment_proof}`}
-                  alt="Payment Proof"
-                  width={300}
-                  height={300}
-                  className="rounded-md"
-                /> */}
               </div>
             )
             // )
@@ -617,14 +525,6 @@ export default function AdminOrderList() {
                 <h4 className="text-sm text-center font-medium">
                   Cancel Order?
                 </h4>
-                {/* <Image
-                  // src={selectedOrder.payment_proof}
-                  src={`http://localhost:8000/payment-proof/${selectedOrder.payment_proof}`}
-                  alt="Payment Proof"
-                  width={300}
-                  height={300}
-                  className="rounded-md"
-                /> */}
               </div>
             )
             // )

@@ -23,6 +23,9 @@ export const fetchShippingCost = async (
         name: result.name,
         costs: result.costs,
       }));
+
+      console.log(results);
+
       setShippingOptions(shippingServices);
     } catch (error) {
       console.error('Error fetching shipping details:', error);

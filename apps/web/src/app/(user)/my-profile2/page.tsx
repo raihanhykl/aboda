@@ -14,6 +14,7 @@ import { Trash2 } from 'lucide-react';
 import { editProfileSchema } from '@/schemas/auth.schemas';
 import { editProfileAction } from '@/action/user.action';
 import ChangePasswordButton from './components/changepassword';
+import { BASE_API_URL } from '@/config';
 
 type FormData = z.infer<typeof editProfileSchema>;
 
@@ -26,6 +27,7 @@ export default function MyProfile() {
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const isGoogleUser = session?.data?.user?.provider === 'google';
   const {
     register,
     handleSubmit,
@@ -49,19 +51,25 @@ export default function MyProfile() {
     }
   };
 
+  let avatar = `${BASE_API_URL}/profile/${session.data?.user.image}`;
+  if (session?.data?.user?.image?.startsWith('http')) {
+    avatar = session.data.user.image;
+  }
+
   useEffect(() => {
     if (session?.data?.user) {
+      const initial = `${session.data.user.first_name && session?.data?.user.first_name[0]}${
+        session.data.user.last_name && session?.data?.user.last_name![0]
+      }`;
       reset({
-        first_name: session?.data?.user.first_name,
+        first_name: session?.data.user.name || session?.data?.user.first_name,
         last_name: session?.data?.user.last_name,
         email: session?.data?.user.email!,
         phone_number: session?.data?.user.phone_number,
       });
       setInitial(
         () =>
-          `${session?.data?.user.first_name![0]}${
-            session.data.user.last_name && session?.data?.user.last_name![0]
-          }`,
+          `${(session.data.user.name && session.data.user?.name[0]) || initial}`,
       );
     }
   }, [session]);
@@ -124,11 +132,7 @@ export default function MyProfile() {
             <div className=" relative">
               <Avatar className="w-32 h-32">
                 <AvatarImage
-                  src={
-                    previewUrl
-                      ? previewUrl
-                      : `http://localhost:8000/profile/${session?.data?.user.image}`
-                  }
+                  src={previewUrl ? previewUrl : avatar}
                   alt="Profile picture"
                 />
                 <AvatarFallback>{initial}</AvatarFallback>
@@ -161,16 +165,16 @@ export default function MyProfile() {
             )}
             <div className="mt-4 text-center">
               <p className="font-semibold text-lg">
-                {session.data?.user &&
-                  (session?.data?.user.first_name +
-                    ' ' +
-                    session?.data?.user.last_name ||
-                    session?.data?.user.name)}
+                {(session.data?.user && session.data?.user.name) ||
+                  (session.data?.user &&
+                    session?.data?.user.first_name +
+                      ' ' +
+                      session?.data?.user.last_name)}
               </p>
               <p className="text-muted-foreground">
                 Referral Code:{' '}
                 {(session.data?.user &&
-                  session.data?.user.UserDetails.referral_code) ||
+                  session.data?.user.UserDetails?.referral_code) ||
                   'N/A'}
               </p>
               <p className="text-muted-foreground">
@@ -214,7 +218,7 @@ export default function MyProfile() {
                   id="email"
                   type="email"
                   {...register('email')}
-                  disabled={!isEditing}
+                  disabled={!isEditing || isGoogleUser}
                 />
                 {errors.email && (
                   <p className="text-destructive text-sm mt-1">
@@ -238,7 +242,9 @@ export default function MyProfile() {
               <div className="flex justify-end space-x-4 mt-6">
                 {!isEditing ? (
                   <Button type="button" onClick={() => setIsEditing(true)}>
-                    Edit Profile
+                    Edit Profile{' '}
+                    {session.data?.user?.provider &&
+                      session.data?.user?.provider}
                   </Button>
                 ) : (
                   <>

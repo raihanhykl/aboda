@@ -26,20 +26,34 @@ export function FeaturedProducts() {
         const response = await api.get(
           `/product?page=1&limit=6&lat=${latitude}&long=${longitude}`,
         );
-        const newProducts = response.data.data.data;
-        const newProducts2 = newProducts[0].ProductStocks.map((stock: any) => ({
-          id: stock.Product.id,
-          branchId: stock.branchId,
-          product_name: stock.Product.product_name,
-          description: stock.Product.description,
-          price: stock.Product.price,
-          weight: stock.Product.weight,
-          stock: stock.stock,
-          image: stock.Product.image[0].imageUrl, // Ensure image is included if available
-          category: stock.Product.categoryId,
-        }));
-        console.log(newProducts2, 'coyyy');
-        setProducts(newProducts2);
+        // const newProducts = response.data.data.data;
+        // const newProducts2 = newProducts[0].ProductStocks.map((stock: any) => ({
+        //   id: stock.Product.id,
+        //   branchId: stock.branchId,
+        //   product_name: stock.Product.product_name,
+        //   description: stock.Product.description,
+        //   price: stock.Product.price,
+        //   weight: stock.Product.weight,
+        //   stock: stock.stock,
+        //   image: stock.Product.image[0].imageUrl, // Ensure image is included if available
+        //   category: stock.Product.categoryId,
+        // }));
+        const allProducts = response.data.data.data.flatMap((branch: Branch) =>
+          branch.ProductStocks.map((stock) => ({
+            id: stock.Product.id,
+            branchId: stock.branchId,
+            product_name: stock.Product.product_name,
+            description: stock.Product.description,
+            price: stock.Product.price,
+            weight: stock.Product.weight,
+            stock: stock.stock,
+            image: stock.Product.image[0].imageUrl,
+            category: stock.Product.categoryId,
+          })),
+        );
+
+        console.log(allProducts, 'coyyy');
+        setProducts(allProducts);
         setLoading(false);
       };
 
@@ -64,17 +78,23 @@ export function FeaturedProducts() {
         </div>
 
         <div className="flex overflow-x-auto space-x-4 pb-4 -mx-4 px-4 scrollbar-hide">
-          {loading
-            ? Array.from({ length: 6 }).map((_, index) => (
-                <div key={index} className="flex-none w-64 sm:w-72 md:w-80">
-                  <ProductCardSkeleton button={false} />
-                </div>
-              ))
-            : products.map((branch: any) => (
-                <div key={branch.id} className="flex-none w-64 sm:w-72 md:w-80">
-                  <ProductCard key={branch.id} {...branch} />
-                </div>
-              ))}
+          {loading ? (
+            Array.from({ length: 6 }).map((_, index) => (
+              <div key={index} className="flex-none w-64 sm:w-72 md:w-80">
+                <ProductCardSkeleton button={false} />
+              </div>
+            ))
+          ) : products.length > 0 ? (
+            products.map((branch: any) => (
+              <div key={branch.id} className="flex-none w-64 sm:w-72 md:w-80">
+                <ProductCard key={branch.id} {...branch} />
+              </div>
+            ))
+          ) : (
+            <div>
+              <p>No products found or out of service area!</p>
+            </div>
+          )}
         </div>
       </div>
     </section>
