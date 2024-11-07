@@ -1,13 +1,14 @@
 // src/app/api/rajaongkir/route.ts
 import { NextResponse } from 'next/server';
 import axios from 'axios';
+import { RAJA_ONGKIR, RAJA_ONGKIR_KEY } from '@/config';
 
 export async function POST(request: Request) {
   try {
     const { origin, destination, weight, courier } = await request.json();
 
     // Logging data yang diterima dari frontend
-    console.log('Received data:', { origin, destination, weight, courier });
+    // console.log('Received data:', { origin, destination, weight, courier });
 
     // Validasi data sebelum mengirim ke Raja Ongkir
     if (!origin || !destination || !weight || !courier) {
@@ -21,7 +22,7 @@ export async function POST(request: Request) {
     }
 
     const response = await axios.post(
-      'https://api.rajaongkir.com/starter/cost',
+      `${RAJA_ONGKIR}`,
       {
         origin: origin.toString(),
         destination: destination.toString(),
@@ -30,14 +31,14 @@ export async function POST(request: Request) {
       },
       {
         headers: {
-          key: '6217fa0987d802058e79fa9a345c6923',
+          key: `${RAJA_ONGKIR_KEY}`,
         },
       },
     );
 
     // Logging respons dari Raja Ongkir
-    console.log('Raja Ongkir response:', response.data);
-    console.log(weight);
+    // console.log('Raja Ongkir response:', response.data);
+    // console.log(weight);
 
     return NextResponse.json(response.data);
   } catch (error: any) {

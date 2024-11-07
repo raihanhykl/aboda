@@ -25,12 +25,12 @@ import { setPosition } from '@/state/position/positionSlice';
 import Image from 'next/image';
 import { setAddresses } from '@/state/addresses/addressesSlice';
 
-interface Address {
-  longitude: number;
-  latitude: number;
-  city: string;
-  street: string;
-}
+// interface Address {
+//   longitude: number;
+//   latitude: number;
+//   city: string;
+//   street: string;
+// }
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -106,6 +106,10 @@ export default function Navbar() {
     }
   }, [session]);
 
+  useEffect(() => {
+    getCurrentPosition();
+  });
+
   return (
     <nav className="sticky top-0 z-50 bg-[#1B8057] text-white">
       <div className="container mx-auto px-4">
@@ -154,16 +158,6 @@ export default function Navbar() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-            {/* <div className="flex-grow"> */}
-            {/* <div className="relative w-[80%]"> */}
-            {/* <input
-                  type="text"
-                  placeholder="Search..."
-                  className="w-full py-2 px-4 pr-10 rounded-md bg-[#39906D] focus:outline-none focus:ring-2 focus:ring-gray-300"
-                />
-                <Search className="absolute right-3 top-2.5 h-5 w-5 text-[#93C2AF]" /> */}
-            {/* </div> */}
-            {/* </div> */}
           </div>
           <div className="flex items-center space-x-11">
             <NavbarButton />

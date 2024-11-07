@@ -65,7 +65,6 @@ export default function ProductPage({ params }: Props) {
   useEffect(() => {
     if (latitude != 0 || longitude != 0) {
       const fetchMoreProducts = async () => {
-        // Replace this with your actual API call
         console.log(latitude, longitude, 'ini ya');
 
         const response = await api.get(

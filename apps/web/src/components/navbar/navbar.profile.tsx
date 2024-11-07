@@ -20,7 +20,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import { actionLogout } from '@/action/auth.action';
 import { useRouter } from 'next/navigation';
-import MyProfile from '@/app/(user)/my-profile/component/my-profile';
 import { BASE_API_URL } from '@/config';
 
 interface ProfileMenuProps {
@@ -51,7 +50,7 @@ export default function ProfileMenu({ image, name }: ProfileMenuProps) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
-        <DropdownMenuItem onClick={() => router.push('/my-profile2')}>
+        <DropdownMenuItem onClick={() => router.push('/my-profile')}>
           My Profile
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => router.push('/my-address')}>
@@ -60,7 +59,6 @@ export default function ProfileMenu({ image, name }: ProfileMenuProps) {
         <DropdownMenuItem onClick={() => router.push('/order')}>
           My Order
         </DropdownMenuItem>
-        <DropdownMenuItem>Settings</DropdownMenuItem>
         <DropdownMenuSeparator />
         <AlertDialog>
           <AlertDialogTrigger asChild>

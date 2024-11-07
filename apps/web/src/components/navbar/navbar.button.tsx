@@ -81,7 +81,7 @@ export default function NavbarButton({}: Props) {
         <div className=" flex gap-3 items-center">
           <Button
             variant={'default'}
-            className=" *:flex *:gap-2 *:items-center  bg-[#e0b116] "
+            className=" *:flex *:gap-2 *:items-center  bg-[#e0b116] hover:bg-[#c5a230] "
             // onClick={() => actionLogout()}
             onClick={() => router.push('/carts')}
           >

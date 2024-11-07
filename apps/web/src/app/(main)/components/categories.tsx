@@ -86,6 +86,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { api } from '@/config/axios.config';
 import { useState, useEffect } from 'react';
+import { BASE_API_URL } from '@/config';
 
 type Category = {
   id: number;
@@ -132,7 +133,7 @@ export default function FeaturedCategories() {
   }
 
   return (
-    <section className="py-12 px-4">
+    <div className="py-12 px-4">
       <div className="max-w-6xl mx-auto">
         <h2 className="text-center mb-8">
           <span className="text-3xl font-bold text-gray-700">Featured </span>
@@ -140,16 +141,12 @@ export default function FeaturedCategories() {
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-12">
           {categories.map((category) => (
-            <Link
-              href={`/shop/${category.slug}`}
-              key={category.id}
-              className="group"
-            >
+            <Link href={`/shop`} key={category.id} className="group">
               <div className="flex flex-col items-center">
                 <div className="relative w-24 h-24 mb-2 rounded-full overflow-hidden group-hover:ring-4 group-hover:ring-green-500 transition-all duration-300">
                   <Image
                     // src={category.image}
-                    src={`${}/category/${category.image}`}
+                    src={`${BASE_API_URL}/category/${category.image}`}
                     alt={category.name}
                     fill
                     sizes="(max-width: 768px) 188px, 188px"
@@ -165,6 +162,6 @@ export default function FeaturedCategories() {
           ))}
         </div>
       </div>
-    </section>
+    </div>
   );
 }

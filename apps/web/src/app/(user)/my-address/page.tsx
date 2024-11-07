@@ -88,39 +88,7 @@ export default function Component() {
         setCities,
         session.data.user?.access_token,
       );
-    // .then(() => {
-    //   setCities(tempCities);
-    //   setSelectedAddress((prev) => ({
-    //     ...prev!,
-    //     address: {
-    //       ...prev!.address,
-    //       City: {
-    //         ...prev!.address.City,
-    //         city: tempCities.length > 0 && tempCities[0].city,
-    //         id: tempCities.length > 0 && tempCities[0].id,
-    //       },
-    //     },
-    //   }));
-    // });
   }, [selectedProvince]);
-
-  // useEffect(() => {
-  //   if (tempCities.length > 0) {
-  //     setCities(tempCities);
-  //     selectedAddress &&
-  //       setSelectedAddress((prev) => ({
-  //         ...prev!,
-  //         address: {
-  //           ...prev!.address,
-  //           City: {
-  //             ...prev!.address.City,
-  //             city: tempCities[0].city,
-  //             id: tempCities[0].id,
-  //           },
-  //         },
-  //       }));
-  //   }
-  // }, [tempCities]);
 
   const handleAddAddress = () => {
     const newAddress: UserAddress = {

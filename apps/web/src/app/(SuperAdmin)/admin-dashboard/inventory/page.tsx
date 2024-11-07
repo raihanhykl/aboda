@@ -41,6 +41,9 @@ interface Product {
   id: number;
   name: string;
   stock: number;
+  Branch: {
+    branch_name: string;
+  };
 }
 
 export default function InventoryManagement() {
@@ -51,7 +54,7 @@ export default function InventoryManagement() {
   const [currentProduct, setCurrentProduct] = useState<any | null>(null);
   const [stockChange, setStockChange] = useState<number>(0);
 
-  const session = useSession();
+  const { data: session } = useSession();
 
   useEffect(() => {
     fetchBranches();
@@ -61,13 +64,13 @@ export default function InventoryManagement() {
     try {
       const response = await api.get(`/branch/get-all-branch`, {
         headers: {
-          Authorization: 'Bearer ' + session?.data?.user.access_token,
+          Authorization: 'Bearer ' + session?.user?.access_token,
         },
       });
       setBranches(response.data.data);
       console.log(response.data.data, 'ini response branches');
     } catch (error) {
-      console.error('Failed to fetch branches:');
+      console.error('Failed to fetch branches:', error);
     }
   };
 
@@ -77,7 +80,11 @@ export default function InventoryManagement() {
 
   const fetchProduct = async (): Promise<void> => {
     try {
-      const response = await api.get(`stocks/${branchId}/stocks`);
+      const response = await api.get(`/stocks/${branchId}/stocks`, {
+        headers: {
+          Authorization: 'Bearer ' + session?.user?.access_token,
+        },
+      });
       setProduct2(response.data);
     } catch (error) {
       console.error('Failed to fetch product:', error);
@@ -103,8 +110,13 @@ export default function InventoryManagement() {
 
     try {
       await api.put(
-        `stocks/${branchId}/products/${currentProduct.id}/update-stock`,
+        `/stocks/${branchId}/products/${currentProduct.id}/update-stock`,
         { stockChange },
+        {
+          headers: {
+            Authorization: 'Bearer ' + session?.user?.access_token,
+          },
+        },
       );
       await fetchProduct();
       setIsDialogOpen(false);
@@ -115,10 +127,18 @@ export default function InventoryManagement() {
 
   const deleteProduct = async (StockId: number): Promise<void> => {
     try {
-      await api.delete(`stocks/${StockId}/delete`);
+      await api.put(
+        `/stocks/${branchId}/products/${StockId}/update-stock`,
+        { stockChange: 0 },
+        {
+          headers: {
+            Authorization: 'Bearer ' + session?.user?.access_token,
+          },
+        },
+      );
       await fetchProduct();
     } catch (error) {
-      console.error('Failed to delete product:', error);
+      console.error('Failed to update stock:', error);
     }
   };
 
@@ -145,6 +165,7 @@ export default function InventoryManagement() {
         <TableHeader>
           <TableRow>
             <TableHead>Product Name</TableHead>
+            <TableHead>Branch Name</TableHead> {/* Added this column */}
             <TableHead>Current Stock</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
@@ -153,6 +174,8 @@ export default function InventoryManagement() {
           {product2.map((product) => (
             <TableRow key={product.id}>
               <TableCell>{product.Product.product_name}</TableCell>
+              <TableCell>{product.Branch?.branch_name || 'N/A'}</TableCell>{' '}
+              {/* Display Branch name */}
               <TableCell>{product.stock}</TableCell>
               <TableCell>
                 <Button
@@ -182,7 +205,7 @@ export default function InventoryManagement() {
             <DialogTitle>Update Stock {branchId}</DialogTitle>
             <DialogDescription>
               Update the stock for {currentProduct?.Product.product_name} on{' '}
-              {currentProduct?.Branch.branch_name}
+              {currentProduct?.Branch?.branch_name}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { Plus, Edit, Trash2, Image as ImageIcon, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,7 +23,15 @@ import {
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { api } from '@/config/axios.config';
+import axios from 'axios';
 
 type Product = {
   id: number;
@@ -31,6 +40,7 @@ type Product = {
   price: number;
   categoryId: number;
   images: string[];
+  weight: number;
 };
 
 type Category = {
@@ -39,81 +49,50 @@ type Category = {
 };
 
 export default function ProductManagement() {
-  const [product, setProduct] = useState<Product[]>([]);
-  const [category, setCategory] = useState<Category[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
   const [currentCategory, setCurrentCategory] = useState<Category | null>(null);
   const [newImages, setNewImages] = useState<File[]>([]);
   const [previewImages, setPreviewImages] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const { data: sessionData } = useSession();
 
   useEffect(() => {
-    const fetchProduct = async () => {
-      try {
-        const response = await api.get('/product/all');
-        console.log('Fetched products:', response.data.data);
-        setProduct(response.data.data);
-      } catch (error) {
-        console.error('Error fetching product:', error);
-      }
-    };
-
-    const fetchCategory = async () => {
-      try {
-        const response = await api.get('/category');
-        console.log('Fetched category:', response.data.data);
-        setCategory(response.data.data);
-      } catch (error) {
-        console.error('Error fetching category:', error);
-      }
-    };
-
-    fetchProduct();
-    fetchCategory();
-  }, []);
-
-  const validateProduct = (productData: Omit<Product, 'id'>) => {
-    if (
-      product.some(
-        (p) => p.name === productData.name && p.id !== currentProduct?.id,
-      )
-    ) {
-      console.error('A product with this name already exists.');
-      return false;
+    if (sessionData?.user?.access_token) {
+      fetchProducts();
+      fetchCategories();
     }
-    return true;
+  }, [sessionData]);
+
+  const fetchProducts = async () => {
+    try {
+      const response = await api.get('/product/all', {
+        headers: {
+          Authorization: `Bearer ${sessionData?.user?.access_token}`,
+        },
+      });
+      console.log('Fetched products:', response.data.data);
+      setProducts(response.data.data);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    }
   };
 
-  const validateCategory = (categoryData: Omit<Category, 'id'>) => {
-    if (
-      category.some(
-        (c) => c.name === categoryData.name && c.id !== currentCategory?.id,
-      )
-    ) {
-      console.error('A category with this name already exists.');
-      return false;
+  const fetchCategories = async () => {
+    try {
+      const response = await api.get('/category', {
+        headers: {
+          Authorization: `Bearer ${sessionData?.user?.access_token}`,
+        },
+      });
+      console.log('Fetched categories:', response.data.data);
+      setCategories(response.data.data);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
     }
-    return true;
-  };
-
-  const validateImage = (file: File) => {
-    const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
-    const maxSize = 1024 * 1024; // 1MB
-
-    if (!validTypes.includes(file.type)) {
-      console.error(
-        'Invalid file type. Only jpg, jpeg, png, and gif are allowed.',
-      );
-      return false;
-    }
-
-    if (file.size > maxSize) {
-      console.error('File size exceeds 1MB limit.');
-      return false;
-    }
-
-    return true;
   };
 
   const handleProductSubmit = async (
@@ -126,29 +105,57 @@ export default function ProductManagement() {
       description: formData.get('description') as string,
       price: Number(formData.get('price')),
       categoryId: Number(formData.get('categoryId')),
+      weight: Number(formData.get('weight')),
       images: currentProduct ? [...currentProduct.images] : [],
     };
 
-    if (!validateProduct(productData)) return;
+    if (
+      products.some(
+        (product) =>
+          product.name === productData.name &&
+          (!currentProduct || currentProduct.id !== product.id),
+      )
+    ) {
+      setError('Product name must be unique. Please choose a different name.');
+      return;
+    }
 
     const newImageUrls = newImages.map((file) => URL.createObjectURL(file));
     productData.images = [...productData.images, ...newImageUrls];
 
-    if (currentProduct) {
-      setProduct(
-        product.map((p) =>
-          p.id === currentProduct.id ? { ...productData, id: p.id } : p,
-        ),
-      );
-      await api.put(`/product/${currentProduct.id}`, productData);
-    } else {
-      const response = await api.post('/product', productData);
-      setProduct([...product, { ...productData, id: response.data.id }]);
-    }
+    const headers = {
+      Authorization: `Bearer ${sessionData?.user?.access_token}`,
+    };
 
-    setIsProductDialogOpen(false);
-    setNewImages([]);
-    setPreviewImages([]);
+    try {
+      if (currentProduct) {
+        await api.put(`/product/${currentProduct.id}`, productData, {
+          headers,
+        });
+        setProducts(
+          products.map((p) =>
+            p.id === currentProduct.id ? { ...productData, id: p.id } : p,
+          ),
+        );
+      } else {
+        const response = await api.post('/product', productData, { headers });
+        setProducts([...products, { ...productData, id: response.data.id }]);
+      }
+      console.log(productData);
+      setIsProductDialogOpen(false);
+      setNewImages([]);
+      setPreviewImages([]);
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        console.error('Axios error:', error.message);
+        setError(
+          `Error saving product: ${error.response?.data?.message || error.message}`,
+        );
+      } else {
+        console.error('Unexpected error:', error);
+        setError('An unexpected error occurred while saving the product.');
+      }
+    }
   };
 
   const handleCategorySubmit = async (
@@ -160,40 +167,69 @@ export default function ProductManagement() {
       name: formData.get('name') as string,
     };
 
-    if (!validateCategory(categoryData)) return;
+    const headers = {
+      Authorization: `Bearer ${sessionData?.user?.access_token}`,
+    };
 
-    if (currentCategory) {
-      setCategory(
-        category.map((c) =>
-          c.id === currentCategory.id ? { ...categoryData, id: c.id } : c,
-        ),
-      );
-      await api.put(`/category/${currentCategory.id}`, categoryData);
-    } else {
-      const response = await api.post('/category', categoryData);
-      setCategory([...category, { ...categoryData, id: response.data.id }]);
+    try {
+      if (currentCategory) {
+        await api.put(`/category/${currentCategory.id}`, categoryData, {
+          headers,
+        });
+        setCategories(
+          categories.map((c) =>
+            c.id === currentCategory.id ? { ...categoryData, id: c.id } : c,
+          ),
+        );
+      } else {
+        const response = await api.post('/category', categoryData, { headers });
+        setCategories([
+          ...categories,
+          { ...categoryData, id: response.data.id },
+        ]);
+      }
+      setIsCategoryDialogOpen(false);
+    } catch (error) {
+      console.error('Error saving category:', error);
     }
-
-    setIsCategoryDialogOpen(false);
   };
 
   const deleteProduct = async (productId: number) => {
-    setProduct(product.filter((prod) => prod.id !== productId));
-    await api.delete(`/product/${productId}`);
+    if (!confirm('Are you sure you want to delete this product?')) return;
+
+    try {
+      await api.delete(`/product/${productId}`, {
+        headers: {
+          Authorization: `Bearer ${sessionData?.user?.access_token}`,
+        },
+      });
+      setProducts(products.filter((prod) => prod.id !== productId));
+    } catch (error) {
+      console.error('Error deleting product:', error);
+    }
   };
 
   const deleteCategory = async (categoryId: number) => {
-    setCategory(category.filter((cat) => cat.id !== categoryId));
-    await api.delete(`/category/${categoryId}`);
+    if (!confirm('Are you sure you want to delete this category?')) return;
+
+    try {
+      await api.delete(`/category/${categoryId}`, {
+        headers: {
+          Authorization: `Bearer ${sessionData?.user?.access_token}`,
+        },
+      });
+      setCategories(categories.filter((cat) => cat.id !== categoryId));
+    } catch (error) {
+      console.error('Error deleting category:', error);
+    }
   };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
-    const validFiles = files.filter(validateImage);
-    setNewImages((prevImages) => [...prevImages, ...validFiles]);
+    setNewImages((prevImages) => [...prevImages, ...files]);
     setPreviewImages((prevPreviews) => [
       ...prevPreviews,
-      ...validFiles.map((file) => URL.createObjectURL(file)),
+      ...files.map((file) => URL.createObjectURL(file)),
     ]);
   };
 
@@ -217,10 +253,20 @@ export default function ProductManagement() {
         Product Management
       </h1>
 
+      {error && (
+        <div
+          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
+          role="alert"
+        >
+          <strong className="font-bold">Error: </strong>
+          <span className="block sm:inline">{error}</span>
+        </div>
+      )}
+
       <Tabs defaultValue="product" className="space-y-4">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="product">Product</TabsTrigger>
-          <TabsTrigger value="category">Category</TabsTrigger>
+          <TabsTrigger value="product">Products</TabsTrigger>
+          <TabsTrigger value="category">Categories</TabsTrigger>
         </TabsList>
 
         <TabsContent value="product">
@@ -243,173 +289,43 @@ export default function ProductManagement() {
                     Description
                   </TableHead>
                   <TableHead>Price</TableHead>
-                  <TableHead className="hidden md:table-cell">
-                    Category
-                  </TableHead>
-                  <TableHead className="hidden lg:table-cell">Images</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead>Weight (kg)</TableHead>
+                  <TableHead className="w-[150px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
+
               <TableBody>
-                {product.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center">
-                      No products available.
+                {products.map((product) => (
+                  <TableRow key={product.id}>
+                    <TableCell>{product.name}</TableCell>
+                    <TableCell className="hidden sm:table-cell">
+                      {product.description}
+                    </TableCell>
+                    <TableCell>{`Rp ${product.price.toLocaleString()}`}</TableCell>
+                    <TableCell>{product.weight}</TableCell>{' '}
+                    <TableCell>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setCurrentProduct(product);
+                          setIsProductDialogOpen(true);
+                        }}
+                        className="mr-2"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => deleteProduct(product.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </TableCell>
                   </TableRow>
-                ) : (
-                  product.map((prod) => (
-                    <TableRow key={prod.id}>
-                      <TableCell>{prod.name}</TableCell>
-                      <TableCell className="hidden sm:table-cell">
-                        {prod.description}
-                      </TableCell>
-                      <TableCell>RP. {prod.price}</TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        {
-                          category.find((cat) => cat.id === prod.categoryId)
-                            ?.name
-                        }
-                      </TableCell>
-                      <TableCell className="hidden lg:table-cell">
-                        <div className="flex flex-wrap gap-1">
-                          {prod.images.map((image, index) => (
-                            <img
-                              key={index}
-                              src={image}
-                              alt="product"
-                              className="h-8 w-8 rounded-md object-cover"
-                            />
-                          ))}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          onClick={() => {
-                            setCurrentProduct(prod);
-                            setPreviewImages(prod.images);
-                            setIsProductDialogOpen(true);
-                          }}
-                          size="icon"
-                          variant="ghost"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          onClick={() => deleteProduct(prod.id)}
-                          size="icon"
-                          variant="ghost"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
+                ))}
               </TableBody>
             </Table>
           </div>
-
-          <Dialog
-            open={isProductDialogOpen}
-            onOpenChange={setIsProductDialogOpen}
-          >
-            <DialogContent>
-              <form onSubmit={handleProductSubmit}>
-                <DialogHeader>
-                  <DialogTitle>
-                    {currentProduct ? 'Edit Product' : 'Add Product'}
-                  </DialogTitle>
-                </DialogHeader>
-
-                <div className="grid gap-4 py-4">
-                  <Label htmlFor="name">Name</Label>
-                  <Input
-                    id="name"
-                    name="name"
-                    defaultValue={currentProduct?.name || ''}
-                    required
-                  />
-
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    name="description"
-                    defaultValue={currentProduct?.description || ''}
-                    required
-                  />
-
-                  <Label htmlFor="price">Price</Label>
-                  <Input
-                    type="number"
-                    id="price"
-                    name="price"
-                    defaultValue={currentProduct?.price || ''}
-                    required
-                  />
-
-                  <Label htmlFor="categoryId">Category</Label>
-                  <select
-                    id="categoryId"
-                    name="categoryId"
-                    defaultValue={currentProduct?.categoryId || ''}
-                    required
-                    className="border border-gray-300 rounded px-3 py-2 w-full"
-                  >
-                    {category.map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </option>
-                    ))}
-                  </select>
-
-                  <Label>Images</Label>
-                  <div className="space-y-2">
-                    <Input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                    />
-                    <div className="flex flex-wrap gap-2">
-                      {previewImages.map((image, index) => (
-                        <div
-                          key={index}
-                          className="relative h-16 w-16 overflow-hidden rounded-md"
-                        >
-                          <img
-                            src={image}
-                            alt="product-preview"
-                            className="h-full w-full object-cover"
-                          />
-                          <button
-                            type="button"
-                            className="absolute right-0 top-0 m-1 rounded-full bg-red-500 p-1 text-white"
-                            onClick={() =>
-                              index < currentProduct?.images.length
-                                ? removeExistingImage(index)
-                                : removeImage(
-                                    index -
-                                      (currentProduct?.images.length || 0),
-                                  )
-                            }
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <DialogFooter>
-                  <Button type="submit">
-                    {currentProduct ? 'Update Product' : 'Create Product'}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
         </TabsContent>
 
         <TabsContent value="category">
@@ -428,78 +344,206 @@ export default function ProductManagement() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead className="w-[150px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {category.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={2} className="text-center">
-                      No categories available.
+                {categories.map((category) => (
+                  <TableRow key={category.id}>
+                    <TableCell>{category.name}</TableCell>
+                    <TableCell>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setCurrentCategory(category);
+                          setIsCategoryDialogOpen(true);
+                        }}
+                        className="mr-2"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => deleteCategory(category.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </TableCell>
                   </TableRow>
-                ) : (
-                  category.map((cat) => (
-                    <TableRow key={cat.id}>
-                      <TableCell>{cat.name}</TableCell>
-                      <TableCell>
-                        <Button
-                          onClick={() => {
-                            setCurrentCategory(cat);
-                            setIsCategoryDialogOpen(true);
-                          }}
-                          size="icon"
-                          variant="ghost"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          onClick={() => deleteCategory(cat.id)}
-                          size="icon"
-                          variant="ghost"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
+                ))}
               </TableBody>
             </Table>
           </div>
-
-          <Dialog
-            open={isCategoryDialogOpen}
-            onOpenChange={setIsCategoryDialogOpen}
-          >
-            <DialogContent>
-              <form onSubmit={handleCategorySubmit}>
-                <DialogHeader>
-                  <DialogTitle>
-                    {currentCategory ? 'Edit Category' : 'Add Category'}
-                  </DialogTitle>
-                </DialogHeader>
-
-                <div className="grid gap-4 py-4">
-                  <Label htmlFor="categoryName">Name</Label>
-                  <Input
-                    id="categoryName"
-                    name="name"
-                    defaultValue={currentCategory?.name || ''}
-                    required
-                  />
-                </div>
-
-                <DialogFooter>
-                  <Button type="submit">
-                    {currentCategory ? 'Update Category' : 'Create Category'}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
         </TabsContent>
       </Tabs>
+
+      <Dialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {currentProduct ? 'Edit Product' : 'Add Product'}
+            </DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={handleProductSubmit}>
+            <div className="grid gap-4">
+              <div>
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  defaultValue={currentProduct?.name || ''}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  name="description"
+                  defaultValue={currentProduct?.description || ''}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="price">Price</Label>
+                <Input
+                  id="price"
+                  name="price"
+                  type="number"
+                  defaultValue={currentProduct?.price || ''}
+                  required
+                  placeholder="Price in Rupiah"
+                />
+              </div>
+              <div>
+                <Label htmlFor="weight">Weight (kg)</Label>
+                <Input
+                  id="weight"
+                  name="weight"
+                  type="number"
+                  defaultValue={currentProduct?.weight || ''}
+                  required
+                  placeholder="Weight in kilograms"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="categoryId">Category</Label>
+                <Select
+                  name="categoryId"
+                  defaultValue={
+                    currentProduct?.categoryId
+                      ? currentProduct.categoryId.toString()
+                      : ''
+                  }
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category) =>
+                      category.id ? (
+                        <SelectItem
+                          key={category.id}
+                          value={category.id.toString()}
+                        >
+                          {category.name}
+                        </SelectItem>
+                      ) : null,
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="images">Images</Label>
+                <Input
+                  id="images"
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                />
+                <div className="mt-2">
+                  {previewImages.map((image, index) => (
+                    <div
+                      key={index}
+                      className="relative inline-block mr-2 mb-2"
+                    >
+                      <img
+                        src={image}
+                        alt={`Image ${index}`}
+                        className="w-16 h-16 object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        className="absolute top-0 right-0 p-1 bg-white rounded-full"
+                      >
+                        <X className="h-4 w-4 text-red-500" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="submit">Save</Button>
+              <Button
+                variant="outline"
+                onClick={() => setIsProductDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={isCategoryDialogOpen}
+        onOpenChange={setIsCategoryDialogOpen}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {currentCategory ? 'Edit Category' : 'Add Category'}
+            </DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={handleCategorySubmit}>
+            <div className="grid gap-4">
+              <div>
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  defaultValue={currentCategory?.name || ''}
+                  required
+                />
+                <Label htmlFor="images">Images</Label>
+                <Input
+                  id="images"
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="submit">Save</Button>
+              <Button
+                variant="outline"
+                onClick={() => setIsCategoryDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

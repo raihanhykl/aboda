@@ -1,90 +1,13 @@
-// import { NextResponse } from 'next/server';
-// // Import midtrans-client using require and destructure Snap directly
-// // const midtransClient = require('midtrans-client');
-// // import Midtrans, { Snap } from 'midtrans-client';
-// // const midtransClient = require('midtrans-client');
-// import midtransClient from 'midtrans-client';
-
-// export async function POST(request: Request) {
-//   try {
-//     const { carts, shippingCost } = await request.json();
-
-//     // Logging data yang diterima dari frontend
-//     console.log('Received data:', { carts, shippingCost });
-
-//     // Validasi data sebelum memproses transaksi
-//     if (!carts || !shippingCost) {
-//       return NextResponse.json(
-//         {
-//           message: 'Missing required fields: carts or shippingCost',
-//         },
-//         { status: 400 },
-//       );
-//     }
-
-//     // Hitung total harga
-//     const totalPrice = carts.reduce(
-//       (total: number, cart: any) =>
-//         total + cart.ProductStock.Product.price * cart.quantity,
-//       0,
-//     );
-
-//     const grossAmount = totalPrice + shippingCost;
-
-//     // Create instance of Snap using require-based import
-//     // const snap = new midtransClient.Snap({
-//     //   isProduction: false, // Set to true in production
-//     //   serverKey: 'SB-Mid-server-p8qMfLxRBmt85nq7t9go50wU', // Replace with your actual server key
-//     //   clientKey: 'SB-Mid-client-c7SnHqsRuZTiamhl',
-//     // });
-//     let snap = new midtransClient.Snap();
-
-//     const transactionDetails = {
-//       order_id: `order-${new Date().getTime()}`,
-//       gross_amount: grossAmount,
-//     };
-
-//     const itemDetails = carts.map((cart: any) => ({
-//       id: `item-${cart.ProductStock.Product.name}`,
-//       price: cart.ProductStock.Product.price,
-//       quantity: cart.quantity,
-//       name: cart.ProductStock.Product.name,
-//     }));
-
-//     // Create the transaction with Midtrans
-//     const transaction = await snap.createTransaction({
-//       transaction_details: transactionDetails,
-//       item_details: itemDetails,
-//       customer_details: {
-//         first_name: 'Customer',
-//         email: 'customer@example.com',
-//       },
-//     });
-
-//     return NextResponse.json({
-//       token: transaction.token,
-//       redirect_url: transaction.redirect_url,
-//     });
-//   } catch (error: any) {
-//     console.error('Error creating transaction with Midtrans:', error.message);
-
-//     return NextResponse.json(
-//       {
-//         message: 'Transaction failed',
-//         error: error.message,
-//       },
-//       { status: 500 },
-//     );
-//   }
-// }
+// @ts-ignore
 import { NextRequest, NextResponse } from 'next/server';
 import Midtrans, { Snap } from 'midtrans-client';
 import { api } from '@/config/axios.config';
+import { SNAP_MIDTRANS_CLIENT_KEY, SNAP_MIDTRANS_SERVER_KEY } from '@/config';
 
 const snap = new Snap({
   isProduction: false,
-  serverKey: 'SB-Mid-server-p8qMfLxRBmt85nq7t9go50wU', // Replace with your actual server key
-  clientKey: 'SB-Mid-client-c7SnHqsRuZTiamhl',
+  serverKey: `${SNAP_MIDTRANS_SERVER_KEY}`,
+  clientKey: `${SNAP_MIDTRANS_CLIENT_KEY}`,
 });
 
 export async function POST(request: NextRequest) {
@@ -100,24 +23,13 @@ export async function POST(request: NextRequest) {
     } = await request.json();
 
     let token;
+    console.log('Is production mode:', snap.apiConfig.isProduction);
     console.log(order_token, 'ini order_token di route.ts');
     console.log(shippingCost, 'ini shipping cost di route.ts');
-    // const statusResponse = await snap.transaction.status(order_id);
-    // token =  await api.get(`/order/get-midtrans-token/${order_id}`);
-    // statusResponse.transaction_status === 'pending'
-    //   ? statusResponse.transaction_id
-    //   : null;
-    // console.log(statusResponse, 'ini token kalo udah ada');
+    console.log(order_id, 'ini orderid');
 
-    // const { carts, shippingCost } = await request.json();
     const parameter: Midtrans.TransactionRequestBody = {
-      // item_details: {
-      //   name: productName,
-      //   price: price,
-      //   quantity: quantity,
-      // },
       transaction_details: {
-        // order_id: `order-${new Date().getTime()}`,
         order_id,
         gross_amount: shippingCost,
       },

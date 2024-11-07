@@ -54,6 +54,7 @@ type StockHistoryEntry = {
   stock_after: number;
   status: 'in' | 'out';
   quantity: number;
+  updatedAt: string;
 };
 
 type ProcessedStockData = {
@@ -61,6 +62,11 @@ type ProcessedStockData = {
   additions: number;
   reductions: number;
   finalStock: number;
+};
+
+type SalesData = {
+  product: string;
+  quantitySold: number;
 };
 
 export default function AdminDashboard() {
@@ -85,7 +91,6 @@ export default function AdminDashboard() {
         },
       });
       setStockHistory(response.data);
-      console.log(response.data, 'ini stock history');
     } catch (err) {
       console.error('Error fetching stock history:', err);
       setError('Failed to fetch stock history. Please try again.');
@@ -109,21 +114,8 @@ export default function AdminDashboard() {
         });
       }
 
-      //   const productData = productMap.get(Product.id);
-      //   if (productData) {
-      //     if (status === 'in') {
-      //       productData.additions += quantity;
-      //     } else if (status === 'out') {
-      //       productData.reductions += quantity;
-      //     }
-      //     productData.finalStock = entry.stock_after;
-      //   }
-      // });
-
       const productData = productMap.get(Product.id);
       if (productData) {
-        console.log(entry.status, 'ini status');
-
         if (entry.status === 'in') {
           productData.additions += entry.quantity;
         } else if (entry.status === 'out') {
@@ -137,40 +129,43 @@ export default function AdminDashboard() {
     return Array.from(productMap.values());
   };
 
-  //   const processStockData = (): ProcessedStockData[] => {
-  //   const productMap = new Map<number, ProcessedStockData>();
+  const processSalesData = (): SalesData[] => {
+    const salesMap = new Map<number, SalesData>();
 
-  //   // Iterate through stock history to calculate additions, reductions, and final stock
-  //   stockHistory.forEach((entry) => {
-  //     const { Product, quantity, status, stock_after } = entry.ProductStock;
-  //     console.log('Processing:', Product.product_name, quantity, status, stock_after); // Cek data per item
+    stockHistory
+      .filter((entry) => entry.status === 'out')
+      .forEach((entry) => {
+        const { Product } = entry.ProductStock;
 
-  //     if (!productMap.has(Product.id)) {
-  //       productMap.set(Product.id, {
-  //         product: Product.product_name,
-  //         additions: 0,
-  //         reductions: 0,
-  //         finalStock: 0,  // Initialize finalStock
-  //       });
-  //     }
+        if (!salesMap.has(Product.id)) {
+          salesMap.set(Product.id, {
+            product: Product.product_name,
+            quantitySold: 0,
+          });
+        }
 
-  //     const productData = productMap.get(Product.id);
-  //     if (productData) {
-  //       if (status === 'in') {
-  //         productData.additions += quantity;
-  //       } else if (status === 'out') {
-  //         productData.reductions += quantity;
-  //       }
+        const salesData = salesMap.get(Product.id);
+        if (salesData) {
+          salesData.quantitySold += entry.quantity;
+        }
+      });
 
-  //       productData.finalStock = stock_after;
-  //     }
-  //   });
+    return Array.from(salesMap.values());
+  };
 
-  //   console.log('Processed data:', Array.from(productMap.values())); // Cek hasil pemrosesan
-  //   return Array.from(productMap.values());
-  // };
+  const uniqueBranches = Array.from(
+    new Set(stockHistory.map((entry) => entry.ProductStock.Branch.id)),
+  )
+    .map((branchId) => {
+      const branch = stockHistory.find(
+        (entry) => entry.ProductStock.Branch.id === branchId,
+      )?.ProductStock.Branch;
+      return branch ? { id: branch.id, name: branch.branch_name } : null;
+    })
+    .filter(Boolean);
 
   const stockData = processStockData();
+  const salesData = processSalesData();
 
   if (loading) {
     return <div className="text-center p-4">Loading...</div>;
@@ -191,8 +186,11 @@ export default function AdminDashboard() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Stores</SelectItem>
-              <SelectItem value="1">Store 1</SelectItem>
-              <SelectItem value="2">Store 2</SelectItem>
+              {uniqueBranches.map((branch) => (
+                <SelectItem key={branch?.id} value={branch?.id.toString()!}>
+                  {branch?.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Popover>
@@ -225,6 +223,54 @@ export default function AdminDashboard() {
           <TabsTrigger value="sales">Sales Report</TabsTrigger>
           <TabsTrigger value="stock">Stock Report</TabsTrigger>
         </TabsList>
+
+        {/* Sales Report */}
+        <TabsContent value="sales" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Sales Summary</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr>
+                      <th className="text-left">Product</th>
+                      <th className="text-right">Quantity Sold</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {salesData.map((item, index) => (
+                      <tr key={index}>
+                        <td>{item.product}</td>
+                        <td className="text-right">{item.quantitySold}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Sales Visualization</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart data={salesData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="product" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="quantitySold" fill="#8884d8" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Stock Report */}
         <TabsContent value="stock" className="space-y-4">
           <Card>
             <CardHeader>

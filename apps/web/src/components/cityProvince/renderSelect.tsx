@@ -52,33 +52,3 @@ export default function RenderSelect({
     />
   );
 }
-
-// const renderSelect = (
-//     name: keyof AddressFormData,
-//     placeholder: string,
-//     items: any[],
-//     valueKey: string,
-//     labelKey: string,
-//   ) => (
-//     <Controller
-//       name={name}
-//       control={control}
-//       render={({ field }) => (
-//         <Select onValueChange={field.onChange}>
-//           <SelectTrigger>
-//             <SelectValue placeholder={placeholder} />
-//           </SelectTrigger>
-//           <SelectContent className="relative z-50">
-//             {items.map((item) => (
-//               <SelectItem
-//                 key={item[valueKey]}
-//                 value={item[valueKey].toString()}
-//               >
-//                 {item[labelKey]}
-//               </SelectItem>
-//             ))}
-//           </SelectContent>
-//         </Select>
-//       )}
-//     />
-//   );

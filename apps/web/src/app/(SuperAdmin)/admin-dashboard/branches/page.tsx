@@ -1,73 +1,24 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Edit, Trash2, Plus } from 'lucide-react';
-import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  useMapEvents,
-  useMap,
-} from 'react-leaflet';
-import { useForm, Controller } from 'react-hook-form';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  getAllBranch,
-  getUnassignedAdmin,
-  unassignAdminAction,
-} from '@/action/admin.action';
-import { IBranch, IAdminDetail } from '@/interfaces/branch';
 import { useSession } from 'next-auth/react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import CreateAdminPopover from '../../components/createAdmin';
-import { api } from '@/config/axios.config';
-import DeleteBranch from '../../components/deleteBranch';
-import UnassignAdmin from '../../components/unassignAdmin';
+import { getAllBranch } from '@/action/admin.action';
+import { IAdminDetail, IBranch } from '@/interfaces/branch';
 import { fetchData } from '@/action/user.action';
-import RenderSelect from '@/components/cityProvince/renderSelect';
-
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl:
-    'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-});
+import { api } from '@/config/axios.config';
+import BranchList from './components/branchList';
+import BranchDetails from './components/branchDetails';
 
 export default function SuperAdminDashboard() {
   const [branches, setBranches] = useState<IBranch[]>([]);
+  const [branchAdmin, setBranchAdmin] = useState<IAdminDetail[]>([]);
   const [selectedBranch, setSelectedBranch] = useState<IBranch | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
-  const [position, setPosition] = useState<[number, number]>([0, 0]);
-  const [availableAdmins, setAvailableAdmins] = useState<IAdminDetail[]>([]);
-  const [showAdminSuggestions, setShowAdminSuggestions] = useState(false);
-  const [branchAdmin, setBranchAdmin] = useState<IAdminDetail[]>([]);
-  const session = useSession();
   const [provinces, setProvinces] = useState<any[]>([]);
   const [cities, setCities] = useState<any[]>([]);
-
-  const { control, handleSubmit, reset, watch } = useForm<IBranch>();
-
-  const selectedProvince = watch('address.City.Province.id');
-
-  useEffect(() => {
-    if (isEditing || isAdding) {
-      fetchAvailableAdmins();
-    }
-  }, [isEditing, isAdding]);
-
-  useEffect(() => {
-    if (selectedBranch) {
-      setPosition([selectedBranch.address.lat, selectedBranch.address.lon]);
-      reset(selectedBranch);
-    }
-  }, [selectedBranch, reset]);
-
+  const session = useSession();
+  const [position, setPosition] = useState<[number, number]>([0, 0]);
   useEffect(() => {
     if (session.data?.user) {
       getAllBranch(session.data.user.access_token).then((res) => {
@@ -75,7 +26,6 @@ export default function SuperAdminDashboard() {
         setBranches(data);
         setSelectedBranch(data[0]);
         setPosition([data[0].address.lat, data[0].address.lon]);
-        setBranchAdmin(data[0].AdminDetails);
       });
       fetchData(
         '/address/get-provinces',
@@ -86,119 +36,23 @@ export default function SuperAdminDashboard() {
   }, [session]);
 
   useEffect(() => {
-    if (!session.data?.user) return;
-    selectedProvince &&
-      fetchData(
-        `/address/get-city-by-province?provinceId=${selectedProvince}`,
-        setCities,
-        session.data.user?.access_token,
-      );
-  }, [selectedProvince]);
-
-  const MapUpdater = () => {
-    const map = useMap();
-    useEffect(() => {
-      if (position) {
-        map.setView(position, 13); // Memusatkan peta ke posisi baru
-      }
-    }, [position, map]);
-    return null;
-  };
-
-  const fetchAvailableAdmins = async () => {
-    getUnassignedAdmin(session.data?.user.access_token!)
-      .then((res) => {
-        setAvailableAdmins(res.data.data as IAdminDetail[]);
-      })
-      .catch((error) => {
-        console.error('Error fetching available admins:', error.message);
-      });
-  };
-
-  const LocationMarker = () => {
-    useMapEvents({
-      click(e) {
-        setPosition([e.latlng.lat, e.latlng.lng]);
-      },
-    });
-    return position ? <Marker position={position} /> : null;
-  };
+    if (!session.data?.user || !selectedBranch) return;
+    fetchData(
+      `/address/get-city-by-province?provinceId=${selectedBranch.address.City.Province.id}`,
+      setCities,
+      session.data.user?.access_token,
+    );
+  }, [selectedBranch, session]);
 
   const handleBranchClick = (branch: IBranch) => {
     if (isAdding) {
       handleCancelAdd();
     }
-    setSelectedBranch(branch);
     setBranchAdmin(branch.AdminDetails);
+    setSelectedBranch(branch);
     setIsAdding(false);
     setIsEditing(false);
-  };
-
-  const handleSaveBranch = async (data: IBranch) => {
-    const updatedBranch = {
-      ...data,
-      address: {
-        ...data.address,
-        lat: position[0],
-        lon: position[1],
-      },
-      AdminDetails: branchAdmin,
-    };
-    if (isAdding) {
-      setBranches([...branches.slice(0, -1), updatedBranch]);
-      setIsAdding(false);
-      await api.post(
-        `/branch/create-branch`,
-        { data: updatedBranch },
-        {
-          headers: {
-            Authorization: 'Bearer ' + session.data?.user.access_token,
-          },
-        },
-      );
-    } else {
-      setBranches(
-        branches.map((branch) =>
-          branch.id === updatedBranch.id ? updatedBranch : branch,
-        ),
-      );
-      await api.put(
-        `/branch/update-branch`,
-        { data: updatedBranch },
-        {
-          headers: {
-            Authorization: 'Bearer ' + session.data?.user.access_token,
-          },
-        },
-      );
-    }
-    setSelectedBranch(updatedBranch);
-    setIsEditing(false);
-  };
-
-  const handleDeleteAdmin = async (id: number) => {
-    await unassignAdminAction(id, session.data?.user.access_token!).then(() => {
-      setBranchAdmin(branchAdmin.filter((admin) => admin.id !== id));
-      fetchAvailableAdmins();
-      setIsEditing(false);
-    });
-  };
-  const handleDeleteBranch = async (id: number) => {
-    await api
-      .put(
-        `branch/delete-branch/${id}`,
-        {},
-        {
-          headers: {
-            Authorization: 'Bearer ' + session.data?.user.access_token,
-          },
-        },
-      )
-      .then(() => {
-        setBranches(branches.filter((branch) => branch.id !== id));
-        setSelectedBranch(null);
-      })
-      .catch((err) => alert(`failed hit api: ${err.message}`));
+    setPosition([branch.address.lat, branch.address.lon]);
   };
 
   const handleAddBranch = () => {
@@ -227,15 +81,12 @@ export default function SuperAdminDashboard() {
     };
     setBranches([...branches, newBranch]);
     setSelectedBranch(newBranch);
-    setBranchAdmin([]);
-    setPosition([newBranch.address.lat, newBranch.address.lon]);
     setIsAdding(true);
     setIsEditing(true);
-    reset(newBranch);
   };
 
   const handleCancelAdd = () => {
-    if (isAdding && selectedBranch?.id == branches[branches.length - 1].id) {
+    if (isAdding && selectedBranch?.id === branches[branches.length - 1].id) {
       setBranches(branches.slice(0, -1));
     }
     setSelectedBranch(null);
@@ -243,595 +94,104 @@ export default function SuperAdminDashboard() {
     setIsEditing(false);
   };
 
-  const handleAddAdmin = (admin: IAdminDetail) => {
-    if (selectedBranch) {
-      setBranchAdmin((prev) => [...prev, admin]);
-      setShowAdminSuggestions(false);
+  const handleSaveBranch = async (updatedBranch: IBranch) => {
+    const finalBranch = {
+      ...updatedBranch,
+      address: {
+        ...updatedBranch.address,
+        lat: position[0],
+        lon: position[1],
+      },
+    };
+    console.log(finalBranch, 'ini final branch');
+    if (isAdding) {
+      try {
+        setBranches([...branches.slice(0, -1), finalBranch]);
+        await api.post(
+          `/branch/create-branch`,
+          { data: finalBranch },
+          {
+            headers: {
+              Authorization: 'Bearer ' + session.data?.user.access_token,
+            },
+          },
+        );
+        alert('success');
+        setBranches([...branches.slice(0, -1), updatedBranch]);
+        setIsAdding(false);
+      } catch (error) {
+        console.error('Error creating branch:', error);
+      }
+    } else {
+      try {
+        await api.put(
+          `/branch/update-branch`,
+          { data: finalBranch },
+          {
+            headers: {
+              Authorization: 'Bearer ' + session.data?.user.access_token,
+            },
+          },
+        );
+        setBranches(
+          branches.map((branch) =>
+            branch.id === updatedBranch.id ? updatedBranch : branch,
+          ),
+        );
+      } catch (error) {
+        console.error('Error updating branch:', error);
+      }
+    }
+    setSelectedBranch(updatedBranch);
+    setIsEditing(false);
+  };
+
+  const handleDeleteBranch = async (id: number) => {
+    try {
+      await api.put(
+        `branch/delete-branch/${id}`,
+        {},
+        {
+          headers: {
+            Authorization: 'Bearer ' + session.data?.user.access_token,
+          },
+        },
+      );
+      setBranches(branches.filter((branch) => branch.id !== id));
+      setSelectedBranch(null);
+    } catch (error) {
+      console.error('Error deleting branch:', error);
     }
   };
 
-  const handleAvailableAdmins = (newAdmin: IAdminDetail[]) => {
-    if (newAdmin.length > 0) setAvailableAdmins((prevAdmins) => [...newAdmin]);
-  };
-
   return (
-    <div className=" min-h-screen p-4">
+    <div className="min-h-screen p-4">
       <div className="flex flex-col lg:flex-row gap-8">
-        <Card className="w-full lg:w-1/3">
-          <CardHeader>
-            <CardTitle className="flex justify-between items-center">
-              Branches
-              <Button size="icon" onClick={handleAddBranch} disabled={isAdding}>
-                <Plus className="h-4 w-4" />
-              </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2">
-              {branches &&
-                branches.map((branch) => (
-                  <li
-                    key={branch.id}
-                    onClick={() => handleBranchClick(branch)}
-                    className={`cursor-pointer p-2 rounded transition-colors ${
-                      selectedBranch?.id === branch.id
-                        ? 'bg-green-100 text-green-800'
-                        : 'hover:bg-gray-100'
-                    }`}
-                  >
-                    {branch.branch_name}
-                  </li>
-                ))}
-            </ul>
-          </CardContent>
-        </Card>
-
+        <BranchList
+          branches={branches}
+          selectedBranch={selectedBranch}
+          onBranchClick={handleBranchClick}
+          onAddBranch={handleAddBranch}
+          isAdding={isAdding}
+          session={session && session}
+        />
         {selectedBranch && (
-          <Card className="w-full lg:w-2/3">
-            <CardHeader>
-              <CardTitle className="flex justify-between items-center">
-                {isEditing
-                  ? selectedBranch?.id === branches[branches.length - 1].id
-                    ? 'Add New Branch'
-                    : 'Edit Branch'
-                  : 'Branch Details'}
-                <div
-                  className={`space-x-2 ${session.data?.user.roleId !== 2 && 'hidden'}`}
-                >
-                  {!isEditing ? (
-                    <>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setIsEditing(true)}
-                      >
-                        <Edit className="h-4 w-4 mr-2" />
-                        Edit
-                      </Button>
-                      <DeleteBranch
-                        branchName={selectedBranch.branch_name}
-                        id={selectedBranch.id}
-                        handler={handleDeleteBranch}
-                      />
-                    </>
-                  ) : (
-                    <>
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={handleSubmit(handleSaveBranch)}
-                      >
-                        Save
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleCancelAdd}
-                      >
-                        Cancel
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Tabs defaultValue="details">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="details">Details</TabsTrigger>
-                  <TabsTrigger
-                    value="admins"
-                    disabled={session?.data?.user.roleId !== 2}
-                  >
-                    Admins
-                  </TabsTrigger>
-                  <TabsTrigger value="products">Products</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="details" className="space-y-4">
-                  <form
-                    onSubmit={handleSubmit(handleSaveBranch)}
-                    className="space-y-4"
-                  >
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="col-span-2">
-                        <Label htmlFor="branch_name">Branch Name</Label>
-                        <Controller
-                          name="branch_name"
-                          control={control}
-                          render={({ field }) => (
-                            <Input
-                              {...field}
-                              disabled={!isEditing}
-                              className="mt-1"
-                            />
-                          )}
-                        />
-                      </div>
-                      <div className="col-span-2">
-                        <Label htmlFor="street">Street</Label>
-                        <Controller
-                          name="address.street"
-                          control={control}
-                          render={({ field }) => (
-                            <Input
-                              {...field}
-                              disabled={!isEditing}
-                              className="mt-1"
-                            />
-                          )}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="city">City</Label>
-                        <RenderSelect
-                          name="address.City.id"
-                          placeholder={selectedBranch.address.City.city}
-                          items={cities}
-                          valueKey="id"
-                          labelKey="city"
-                          control={control}
-                          disabled={!isEditing || !selectedProvince}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="province">Province</Label>
-                        <RenderSelect
-                          name="address.City.Province.id"
-                          placeholder={
-                            selectedBranch.address.City.Province.name
-                          }
-                          items={provinces}
-                          valueKey="id"
-                          labelKey="name"
-                          control={control}
-                          disabled={!isEditing}
-                        />
-                      </div>
-                    </div>
-                  </form>
-
-                  <div>
-                    <Label>Location</Label>
-                    <div className="mt-1 h-64 rounded-md overflow-hidden w-full">
-                      <MapContainer
-                        center={position}
-                        zoom={13}
-                        style={{ height: '100%', width: '100%', zIndex: 1 }}
-                      >
-                        <TileLayer
-                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                        />
-                        <LocationMarker />
-                        <MapUpdater />
-                      </MapContainer>
-                    </div>
-                    {isEditing && (
-                      <p className="mt-2 text-sm text-gray-500">
-                        Click on the map to set the branch location.
-                      </p>
-                    )}
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="admins">
-                  <ul className="space-y-2">
-                    {branchAdmin.map((admin) => (
-                      <li
-                        key={admin.id}
-                        className="flex justify-between items-center p-2 bg-gray-50 rounded"
-                      >
-                        {admin.User.first_name} {admin.User.last_name}
-                        {isEditing && (
-                          <UnassignAdmin
-                            adminName={admin.User.first_name}
-                            id={admin.id}
-                            handler={handleDeleteAdmin}
-                          />
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                  {isEditing && (
-                    <div className="relative mt-4">
-                      <Button
-                        variant="outline"
-                        onClick={() =>
-                          setShowAdminSuggestions(!showAdminSuggestions)
-                        }
-                      >
-                        + Add Admin
-                      </Button>
-                      {showAdminSuggestions && (
-                        <Card className="absolute z-10 mt-1 w-full">
-                          <CardContent className="p-0">
-                            <ul className="max-h-60 overflow-auto">
-                              <li className=" text-green-500 p-2 hover:bg-green-100 cursor-pointe">
-                                <CreateAdminPopover
-                                  setAvailable={handleAvailableAdmins}
-                                />
-                              </li>
-                              {availableAdmins.map((admin: IAdminDetail) => (
-                                <li
-                                  key={admin.id}
-                                  className="p-2 hover:bg-gray-100 cursor-pointer"
-                                  onClick={() => handleAddAdmin(admin)}
-                                >
-                                  {admin.User.first_name} {admin.User.last_name}
-                                </li>
-                              ))}
-                            </ul>
-                          </CardContent>
-                        </Card>
-                      )}
-                    </div>
-                  )}
-                </TabsContent>
-
-                <TabsContent value="products">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="bg-gray-50">
-                        <th className="px-4 py-2 text-left">Product Name</th>
-                        <th className="px-4 py-2 text-left">Description</th>
-                        <th className="px-4 py-2 text-left">Price</th>
-                        <th className="px-4 py-2 text-left">Stock</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {selectedBranch.ProductStocks.map((stock) => (
-                        <tr key={stock.id} className="border-t">
-                          <td className="px-4 py-2">
-                            {stock.Product.product_name}
-                          </td>
-                          <td className="px-4 py-2">
-                            {stock.Product.description}
-                          </td>
-                          <td className="px-4 py-2">
-                            Rp. {stock.Product.price.toLocaleString('id-ID')}
-                          </td>
-                          <td className="px-4 py-2">{stock.stock}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
+          <BranchDetails
+            branch={selectedBranch}
+            isEditing={isEditing}
+            setIsEditing={setIsEditing}
+            onSave={handleSaveBranch}
+            onCancel={handleCancelAdd}
+            onDelete={handleDeleteBranch}
+            session={session}
+            provinces={provinces}
+            cities={cities}
+            admins={branchAdmin}
+            position={position}
+            setPosition={setPosition}
+          />
         )}
       </div>
     </div>
   );
 }
-
-// ------------------------------------------------------------------------------
-// Component: BranchDetails
-// ----------------------------------------------------------------------------
-
-// ('use client');
-
-// import { useState, useEffect } from 'react';
-// import { useSession } from 'next-auth/react';
-// import { getAllBranch } from '@/action/admin.action';
-// import { IBranch } from '@/interfaces/branch';
-// import BranchDetails from './branchDetails';
-// import BranchList from './branchList';
-// import { Session } from 'next-auth';
-
-// export default function SuperAdminDashboard() {
-//   const [branches, setBranches] = useState<IBranch[]>([]);
-//   const [selectedBranch, setSelectedBranch] = useState<IBranch | null>(null);
-//   const [isEditing, setIsEditing] = useState(false);
-//   const [isAdding, setIsAdding] = useState(false);
-//   const session = useSession();
-
-//   useEffect(() => {
-//     if (session.data?.user) {
-//       getAllBranch(session.data.user.access_token).then((res) => {
-//         const data = res?.data.data as IBranch[];
-//         setBranches(data);
-//         setSelectedBranch(data[0]);
-//       });
-//     }
-//   }, [session]);
-
-//   const handleBranchClick = (branch: IBranch) => {
-//     if (isAdding) {
-//       handleCancelAdd();
-//     }
-//     setSelectedBranch(branch);
-//     setIsAdding(false);
-//     setIsEditing(false);
-//   };
-
-//   const handleAddBranch = () => {
-//     const newBranch: IBranch = {
-//       id: branches[branches.length - 1].id + 1,
-//       branch_name: 'New Branch',
-//       addressId: 0,
-//       address: {
-//         id: 0,
-//         cityId: 457,
-//         street: '',
-//         lon: 0,
-//         lat: 0,
-//         City: {
-//           id: 457,
-//           provinceId: 3,
-//           city: '',
-//           Province: {
-//             id: 3,
-//             name: '',
-//           },
-//         },
-//       },
-//       AdminDetails: [],
-//       ProductStocks: [],
-//     };
-//     setBranches([...branches, newBranch]);
-//     setSelectedBranch(newBranch);
-//     setIsAdding(true);
-//     setIsEditing(true);
-//   };
-
-//   const handleCancelAdd = () => {
-//     if (isAdding && selectedBranch?.id === branches[branches.length - 1].id) {
-//       setBranches(branches.slice(0, -1));
-//     }
-//     setSelectedBranch(null);
-//     setIsAdding(false);
-//     setIsEditing(false);
-//   };
-
-//   const handleSaveBranch = async (updatedBranch: IBranch) => {
-//     alert(JSON.stringify(updatedBranch));
-//     if (isAdding) {
-//       setBranches([...branches.slice(0, -1), updatedBranch]);
-//       setIsAdding(false);
-//     } else {
-//       setBranches(
-//         branches.map((branch) =>
-//           branch.id === updatedBranch.id ? updatedBranch : branch,
-//         ),
-//       );
-//     }
-//     setSelectedBranch(updatedBranch);
-//     setIsEditing(false);
-//   };
-
-//   const handleDeleteBranch = async (id: number) => {
-//     setBranches(branches.filter((branch) => branch.id !== id));
-//     setSelectedBranch(null);
-//   };
-
-//   return (
-//     <div className="min-h-screen p-4">
-//       <div className="flex flex-col lg:flex-row gap-8">
-//         <BranchList
-//           branches={branches}
-//           selectedBranch={selectedBranch}
-//           onBranchClick={handleBranchClick}
-//           onAddBranch={handleAddBranch}
-//           isAdding={isAdding}
-//         />
-//         {selectedBranch && (
-//           <BranchDetails
-//             branch={selectedBranch}
-//             isEditing={isEditing}
-//             setIsEditing={setIsEditing}
-//             onSave={handleSaveBranch}
-//             onCancel={handleCancelAdd}
-//             onDelete={handleDeleteBranch}
-//             session={session}
-//           />
-//         )}
-//       </div>
-//     </div>
-//   );
-// }
-
-// 'use client';
-
-// import { useState, useEffect } from 'react';
-// import { useSession } from 'next-auth/react';
-// import { getAllBranch } from '@/action/admin.action';
-// import { IAdminDetail, IBranch } from '@/interfaces/branch';
-// import { fetchData } from '@/action/user.action';
-// import { api } from '@/config/axios.config';
-// import BranchList from './branchList';
-// import BranchDetails from './branchDetails';
-
-// export default function SuperAdminDashboard() {
-//   const [branches, setBranches] = useState<IBranch[]>([]);
-//   const [branchAdmin, setBranchAdmin] = useState<IAdminDetail[]>([]);
-//   const [selectedBranch, setSelectedBranch] = useState<IBranch | null>(null);
-//   const [isEditing, setIsEditing] = useState(false);
-//   const [isAdding, setIsAdding] = useState(false);
-//   const [provinces, setProvinces] = useState<any[]>([]);
-//   const [cities, setCities] = useState<any[]>([]);
-//   const session = useSession();
-
-//   useEffect(() => {
-//     if (session.data?.user) {
-//       getAllBranch(session.data.user.access_token).then((res) => {
-//         const data = res?.data.data as IBranch[];
-//         setBranches(data);
-//         setSelectedBranch(data[0]);
-//       });
-//       fetchData(
-//         '/address/get-provinces',
-//         setProvinces,
-//         session.data.user.access_token,
-//       );
-//     }
-//   }, [session]);
-
-//   useEffect(() => {
-//     if (!session.data?.user || !selectedBranch) return;
-//     fetchData(
-//       `/address/get-city-by-province?provinceId=${selectedBranch.address.City.Province.id}`,
-//       setCities,
-//       session.data.user?.access_token,
-//     );
-//   }, [selectedBranch, session]);
-
-//   const handleBranchClick = (branch: IBranch) => {
-//     // alert(branch.address.City.Province.name);
-//     if (isAdding) {
-//       handleCancelAdd();
-//     }
-//     setBranchAdmin(branch.AdminDetails);
-//     setSelectedBranch(branch);
-//     setIsAdding(false);
-//     setIsEditing(false);
-//   };
-
-//   const handleAddBranch = () => {
-//     const newBranch: IBranch = {
-//       id: branches[branches.length - 1].id + 1,
-//       branch_name: 'New Branch',
-//       addressId: 0,
-//       address: {
-//         id: 0,
-//         cityId: 457,
-//         street: '',
-//         lon: 0,
-//         lat: 0,
-//         City: {
-//           id: 457,
-//           provinceId: 3,
-//           city: '',
-//           Province: {
-//             id: 3,
-//             name: '',
-//           },
-//         },
-//       },
-//       AdminDetails: [],
-//       ProductStocks: [],
-//     };
-//     setBranches([...branches, newBranch]);
-//     setSelectedBranch(newBranch);
-//     setIsAdding(true);
-//     setIsEditing(true);
-//   };
-
-//   const handleCancelAdd = () => {
-//     if (isAdding && selectedBranch?.id === branches[branches.length - 1].id) {
-//       setBranches(branches.slice(0, -1));
-//     }
-//     setSelectedBranch(null);
-//     setIsAdding(false);
-//     setIsEditing(false);
-//   };
-
-//   const handleSaveBranch = async (updatedBranch: IBranch) => {
-//     alert(JSON.stringify(updatedBranch));
-//     if (isAdding) {
-//       try {
-//         await api.post(
-//           `/branch/create-branch`,
-//           { data: updatedBranch },
-//           {
-//             headers: {
-//               Authorization: 'Bearer ' + session.data?.user.access_token,
-//             },
-//           },
-//         );
-//         setBranches([...branches.slice(0, -1), updatedBranch]);
-//         setIsAdding(false);
-//       } catch (error) {
-//         console.error('Error creating branch:', error);
-//       }
-//     } else {
-//       try {
-//         await api.put(
-//           `/branch/update-branch`,
-//           { data: updatedBranch },
-//           {
-//             headers: {
-//               Authorization: 'Bearer ' + session.data?.user.access_token,
-//             },
-//           },
-//         );
-//         setBranches(
-//           branches.map((branch) =>
-//             branch.id === updatedBranch.id ? updatedBranch : branch,
-//           ),
-//         );
-//       } catch (error) {
-//         console.error('Error updating branch:', error);
-//       }
-//     }
-//     setSelectedBranch(updatedBranch);
-//     setIsEditing(false);
-//   };
-
-//   const handleDeleteBranch = async (id: number) => {
-//     try {
-//       await api.put(
-//         `branch/delete-branch/${id}`,
-//         {},
-//         {
-//           headers: {
-//             Authorization: 'Bearer ' + session.data?.user.access_token,
-//           },
-//         },
-//       );
-//       setBranches(branches.filter((branch) => branch.id !== id));
-//       setSelectedBranch(null);
-//     } catch (error) {
-//       console.error('Error deleting branch:', error);
-//     }
-//   };
-
-//   return (
-//     <div className="min-h-screen p-4">
-//       <div className="flex flex-col lg:flex-row gap-8">
-//         <BranchList
-//           branches={branches}
-//           selectedBranch={selectedBranch}
-//           onBranchClick={handleBranchClick}
-//           onAddBranch={handleAddBranch}
-//           isAdding={isAdding}
-//         />
-//         {selectedBranch && (
-//           <BranchDetails
-//             branch={selectedBranch}
-//             isEditing={isEditing}
-//             setIsEditing={setIsEditing}
-//             onSave={handleSaveBranch}
-//             onCancel={handleCancelAdd}
-//             onDelete={handleDeleteBranch}
-//             session={session}
-//             provinces={provinces}
-//             cities={cities}
-//             admins={branchAdmin}
-//           />
-//         )}
-//       </div>
-//     </div>
-//   );
-// }

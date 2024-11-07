@@ -32,32 +32,17 @@ export async function middleware(request: NextRequest) {
   if (user?.roleId == 1 && pathname.startsWith('/admin-dashboard')) {
     return NextResponse.redirect(new URL('/', request.url));
   }
-  if (user?.roleId == 2) {
+  if (user?.roleId == 2 || user?.roleId == 3) {
     if (
       pathname == '/order' ||
       pathname == '/my-order' ||
-      pathname == '/admin-dashboard/branch-orders' ||
+      // pathname == '/admin-dashboard/branch-orders' ||
       pathname == '/admin-dashboard/order' ||
       pathname == '/checkout' ||
       pathname == '/checkout-manual'
     ) {
-      console.log('masuk');
       return NextResponse.redirect(
         new URL('/admin-dashboard/all-branch-orders', request.url),
-      );
-    }
-  }
-  if (user?.roleId == 3) {
-    if (
-      pathname == '/order' ||
-      pathname == '/my-order' ||
-      pathname == '/admin-dashboard/all-branch-orders' ||
-      pathname == '/admin-dashboard/order' ||
-      pathname == '/checkout' ||
-      pathname == '/checkout-manual'
-    ) {
-      return NextResponse.redirect(
-        new URL('/admin-dashboard/branch-orders', request.url),
       );
     }
   }

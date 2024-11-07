@@ -117,22 +117,6 @@ model Category {
   @@map("categories")
 }
 
-// model Product {
-//   id            Int            @id @default(autoincrement())
-//   categoryId    Int
-//   product_name  String
-//   description   String
-//   price         Int
-//   image         String
-//   weight        Int
-//   category      Category       @relation(fields: [categoryId], references: [id])
-//   ProductStocks ProductStock[]
-//   Discounts     Discount[]
-//   OrderItems    OrderItem[]
-
-//   @@map("products")
-// }
-
 model Product {
   id            Int            @id @default(autoincrement())
   categoryId    Int

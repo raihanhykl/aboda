@@ -9,6 +9,7 @@ interface BranchListProps {
   onBranchClick: (branch: IBranch) => void;
   onAddBranch: () => void;
   isAdding: boolean;
+  session: any;
 }
 
 export default function BranchList({
@@ -17,13 +18,19 @@ export default function BranchList({
   onBranchClick,
   onAddBranch,
   isAdding,
+  session,
 }: BranchListProps) {
   return (
     <Card className="w-full lg:w-1/3">
       <CardHeader>
         <CardTitle className="flex justify-between items-center">
           Branches
-          <Button size="icon" onClick={onAddBranch} disabled={isAdding}>
+          <Button
+            size="icon"
+            onClick={onAddBranch}
+            disabled={isAdding}
+            className={`${session.data?.user.roleId !== 2 && 'hidden'}`}
+          >
             <Plus className="h-4 w-4" />
           </Button>
         </CardTitle>

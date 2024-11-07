@@ -36,23 +36,48 @@ export const registerSchema = z.object({
     .max(7, { message: 'Masukkan referral code yang valid.' }),
 });
 
-export const setFirstPassword = z.object({
-  password: z
-    .string({ message: 'Mohon masukan kata sandi Anda.' })
-    .min(6, {
-      message:
-        'Mohon masukan kata sandi anda como Kata sandi minimal harus 6 karakter, berisi huruf dan angka',
-    })
-    .regex(/[a-zA-Z]/, {
-      message:
-        'Mohon masukan kata sandi anda como Kata sandi minimal harus 6 karakter, berisi huruf dan angka',
-    })
-    .regex(/[0-9]/, {
-      message:
-        'Mohon masukan kata sandi anda como Kata sandi minimal harus 6 karakter, berisi huruf dan angka',
-    })
-    .trim(),
-});
+export const setFirstPassword = z
+  .object({
+    password: z
+      .string({ message: 'Mohon masukan kata sandi Anda.' })
+      .min(6, {
+        message:
+          'Mohon masukan kata sandi anda como Kata sandi minimal harus 6 karakter, berisi huruf dan angka',
+      })
+      .regex(/[a-zA-Z]/, {
+        message:
+          'Mohon masukan kata sandi anda como Kata sandi minimal harus 6 karakter, berisi huruf dan angka',
+      })
+      .regex(/[0-9]/, {
+        message:
+          'Mohon masukan kata sandi anda como Kata sandi minimal harus 6 karakter, berisi huruf dan angka',
+      })
+      .trim(),
+    confirmPassword: z
+      .string({ message: 'Mohon masukan kata sandi Anda.' })
+      .min(6, {
+        message:
+          'Mohon masukan kata sandi anda sebagai Kata sandi minimal harus 6 karakter, berisi huruf dan angka',
+      })
+      .regex(/[a-zA-Z]/, {
+        message:
+          'Mohon masukan kata sandi anda sebagai Kata sandi minimal harus 6 karakter, berisi huruf dan angka',
+      })
+      .regex(/[0-9]/, {
+        message:
+          'Mohon masukan kata sandi anda sebagai Kata sandi minimal harus 6 karakter, berisi huruf dan angka',
+      })
+      .trim(),
+  })
+  .superRefine(({ password, confirmPassword }, ctx) => {
+    if (password !== confirmPassword) {
+      ctx.addIssue({
+        code: 'custom',
+        message: "Confirm password doesn't match with your new password",
+        path: ['confirmPassword'],
+      });
+    }
+  });
 
 export const forgotPasswordSchema = z.object({
   email: z.string().email({ message: 'Invalid email address' }),

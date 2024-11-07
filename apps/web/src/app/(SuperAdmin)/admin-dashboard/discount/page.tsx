@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Search } from 'lucide-react';
+import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { api } from '@/config/axios.config';
+import { useSession } from 'next-auth/react'; // Import the useSession hook
 
 type Discount = {
   id: number;
@@ -38,8 +39,6 @@ type Discount = {
   start_date: string;
   end_date: string;
   productId: number | null;
-  min_purchase_amount?: number;
-  max_discount_amount?: number;
 };
 
 type Product = {
@@ -49,6 +48,7 @@ type Product = {
 };
 
 export default function DiscountManagement() {
+  const { data: sessionData } = useSession(); // Get session data
   const [discounts, setDiscounts] = useState<Discount[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -56,6 +56,9 @@ export default function DiscountManagement() {
   const [isDiscountDialogOpen, setIsDiscountDialogOpen] = useState(false);
   const [currentDiscount, setCurrentDiscount] = useState<Discount | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [discountType, setDiscountType] = useState<
+    'PERCENTAGE' | 'FIXED' | 'BUY_ONE_GET_ONE'
+  >('PERCENTAGE');
 
   useEffect(() => {
     fetchDiscounts();
@@ -66,8 +69,11 @@ export default function DiscountManagement() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await api.get('/discount');
-      console.log(response.data, 'ini response discount');
+      const response = await api.get('/discount', {
+        headers: {
+          Authorization: `Bearer ${sessionData?.user?.access_token}`, // Add authorization header
+        },
+      });
       setDiscounts(response.data);
     } catch (error) {
       console.error('Error fetching discounts:', error);
@@ -79,8 +85,11 @@ export default function DiscountManagement() {
 
   const fetchProducts = async () => {
     try {
-      const response = await api.get('/product/all');
-      console.log(response.data, 'ini response product');
+      const response = await api.get('/product/all', {
+        headers: {
+          Authorization: `Bearer ${sessionData?.user?.access_token}`, // Add authorization header
+        },
+      });
       setProducts(response.data.data);
     } catch (error) {
       console.error('Failed to fetch products:', error);
@@ -92,33 +101,50 @@ export default function DiscountManagement() {
   ) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    const productId = formData.get('productId') as string;
+
+    // Get form data
+    const productId =
+      formData.get('productId') === 'all' ? null : formData.get('productId');
+    const discountType = formData.get('discount_type') as
+      | 'PERCENTAGE'
+      | 'FIXED'
+      | 'BUY_ONE_GET_ONE';
+    const discountValue = formData.get('discount_value');
+    const startDate = formData.get('start_date');
+    const endDate = formData.get('end_date');
+    const branchId = formData.get('branchId');
+
+    // Validate form fields
+    if (!discountValue || !startDate || !endDate || !branchId) {
+      alert('All required fields must be filled out.');
+      return;
+    }
+
     const discountData = {
-      branchId: Number(formData.get('branchId')),
-      discount_type: formData.get('discount_type') as
-        | 'PERCENTAGE'
-        | 'FIXED'
-        | 'BUY_ONE_GET_ONE',
-      discount_value: Number(formData.get('discount_value')),
-      start_date: formData.get('start_date') as string,
-      end_date: formData.get('end_date') as string,
-      productId: productId === 'all' ? null : Number(productId),
-      min_purchase_amount: formData.get('min_purchase_amount')
-        ? Number(formData.get('min_purchase_amount'))
-        : undefined,
-      max_discount_amount: formData.get('max_discount_amount')
-        ? Number(formData.get('max_discount_amount'))
-        : undefined,
+      branchId: Number(branchId),
+      discount_type: discountType,
+      discount_value: Number(discountValue),
+      start_date: startDate as string,
+      end_date: endDate as string,
+      productId: productId ? Number(productId) : null,
     };
 
     try {
       if (currentDiscount) {
-        await api.put(`/discount/${currentDiscount.id}`, discountData);
+        await api.put(`/discount/${currentDiscount.id}`, discountData, {
+          headers: {
+            Authorization: `Bearer ${sessionData?.user?.access_token}`,
+          },
+        });
       } else {
-        await api.post('/discount', discountData);
+        await api.post('/discount', discountData, {
+          headers: {
+            Authorization: `Bearer ${sessionData?.user?.access_token}`,
+          },
+        });
       }
-      fetchDiscounts();
-      setIsDiscountDialogOpen(false);
+      fetchDiscounts(); // Refresh the list
+      setIsDiscountDialogOpen(false); // Close the dialog
     } catch (error) {
       console.error('Error submitting discount:', error);
       setError('Failed to submit discount. Please try again.');
@@ -127,7 +153,11 @@ export default function DiscountManagement() {
 
   const deleteDiscount = async (discountId: number) => {
     try {
-      await api.delete(`/discount/${discountId}`);
+      await api.delete(`/discount/${discountId}`, {
+        headers: {
+          Authorization: `Bearer ${sessionData?.user?.access_token}`, // Add authorization header
+        },
+      });
       fetchDiscounts();
     } catch (error) {
       console.error('Error deleting discount:', error);
@@ -182,15 +212,13 @@ export default function DiscountManagement() {
               <TableHead>Start Date</TableHead>
               <TableHead>End Date</TableHead>
               <TableHead>Product</TableHead>
-              <TableHead>Min Purchase</TableHead>
-              <TableHead>Max Discount</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredDiscounts.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center">
+                <TableCell colSpan={6} className="text-center">
                   No discounts available.
                 </TableCell>
               </TableRow>
@@ -210,8 +238,6 @@ export default function DiscountManagement() {
                       ? products.find((p) => p.id === discount.productId)?.name
                       : 'All Products'}
                   </TableCell>
-                  <TableCell>{discount.min_purchase_amount || 'N/A'}</TableCell>
-                  <TableCell>{discount.max_discount_amount || 'N/A'}</TableCell>
                   <TableCell>
                     <Button
                       variant="outline"
@@ -257,7 +283,12 @@ export default function DiscountManagement() {
                 </Label>
                 <Select
                   name="discount_type"
-                  defaultValue={currentDiscount?.discount_type}
+                  value={discountType}
+                  onValueChange={(value) =>
+                    setDiscountType(
+                      value as 'PERCENTAGE' | 'FIXED' | 'BUY_ONE_GET_ONE',
+                    )
+                  }
                 >
                   <SelectTrigger className="col-span-3">
                     <SelectValue placeholder="Select discount type" />
@@ -282,6 +313,7 @@ export default function DiscountManagement() {
                   defaultValue={currentDiscount?.discount_value}
                   className="col-span-3"
                   required
+                  disabled={discountType === 'BUY_ONE_GET_ONE'}
                 />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
@@ -333,30 +365,6 @@ export default function DiscountManagement() {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="min_purchase_amount" className="text-right">
-                  Min Purchase
-                </Label>
-                <Input
-                  id="min_purchase_amount"
-                  name="min_purchase_amount"
-                  type="number"
-                  defaultValue={currentDiscount?.min_purchase_amount}
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="max_discount_amount" className="text-right">
-                  Max Discount
-                </Label>
-                <Input
-                  id="max_discount_amount"
-                  name="max_discount_amount"
-                  type="number"
-                  defaultValue={currentDiscount?.max_discount_amount}
-                  className="col-span-3"
-                />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="branchId" className="text-right">

@@ -15,9 +15,6 @@ export class ProductService {
       const { lat, long, name } = req.query;
       const maxDistance = 10;
 
-      // console.log(lat, 'ini lat', long, 'ini long', name, 'ini name');
-
-      // Filter produk berdasarkan nama jika ada
       const productFilter = name
         ? {
             ProductStocks: {
@@ -25,7 +22,6 @@ export class ProductService {
                 Product: {
                   product_name: {
                     contains: String(name),
-                    // mode: 'insensitive',
                   },
                 },
               },
@@ -33,14 +29,11 @@ export class ProductService {
           }
         : {};
 
-      // Ambil cabang yang memiliki produk yang sesuai dengan filter
       const branches = await prisma.branch.findMany({
         include: {
           address: true,
           ProductStocks: true,
         },
-        // skip: skip,
-        // take: limit,
       });
 
       const shortest: { branch: Branch | undefined; distance: number } = {
@@ -91,14 +84,7 @@ export class ProductService {
             take: limit,
           },
         },
-        // skip: skip,
-        // take: limit,
       });
-
-      // const total = branchesFiltered.reduce(
-      //   (acc, branch) => acc + branch.ProductStocks.length,
-      //   0,
-      // );
 
       const total = await prisma.productStock.count({
         where: {
@@ -112,35 +98,9 @@ export class ProductService {
         },
       });
 
-      // const testing = await prisma.branch.findMany({
-      //   where: {
-      //     id: 1,
-      //   },
-      //   include: {
-      //     ProductStocks: {
-      //       where: {
-      //         Product: {
-      //           product_name: {
-      //             contains: '',
-      //           },
-      //         },
-      //       },
-      //       include: {
-      //         Product: {
-      //           include: {
-      //             image: true,
-      //           },
-      //         },
-      //       },
-      //       skip: skip,
-      //       take: limit,
-      //     },
-      //   },
-      // });
-
       return {
         data: branchesFiltered,
-        // data: testing,
+
         total,
       };
     } catch (error) {

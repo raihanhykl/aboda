@@ -21,6 +21,7 @@ L.Icon.Default.mergeOptions({
 
 interface MapComponentProps {
   position: [number, number];
+  setPosition: any;
   isEditing: boolean;
   onPositionChange?: (newPosition: [number, number]) => void;
 }
@@ -33,31 +34,40 @@ function MapUpdater({ position }: { position: [number, number] }) {
   return null;
 }
 
-function LocationMarker({
-  isEditing,
-  onPositionChange,
-}: {
-  isEditing: boolean;
-  onPositionChange?: (newPosition: [number, number]) => void;
-}) {
-  const [position, setPosition] = useState<[number, number] | null>(null);
-  const map = useMapEvents({
-    click(e) {
-      if (isEditing) {
-        setPosition([e.latlng.lat, e.latlng.lng]);
-        onPositionChange?.([e.latlng.lat, e.latlng.lng]);
-      }
-    },
-  });
+// function LocationMarker({
+//   isEditing,
+//   onPositionChange,
+// }: {
+//   isEditing: boolean;
+//   onPositionChange?: (newPosition: [number, number]) => void;
+// }) {
+//   const [position, setPosition] = useState<[number, number] | null>(null);
+//   const map = useMapEvents({
+//     click(e) {
+//       if (isEditing) {
+//         setPosition([e.latlng.lat, e.latlng.lng]);
+//         onPositionChange?.([e.latlng.lat, e.latlng.lng]);
+//       }
+//     },
+//   });
 
-  return position === null ? null : <Marker position={position} />;
-}
+//   return position === null ? null : <Marker position={position} />;
+// }
 
 export default function MapComponent({
   position,
+  setPosition,
   isEditing,
   onPositionChange,
 }: MapComponentProps) {
+  const LocationMarker = () => {
+    useMapEvents({
+      click(e) {
+        setPosition([e.latlng.lat, e.latlng.lng]);
+      },
+    });
+    return position ? <Marker position={position} /> : null;
+  };
   return (
     <div>
       <div className="mt-1 h-64 rounded-md overflow-hidden w-full">
@@ -71,10 +81,11 @@ export default function MapComponent({
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           />
           <Marker position={position} />
-          <LocationMarker
+          {/* <LocationMarker
             isEditing={isEditing}
             onPositionChange={onPositionChange}
-          />
+          /> */}
+          <LocationMarker />
           <MapUpdater position={position} />
         </MapContainer>
       </div>

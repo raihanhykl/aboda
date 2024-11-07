@@ -104,7 +104,7 @@ export class BranchService {
 
       const newAddress = await prisma.address.create({
         data: {
-          cityId: branchData.address.City.id,
+          cityId: Number(branchData.address.City.id),
           street: branchData.address.street,
           lon: branchData.address.lon,
           lat: branchData.address.lat,
@@ -139,7 +139,6 @@ export class BranchService {
         })),
       });
       const hasil = await returnBranch();
-      console.log(hasil, 'ini hasil');
       return hasil;
     });
   }

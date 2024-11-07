@@ -1,6 +1,5 @@
 'use client';
-
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useDispatch, useSelector } from 'react-redux';
@@ -12,6 +11,7 @@ import AlertModal from '@/components/modal/modal';
 import CartList from '../components/CartList';
 import OrderSummary from '../components/OrderSummary';
 import Link from 'next/link';
+import useDebounce from '@/hooks/useDebounce';
 
 export default function ShoppingCartPage() {
   const [carts, setCarts] = useState<any[]>([]);
@@ -20,6 +20,49 @@ export default function ShoppingCartPage() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const cart = useSelector(selectCart);
+
+  const [updatedQuantity, setUpdatedQuantity] = useState<{
+    id: number;
+    change: number;
+  } | null>(null);
+
+  const { debounce } = useDebounce();
+
+  const updateQuantity = async (id: number, change: number) => {
+    setDiscountedCarts((prevCarts) =>
+      prevCarts.map((cart) =>
+        cart.id === id ? { ...cart, quantity: Math.max(1, change) } : cart,
+      ),
+    );
+    setUpdatedQuantity({ id, change });
+  };
+
+  const updateQuantityApi = async () => {
+    if (updatedQuantity) {
+      const { id, change } = updatedQuantity;
+      try {
+        await api.patch(
+          '/cart/update',
+          { quantity: change, cartId: id },
+          {
+            headers: {
+              Authorization: 'Bearer ' + session.data?.user?.access_token,
+            },
+          },
+        );
+      } catch (error) {
+        console.error('Error updating cart quantity:', error);
+      }
+    }
+  };
+
+  const debouncedQuantity = debounce(() => updateQuantityApi(), 500);
+
+  useEffect(() => {
+    if (updatedQuantity) {
+      debouncedQuantity();
+    }
+  }, [updatedQuantity, debouncedQuantity]);
 
   useEffect(() => {
     if (session.status === 'authenticated') {
@@ -92,24 +135,6 @@ export default function ShoppingCartPage() {
     }
   };
 
-  const updateQuantity = async (id: number, change: number) => {
-    const update = await api.patch(
-      '/cart/update',
-      { quantity: change, cartId: id },
-      {
-        headers: {
-          Authorization: 'Bearer ' + session.data?.user?.access_token,
-        },
-      },
-    );
-
-    setDiscountedCarts((prevCarts) =>
-      prevCarts.map((cart) =>
-        cart.id === id ? { ...cart, quantity: Math.max(1, change) } : cart,
-      ),
-    );
-  };
-
   const deleteCart = async (id: number) => {
     try {
       await api.patch(
@@ -159,6 +184,7 @@ export default function ShoppingCartPage() {
     0,
   );
   const total = subtotal;
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-4 text-center">Shopping Cart</h1>

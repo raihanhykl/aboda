@@ -19,15 +19,6 @@ import { RootState } from '@/state/store';
 import useDebounce from '@/hooks/useDebounce';
 import { RenderPaginationButtons } from '../components/pagination';
 
-// const categories = [
-//   'Vegetables',
-//   'Fresh Fruits',
-//   'Milk & Eggs',
-//   'Bakery',
-//   'House Hold',
-//   'Dry Fruits',
-//   'Drinks',
-// ];
 interface Product {
   id: number;
   categoryId: number; // Keep if needed for mapping
@@ -86,7 +77,7 @@ export default function ShopPage() {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [searchQuery, setSearchQuery] = useState<string>(''); // State for search input
-  const itemsPerPage = 1;
+  const itemsPerPage = 3;
   const { debounce } = useDebounce();
   const { longitude, latitude } = useSelector(
     (state: RootState) => state.position,
@@ -168,7 +159,7 @@ export default function ShopPage() {
           </div>
         </aside>
         <main className="w-full md:w-3/4">
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex justify-between items-center mb-4 gap-3">
             <div className="relative w-full">
               <input
                 type="text"
@@ -205,74 +196,6 @@ export default function ShopPage() {
               </div>
             )}
           </div>
-          {/* <div className="flex justify-center items-center space-x-2 mt-5">
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            {currentPage > 1 && (
-              <>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => handlePageChange(1)}
-                >
-                  1
-                </Button>
-                {currentPage > 2 && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    disabled
-                  >
-                    ...
-                  </Button>
-                )}
-              </>
-            )}
-            <Button variant="default" size="icon" className="h-8 w-8">
-              {currentPage}
-            </Button>
-            {currentPage < totalPages && (
-              <>
-                {currentPage < totalPages - 1 && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    disabled
-                  >
-                    ...
-                  </Button>
-                )}
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => handlePageChange(totalPages)}
-                >
-                  {totalPages}
-                </Button>
-              </>
-            )}
-
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div> */}
           <div className="flex justify-center items-center space-x-2 mt-5">
             <Button
               variant="outline"
