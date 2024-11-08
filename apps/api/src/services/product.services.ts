@@ -231,6 +231,7 @@ export class ProductService {
         description: product.description,
         price: product.price,
         category: product.categoryId,
+        weight: product.weight,
         images: product.image.map((img) => ({
           imageUrl: `/images/product/${img.imageUrl}`,
         })),
@@ -278,9 +279,6 @@ export class ProductService {
           shortest.branch = branch;
           shortest.distance = distance;
         }
-        console.log(shortest.branch?.id, 'ini id');
-        console.log(shortest.branch?.branch_name);
-        console.log(productId, 'ini product_id');
       });
       return await prisma.productStock.findFirst({
         include: {

@@ -69,7 +69,8 @@ export default function Navbar() {
 
   useEffect(() => {
     if (!session.data?.user) return;
-    getCurrentPosition();
+    // getCurrentPosition();
+
     const fetchAddresses = async () => {
       api
         .get('/user/get-all-user-addresses', {
@@ -102,13 +103,15 @@ export default function Navbar() {
     };
 
     if (session.status === 'authenticated') {
+      if (city && street) return;
       fetchAddresses();
     }
   }, [session]);
 
   useEffect(() => {
+    if (currentLocation) return;
     getCurrentPosition();
-  });
+  }, []);
 
   return (
     <nav className="sticky top-0 z-50 bg-[#1B8057] text-white">

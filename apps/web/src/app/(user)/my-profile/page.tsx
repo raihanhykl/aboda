@@ -72,7 +72,7 @@ export default function MyProfile() {
           `${(session.data.user.name && session.data.user?.name[0]) || initial}`,
       );
     }
-  }, [session]);
+  }, [session, reset]);
 
   const onSubmit = async (data: z.infer<typeof editProfileSchema>) => {
     setIsSubmitting(true);

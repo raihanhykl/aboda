@@ -67,7 +67,7 @@ export default function BranchDetails({
         setCities,
         session.data.user?.access_token,
       );
-  }, [selectedProvince]);
+  }, [selectedProvince, session.data?.user]);
   const handleUpdateBranchAdmin = (updatedAdmins: IAdminDetail[]) => {
     setBranchAdmin(updatedAdmins);
     onSave({ ...branch, AdminDetails: updatedAdmins });

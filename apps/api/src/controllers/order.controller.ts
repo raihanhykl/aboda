@@ -1,6 +1,5 @@
 import { responseHandle } from '@/helpers/response';
 import { NextFunction, Request, Response } from 'express';
-// import { CartService } from '../services/cart.services';
 import { OrderService } from '@/services/order.services';
 
 export class OrderController {
@@ -33,8 +32,6 @@ export class OrderController {
 
   async updatePaymentProof(req: Request, res: Response, next: NextFunction) {
     try {
-      // console.log(req, 'ini req body di controller');
-
       const data = await OrderService.updatePaymentProof(req);
       return res.send(responseHandle('Update Payment Proof Success', data));
     } catch (error) {
@@ -95,31 +92,4 @@ export class OrderController {
       next(error);
     }
   }
-
-  //   `async updateCart(req: Request, res: Response, next: NextFunction) {
-  //     try {
-  //       const data = await CartService.updateCart(req);
-  //       return res.send(responseHandle('Update Cart Success', data));
-  //     } catch (error) {
-  //       next(error);
-  //     }
-  //   }
-
-  //   async deleteCart(req: Request, res: Response, next: NextFunction) {
-  //     try {
-  //       const data = await CartService.delete(req);
-  //       return res.send(responseHandle('Delete Cart Success', data));
-  //     } catch (error) {
-  //       next(error);
-  //     }
-  //   }
-
-  //   async deleteAllCart(req: Request, res: Response, next: NextFunction) {
-  //     try {
-  //       const data = await CartService.deleteAll(req);
-  //       return res.send(responseHandle('Delete All Cart Success', data));
-  //     } catch (error) {
-  //       next(error);
-  //     }
-  //   }`
 }

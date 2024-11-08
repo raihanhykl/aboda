@@ -19,6 +19,7 @@ export default function SuperAdminDashboard() {
   const [cities, setCities] = useState<any[]>([]);
   const session = useSession();
   const [position, setPosition] = useState<[number, number]>([0, 0]);
+
   useEffect(() => {
     if (session.data?.user) {
       getAllBranch(session.data.user.access_token).then((res) => {
@@ -103,7 +104,6 @@ export default function SuperAdminDashboard() {
         lon: position[1],
       },
     };
-    console.log(finalBranch, 'ini final branch');
     if (isAdding) {
       try {
         setBranches([...branches.slice(0, -1), finalBranch]);

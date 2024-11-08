@@ -156,7 +156,6 @@ export default function FeaturedCategories() {
                 <h3 className="text-md font-semibold text-center">
                   {category.name}
                 </h3>
-                {/* <p>{category.image}</p> */}
               </div>
             </Link>
           ))}

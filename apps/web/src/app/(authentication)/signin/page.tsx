@@ -100,7 +100,7 @@ export default function SignIn() {
               <div className="flex items-center space-x-2">
                 <Checkbox />
                 <label htmlFor="terms" className="text-sm text-gray-600">
-                  Creating an account you're okay with our Terms of Service,
+                  Creating an account you are okay with our Terms of Service,
                   Privacy Policy and our default notification settings
                 </label>
               </div>
@@ -159,7 +159,7 @@ export default function SignIn() {
             </div>
             <div className=" w-full">
               <p className=" text-sm text-gray-100 mb-1">
-                Don't have an account?
+                Dont have an account?
               </p>
               <Button
                 variant="outline"

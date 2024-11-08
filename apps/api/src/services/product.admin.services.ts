@@ -119,20 +119,21 @@ export class ProductAdminServices {
     try {
       const user = req.user;
       const { id } = req.params;
-
       if (user.roleId !== 2) {
         throw new ErrorHandler('Unauthorized', 401);
       }
-
-      await prisma.product.delete({
+      await prisma.product.update({
         where: {
           id: Number(id),
         },
+        data: {
+          isActive: 0,
+        },
       });
 
-      return { message: 'Product deleted successfully' };
+      return { message: 'Product marked as inactive successfully' };
     } catch (error) {
-      throw new ErrorHandler('Failed to delete product', 500);
+      throw new ErrorHandler('Failed to mark product as inactive', 500);
     }
   }
 }

@@ -23,12 +23,6 @@ export default function AdminList({
   const [showAdminSuggestions, setShowAdminSuggestions] = useState(false);
   const [availableAdmins, setAvailableAdmins] = useState<IAdminDetail[]>([]);
 
-  useEffect(() => {
-    if (isEditing) {
-      fetchAvailableAdmins();
-    }
-  }, [isEditing]);
-
   const fetchAvailableAdmins = async () => {
     if (session.data?.user.access_token) {
       try {
@@ -39,6 +33,11 @@ export default function AdminList({
       }
     }
   };
+  useEffect(() => {
+    if (isEditing) {
+      fetchAvailableAdmins();
+    }
+  }, [isEditing, fetchAvailableAdmins]);
 
   const handleDeleteAdmin = async (id: number) => {
     if (session.data?.user.access_token) {

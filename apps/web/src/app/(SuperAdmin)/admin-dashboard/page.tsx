@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -76,11 +76,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchStockHistory();
-  }, [selectedStore, date]);
-
-  const fetchStockHistory = async () => {
+  const fetchStockHistory = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -97,7 +93,11 @@ export default function AdminDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedStore, date]);
+
+  useEffect(() => {
+    fetchStockHistory();
+  }, [fetchStockHistory]);
 
   const processStockData = (): ProcessedStockData[] => {
     const productMap = new Map<number, ProcessedStockData>();

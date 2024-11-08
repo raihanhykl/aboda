@@ -34,8 +34,6 @@ export class OrderPaymentService {
       const { id } = req.body;
       const image = req.file;
 
-      console.log(image?.filename);
-
       if (!id || !image) {
         throw new Error('Id atau image tidak ada!');
       }

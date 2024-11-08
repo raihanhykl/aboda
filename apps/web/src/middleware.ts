@@ -9,17 +9,6 @@ export async function middleware(request: NextRequest) {
   const session = await auth();
   const user = session?.user;
   const { pathname } = request.nextUrl;
-  // if (session?.user.access_token) {
-  //   console.log('masukkk refresh');
-  //   // await signIn('credentials', {
-  //   //   access_token: session.user.access_token,
-  //   //   redirect: false,
-  //   // });
-  // }
-
-  // if (user?.roleId == 2 && (pathname === '/order' || pathname === '/signup')) {
-  //   return NextResponse.redirect(new URL('/', request.url));
-  // }
   if (user?.roleId == 1) {
     if (
       pathname == '/order' ||
@@ -55,8 +44,6 @@ export async function middleware(request: NextRequest) {
     }
     const loginUrl = new URL('/signin', request.url);
     loginUrl.searchParams.set('redirect', pathname);
-    console.log(request.url, 'ini request url');
-    // Set the redirect parameter
     return NextResponse.redirect(loginUrl);
   }
 

@@ -26,7 +26,7 @@ export default function VerificationError({}: Props) {
           User Not Found
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
-          We couldn't find a user associated with this verification link.
+          We couldn&apos;t find a user associated with this verification link.
         </p>
       </div>
 

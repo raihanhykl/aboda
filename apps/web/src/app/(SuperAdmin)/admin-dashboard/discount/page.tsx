@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,12 +29,12 @@ import {
 } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { api } from '@/config/axios.config';
-import { useSession } from 'next-auth/react'; // Import the useSession hook
+import { useSession } from 'next-auth/react';
 
 type Discount = {
   id: number;
   branchId: number;
-  discount_type: 'PERCENTAGE' | 'FIXED' | 'BUY_ONE_GET_ONE';
+  discount_type: 'percentage' | 'FIXED' | 'BUY_ONE_GET_ONE';
   discount_value: number;
   start_date: string;
   end_date: string;
@@ -48,7 +48,7 @@ type Product = {
 };
 
 export default function DiscountManagement() {
-  const { data: sessionData } = useSession(); // Get session data
+  const { data: sessionData } = useSession();
   const [discounts, setDiscounts] = useState<Discount[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -57,21 +57,16 @@ export default function DiscountManagement() {
   const [currentDiscount, setCurrentDiscount] = useState<Discount | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [discountType, setDiscountType] = useState<
-    'PERCENTAGE' | 'FIXED' | 'BUY_ONE_GET_ONE'
-  >('PERCENTAGE');
+    'percentage' | 'FIXED' | 'BUY_ONE_GET_ONE'
+  >('percentage');
 
-  useEffect(() => {
-    fetchDiscounts();
-    fetchProducts();
-  }, []);
-
-  const fetchDiscounts = async () => {
+  const fetchDiscounts = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
       const response = await api.get('/discount', {
         headers: {
-          Authorization: `Bearer ${sessionData?.user?.access_token}`, // Add authorization header
+          Authorization: `Bearer ${sessionData?.user?.access_token}`,
         },
       });
       setDiscounts(response.data);
@@ -81,20 +76,25 @@ export default function DiscountManagement() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [sessionData?.user?.access_token]);
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     try {
       const response = await api.get('/product/all', {
         headers: {
-          Authorization: `Bearer ${sessionData?.user?.access_token}`, // Add authorization header
+          Authorization: `Bearer ${sessionData?.user?.access_token}`,
         },
       });
       setProducts(response.data.data);
     } catch (error) {
       console.error('Failed to fetch products:', error);
     }
-  };
+  }, [sessionData?.user?.access_token]);
+
+  useEffect(() => {
+    fetchDiscounts();
+    fetchProducts();
+  }, [fetchDiscounts, fetchProducts]);
 
   const handleDiscountSubmit = async (
     event: React.FormEvent<HTMLFormElement>,
@@ -102,11 +102,10 @@ export default function DiscountManagement() {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
 
-    // Get form data
     const productId =
       formData.get('productId') === 'all' ? null : formData.get('productId');
     const discountType = formData.get('discount_type') as
-      | 'PERCENTAGE'
+      | 'percentage'
       | 'FIXED'
       | 'BUY_ONE_GET_ONE';
     const discountValue = formData.get('discount_value');
@@ -114,7 +113,6 @@ export default function DiscountManagement() {
     const endDate = formData.get('end_date');
     const branchId = formData.get('branchId');
 
-    // Validate form fields
     if (!discountValue || !startDate || !endDate || !branchId) {
       alert('All required fields must be filled out.');
       return;
@@ -143,8 +141,8 @@ export default function DiscountManagement() {
           },
         });
       }
-      fetchDiscounts(); // Refresh the list
-      setIsDiscountDialogOpen(false); // Close the dialog
+      fetchDiscounts();
+      setIsDiscountDialogOpen(false);
     } catch (error) {
       console.error('Error submitting discount:', error);
       setError('Failed to submit discount. Please try again.');
@@ -155,7 +153,7 @@ export default function DiscountManagement() {
     try {
       await api.delete(`/discount/${discountId}`, {
         headers: {
-          Authorization: `Bearer ${sessionData?.user?.access_token}`, // Add authorization header
+          Authorization: `Bearer ${sessionData?.user?.access_token}`,
         },
       });
       fetchDiscounts();
@@ -286,7 +284,7 @@ export default function DiscountManagement() {
                   value={discountType}
                   onValueChange={(value) =>
                     setDiscountType(
-                      value as 'PERCENTAGE' | 'FIXED' | 'BUY_ONE_GET_ONE',
+                      value as 'percentage' | 'FIXED' | 'BUY_ONE_GET_ONE',
                     )
                   }
                 >
@@ -294,7 +292,7 @@ export default function DiscountManagement() {
                     <SelectValue placeholder="Select discount type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="PERCENTAGE">Percentage</SelectItem>
+                    <SelectItem value="percentage">Percentage</SelectItem>
                     <SelectItem value="FIXED">Fixed Amount</SelectItem>
                     <SelectItem value="BUY_ONE_GET_ONE">
                       Buy One Get One

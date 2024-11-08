@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, ReactNode } from 'react';
+import { useState, useEffect, useCallback, ReactNode } from 'react';
 import { Trash2, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,107 +44,155 @@ interface Product {
   Branch: {
     branch_name: string;
   };
+  Product: {
+    product_name: string;
+  };
 }
 
 export default function InventoryManagement() {
   const [branches, setBranches] = useState<Store[]>([]);
-  const [product2, setProduct2] = useState<any[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [branchId, setBranchId] = useState<number>(1);
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
-  const [currentProduct, setCurrentProduct] = useState<any | null>(null);
+  const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
   const [stockChange, setStockChange] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
   const { data: session } = useSession();
 
-  useEffect(() => {
-    fetchBranches();
-  }, [session]);
-
-  const fetchBranches = async () => {
+  const fetchBranches = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
     try {
-      const response = await api.get(`/branch/get-all-branch`, {
+      const response = await api.get('/branch/get-all-branch', {
         headers: {
-          Authorization: 'Bearer ' + session?.user?.access_token,
+          Authorization: `Bearer ${session?.user?.access_token}`,
         },
       });
       setBranches(response.data.data);
-      console.log(response.data.data, 'ini response branches');
     } catch (error) {
-      console.error('Failed to fetch branches:', error);
+      handleApiError(error, 'Failed to fetch branches');
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, [session?.user?.access_token]);
 
-  useEffect(() => {
-    fetchProduct();
-  }, [branchId]);
-
-  const fetchProduct = async (): Promise<void> => {
+  const fetchProducts = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
     try {
       const response = await api.get(`/stocks/${branchId}/stocks`, {
         headers: {
-          Authorization: 'Bearer ' + session?.user?.access_token,
+          Authorization: `Bearer ${session?.user?.access_token}`,
         },
       });
-      setProduct2(response.data);
+      setProducts(response.data);
     } catch (error) {
-      console.error('Failed to fetch product:', error);
+      handleApiError(error, 'Failed to fetch products');
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, [branchId, session?.user?.access_token]);
 
-  const handleBranchChange = (branchId: string): void => {
+  useEffect(() => {
+    if (session) {
+      fetchBranches();
+    }
+  }, [session, fetchBranches]);
+
+  useEffect(() => {
+    if (branchId) {
+      fetchProducts();
+    }
+  }, [branchId, fetchProducts]);
+
+  const handleBranchChange = (branchId: string) => {
     setBranchId(Number(branchId));
   };
 
-  const openStockUpdateDialog = (
-    product: Product,
-    defaultStock: number,
-  ): void => {
-    console.log(product, 'ini product ya maniez');
+  const openStockUpdateDialog = (product: Product) => {
     setCurrentProduct(product);
-    setStockChange(defaultStock);
+    setStockChange(product.stock);
     setIsDialogOpen(true);
   };
 
-  const handleStockUpdate = async (): Promise<void> => {
+  const handleStockUpdate = async () => {
     if (!currentProduct) return;
 
+    setIsLoading(true);
+    setError(null);
     try {
       await api.put(
         `/stocks/${branchId}/products/${currentProduct.id}/update-stock`,
         { stockChange },
         {
           headers: {
-            Authorization: 'Bearer ' + session?.user?.access_token,
+            Authorization: `Bearer ${session?.user?.access_token}`,
           },
         },
       );
-      await fetchProduct();
+      await fetchProducts();
       setIsDialogOpen(false);
+      console.log(
+        `Stock for ${currentProduct.Product.product_name} has been updated successfully.`,
+      );
     } catch (error) {
-      console.error('Failed to update stock:', error);
+      handleApiError(error, 'Failed to update stock');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const deleteProduct = async (StockId: number): Promise<void> => {
+  const setStockToZero = async (productId: number) => {
+    setIsLoading(true);
+    setError(null);
     try {
       await api.put(
-        `/stocks/${branchId}/products/${StockId}/update-stock`,
+        `/stocks/${branchId}/products/${productId}/update-stock`,
         { stockChange: 0 },
         {
           headers: {
-            Authorization: 'Bearer ' + session?.user?.access_token,
+            Authorization: `Bearer ${session?.user?.access_token}`,
           },
         },
       );
-      await fetchProduct();
+      await fetchProducts();
+      console.log('The product stock has been set to zero successfully.');
     } catch (error) {
-      console.error('Failed to update stock:', error);
+      handleApiError(error, 'Failed to set stock to zero');
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const handleApiError = (error: any, defaultMessage: string) => {
+    console.error(`${defaultMessage}:`, error);
+    let errorMessage = defaultMessage;
+    if (error.response) {
+      errorMessage =
+        error.response.data.message || `Server error: ${error.response.status}`;
+    } else if (error.request) {
+      errorMessage = 'No response received from server';
+    } else {
+      errorMessage = error.message;
+    }
+    setError(errorMessage);
   };
 
   return (
     <div className="container mx-auto p-8">
       <h1 className="text-3xl font-bold mb-8">Inventory Management</h1>
+
+      {error && (
+        <div
+          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
+          role="alert"
+        >
+          <strong className="font-bold">Error: </strong>
+          <span className="block sm:inline">{error}</span>
+        </div>
+      )}
 
       <div className="mb-4">
         <Select onValueChange={handleBranchChange}>
@@ -161,57 +209,60 @@ export default function InventoryManagement() {
         </Select>
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Product Name</TableHead>
-            <TableHead>Branch Name</TableHead> {/* Added this column */}
-            <TableHead>Current Stock</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {product2.map((product) => (
-            <TableRow key={product.id}>
-              <TableCell>{product.Product.product_name}</TableCell>
-              <TableCell>{product.Branch?.branch_name || 'N/A'}</TableCell>{' '}
-              {/* Display Branch name */}
-              <TableCell>{product.stock}</TableCell>
-              <TableCell>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="mr-2"
-                  onClick={() => openStockUpdateDialog(product, product.stock)}
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="destructive"
-                  size="icon"
-                  onClick={() => deleteProduct(product.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </TableCell>
+      {isLoading ? (
+        <div>Loading...</div>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Product Name</TableHead>
+              <TableHead>Branch Name</TableHead>
+              <TableHead>Current Stock</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {products.map((product) => (
+              <TableRow key={product.id}>
+                <TableCell>{product.Product.product_name}</TableCell>
+                <TableCell>{product.Branch?.branch_name || 'N/A'}</TableCell>
+                <TableCell>{product.stock}</TableCell>
+                <TableCell>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="mr-2"
+                    onClick={() => openStockUpdateDialog(product)}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    onClick={() => setStockToZero(product.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Update Stock {branchId}</DialogTitle>
+            <DialogTitle>Update Stock</DialogTitle>
             <DialogDescription>
-              Update the stock for {currentProduct?.Product.product_name} on{' '}
+              Update the stock for {currentProduct?.Product.product_name} at{' '}
               {currentProduct?.Branch?.branch_name}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="stock-change" className="text-right">
-                Stock Change
+                New Stock Value
               </Label>
               <Input
                 id="stock-change"
@@ -223,7 +274,9 @@ export default function InventoryManagement() {
             </div>
           </div>
           <DialogFooter>
-            <Button onClick={handleStockUpdate}>Update Stock</Button>
+            <Button onClick={handleStockUpdate} disabled={isLoading}>
+              {isLoading ? 'Updating...' : 'Update Stock'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

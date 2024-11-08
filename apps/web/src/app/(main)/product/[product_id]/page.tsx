@@ -5,12 +5,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Minus, Plus } from 'lucide-react';
 import { api } from '@/config/axios.config';
 import Image from 'next/image';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/state/store';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState, AppDispatch } from '@/state/store';
 import { useToast } from '@/hooks/use-toast';
 import { useSession } from 'next-auth/react';
-import { useDispatch } from 'react-redux';
-import { AppDispatch } from '@/state/store'; // Adjust the path based on your project structure
 import { fetchCart, selectCart } from '@/state/cart/cartSlice';
 import { BASE_API_URL } from '@/config';
 
@@ -21,6 +19,7 @@ type Props = {
 };
 
 export default function ProductPage({ params }: Props) {
+  const { product_id } = params; // Destructure product_id from params
   const [quantity, setQuantity] = useState(1);
   const [product, setProduct] = useState<any>(null);
   const [productStock, setProductStock] = useState<any>(null);
@@ -28,7 +27,6 @@ export default function ProductPage({ params }: Props) {
   const session = useSession();
   const dispatch = useDispatch<AppDispatch>();
   const cart = useSelector(selectCart);
-  // const session = useSession();
 
   const { longitude, latitude } = useSelector(
     (state: RootState) => state.position,
@@ -36,11 +34,6 @@ export default function ProductPage({ params }: Props) {
 
   const handleAddToCart = async () => {
     try {
-      // const res = await api.post('/cart/add', {
-      //   productStockId: productStock.id,
-      //   quantityInput: quantity,
-      // });
-
       const res = await api.post(
         '/cart/add',
         { productStockId: productStock.id, quantityInput: quantity },
@@ -63,27 +56,23 @@ export default function ProductPage({ params }: Props) {
   };
 
   useEffect(() => {
-    if (latitude != 0 || longitude != 0) {
+    if (latitude !== 0 || longitude !== 0) {
       const fetchMoreProducts = async () => {
-        console.log(latitude, longitude, 'ini ya');
-
         const response = await api.get(
-          `/product/get-branch?lat=${latitude}&long=${longitude}&productId=${params.product_id}`,
+          `/product/get-branch?lat=${latitude}&long=${longitude}&productId=${product_id}`,
         );
-
-        console.log(response.data.data, 'ini response.data');
 
         setProductStock(response.data.data);
       };
 
       fetchMoreProducts();
     }
-  }, [longitude, latitude]);
+  }, [longitude, latitude, product_id]); // Add product_id to the dependency array
 
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const res = await api.get(`/product/${params.product_id}`);
+        const res = await api.get(`/product/${product_id}`);
         setProduct(res.data.data);
       } catch (error) {
         console.error('Error fetching product:', error);
@@ -91,7 +80,7 @@ export default function ProductPage({ params }: Props) {
     };
 
     fetchProduct();
-  }, [params.product_id]);
+  }, [product_id]); // Add product_id to the dependency array
 
   const incrementQuantity = () => setQuantity((prev) => prev + 1);
   const decrementQuantity = () =>
@@ -132,12 +121,10 @@ export default function ProductPage({ params }: Props) {
 
       <div className="flex flex-col md:flex-row gap-8">
         <div className="md:w-1/2">
-          {/* Product Image */}
           {product.image && product.image.length > 0 ? (
             <Image
               width={500}
               height={500}
-              // src={product.images[0].imageUrl} // Display main product image
               src={`${BASE_API_URL}/product/${product.image[0].imageUrl}`}
               alt={product.product_name}
               className="aspect-square object-cover mb-4"
@@ -145,21 +132,6 @@ export default function ProductPage({ params }: Props) {
           ) : (
             <div className="aspect-square bg-gray-200 mb-4"></div>
           )}
-
-          {/* Additional Images */}
-          {/* <div className="grid grid-cols-4 gap-4">
-            {product.images.map((img: { imageUrl: string }, i: number) => (
-              <div key={i} className="aspect-square">
-                <Image
-                  width={125}
-                  height={125}
-                  src={img.imageUrl}
-                  alt={`${product.product_name} image ${i + 1}`}
-                  className="object-cover"
-                />
-              </div>
-            ))}
-          </div> */}
         </div>
 
         <div className="md:w-1/2">
@@ -199,7 +171,7 @@ export default function ProductPage({ params }: Props) {
               session.status !== 'authenticated' ||
               productStock?.stock <= 0 ||
               session.data.user.roleId !== 1
-            } // Disables if the user is not logged in
+            }
           >
             Add To Cart
           </Button>

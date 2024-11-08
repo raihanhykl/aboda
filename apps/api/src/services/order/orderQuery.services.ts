@@ -48,12 +48,6 @@ export class OrderQueryService {
 
       const skip = (page - 1) * limit;
 
-      console.log(page, 'ini page');
-      console.log(limit, 'ini limit');
-      console.log(search, 'ini search');
-      console.log(status, 'ini status');
-      console.log(dateFilter, 'ini date');
-
       const searchFilter: Prisma.OrderWhereInput = search
         ? {
             OR: [
@@ -169,8 +163,6 @@ export class OrderQueryService {
   static async getByInvoice(req: Request) {
     try {
       const { invoice } = req.params;
-      console.log(req.params, 'ini req params');
-      console.log(invoice, 'ini invoice');
 
       if (!req.user || !req.user.is_verified) {
         throw new ErrorHandler(

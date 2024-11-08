@@ -55,7 +55,7 @@ export class CategoryService {
       try {
         const { id } = req.params;
         const { name } = req.body;
-        const image = req.file?.path || '';
+        const image = req.file;
 
         if (!name || name.trim() === '') {
           throw new ErrorHandler('Nama kategori tidak boleh kosong', 400);
@@ -75,7 +75,7 @@ export class CategoryService {
           where: { id: Number(id) },
           data: {
             name,
-            image,
+            image: image?.filename,
           },
         });
 

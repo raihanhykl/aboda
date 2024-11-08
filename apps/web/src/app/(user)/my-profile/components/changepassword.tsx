@@ -132,8 +132,8 @@ export default function ChangePasswordButton() {
           <DialogHeader>
             <DialogTitle>Change Password</DialogTitle>
             <DialogDescription>
-              Enter your current password and choose a new one. Make sure it's
-              strong and unique!
+              Enter your current password and choose a new one. Make sure
+              it&apos;s strong and unique!
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>

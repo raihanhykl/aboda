@@ -7,11 +7,6 @@ import { Request } from 'express';
 
 export class BranchService {
   static async getAllBranch(req: Request) {
-    console.log(req.user.roleId), 'ini role';
-
-    // if (req.user.roleId != 2)
-    //   throw new ErrorHandler('Unauthorized, Super Admin only!.', 400);
-
     return returnBranch();
   }
 
@@ -100,7 +95,6 @@ export class BranchService {
       if (req.user.roleId != 2)
         throw new ErrorHandler('Unauthorized, Super admin only!', 400);
       const branchData: IBranch = req.body.data;
-      console.log(branchData, 'ini branch data di branch service');
 
       const newAddress = await prisma.address.create({
         data: {

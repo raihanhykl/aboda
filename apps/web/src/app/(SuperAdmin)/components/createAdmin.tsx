@@ -104,7 +104,7 @@ export default function CreateAdminPopover({ setAvailable }: any) {
             )}
           </div>
           <p className="text-sm text-muted-foreground">
-            Note: The default password will be set to "admin123"
+            Note: The default password will be set to &quot;admin123&quot;
           </p>
           <Button type="submit">Create Admin</Button>
         </form>

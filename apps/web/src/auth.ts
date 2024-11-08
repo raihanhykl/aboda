@@ -24,8 +24,6 @@ export const { signIn, signOut, handlers, auth } = NextAuth({
         try {
           let token;
           if (credentials.access_token) {
-            // console.log(credentials.access_token);
-
             const res = await api.post(
               '/auth/refresh-token',
               {},
@@ -38,7 +36,6 @@ export const { signIn, signOut, handlers, auth } = NextAuth({
 
             token = res.data.data;
           } else if (credentials?.email && credentials?.password) {
-            //if credentials.access != null, bikin route baru di api buat keep login, atau refresh token
             const res = await api.post('/auth/v1', {
               email: credentials?.email,
               password: credentials?.password,
@@ -53,7 +50,6 @@ export const { signIn, signOut, handlers, auth } = NextAuth({
           const user = jwtDecode<User>(token);
 
           user.access_token = token;
-          console.log(user, 'ini user');
 
           return user;
         } catch (error) {
@@ -76,8 +72,6 @@ export const { signIn, signOut, handlers, auth } = NextAuth({
           image: profile?.picture as string,
         })
           .then((res) => {
-            // console.log(res);
-
             const userr = jwtDecode<User>(res);
             user.access_token = res;
             user.id = userr.id;

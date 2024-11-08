@@ -51,8 +51,6 @@ export function FeaturedProducts() {
             category: stock.Product.categoryId,
           })),
         );
-
-        console.log(allProducts, 'coyyy');
         setProducts(allProducts);
         setLoading(false);
       };

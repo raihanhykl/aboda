@@ -13,7 +13,6 @@ export const Uploader = (prefix: string, folderName: string) => {
       const fileSize = parseInt(req.headers['content-length'] || '');
       if (fileSize > maxSize) {
         return cb(new ErrorHandler('File is bigger than 5MB!', 400));
-        // throw new ErrorHandler('File is bigger than 5MB!', 400);
       }
       cb(null, true);
     },

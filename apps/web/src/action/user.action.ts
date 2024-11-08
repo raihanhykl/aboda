@@ -15,7 +15,6 @@ export const editProfileAction = async (
   token?: string,
 ) => {
   try {
-    console.log('mashok editprofileaction: ', values);
     const res = await api.put('/user/edit-profile', values, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -75,8 +74,6 @@ export const crudUserAddress = async (
       isDefault: updatedAddress.isDefault,
     };
 
-    console.log(dataFinal, 'ini data final');
-
     if (isAdding) {
       await api.post(
         `/address/add-user-address`,
@@ -87,7 +84,6 @@ export const crudUserAddress = async (
           },
         },
       );
-      console.log('masuk add');
     } else {
       await api.put(
         `/address/update-user-address`,
@@ -98,15 +94,12 @@ export const crudUserAddress = async (
           },
         },
       );
-      console.log('masuk update');
     }
-    console.log('success crud address');
   } catch (error) {
     if (axios.isAxiosError(error)) {
       const errorMessage = error.response?.data.message;
       throw new Error(errorMessage);
     }
-    console.log('gagal crud address');
     throw new Error('Get User Addresses Gagal. ');
   }
 };

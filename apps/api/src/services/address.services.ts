@@ -166,14 +166,6 @@ export class AddressService {
     return prisma.$transaction(async (prisma) => {
       try {
         const { addressId, street, cityId, lon, lat } = req.body;
-        console.log(
-          addressId,
-          street,
-          cityId,
-          lon,
-          lat,
-          'ini req user address',
-        );
 
         if (!addressId || !street || !cityId || !lon || !lat) {
           throw new ErrorHandler('All fields are required', 400);
@@ -212,7 +204,6 @@ export class AddressService {
     return prisma.$transaction(async (prisma) => {
       try {
         const { id } = req.body;
-        console.log(id, 'ini req user address');
         if (!id) {
           throw new ErrorHandler('Address ID is required', 400);
         }

@@ -1,6 +1,6 @@
 // @ts-ignore
-import { NextRequest, NextResponse } from 'next/server';
 import Midtrans, { Snap } from 'midtrans-client';
+import { NextRequest, NextResponse } from 'next/server';
 import { api } from '@/config/axios.config';
 import { SNAP_MIDTRANS_CLIENT_KEY, SNAP_MIDTRANS_SERVER_KEY } from '@/config';
 
@@ -23,10 +23,6 @@ export async function POST(request: NextRequest) {
     } = await request.json();
 
     let token;
-    console.log('Is production mode:', snap.apiConfig.isProduction);
-    console.log(order_token, 'ini order_token di route.ts');
-    console.log(shippingCost, 'ini shipping cost di route.ts');
-    console.log(order_id, 'ini orderid');
 
     const parameter: Midtrans.TransactionRequestBody = {
       transaction_details: {
@@ -35,13 +31,9 @@ export async function POST(request: NextRequest) {
       },
     };
     if (!token) {
-      console.log(token, 'before isi token');
       token = await snap.createTransactionToken(parameter);
-      console.log(token, 'after isi token');
     }
-    console.log(token, 'ini token');
     token = await snap.createTransactionToken(parameter);
-
     return NextResponse.json({ token });
   } catch (error) {
     console.error('Error processing the request:', error);

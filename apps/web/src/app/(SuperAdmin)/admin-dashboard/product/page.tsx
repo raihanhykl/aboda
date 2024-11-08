@@ -74,7 +74,7 @@ export default function ProductManagement() {
           Authorization: `Bearer ${sessionData?.user?.access_token}`,
         },
       });
-      console.log('Fetched products:', response.data.data);
+
       setProducts(response.data.data);
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -88,7 +88,7 @@ export default function ProductManagement() {
           Authorization: `Bearer ${sessionData?.user?.access_token}`,
         },
       });
-      console.log('Fetched categories:', response.data.data);
+
       setCategories(response.data.data);
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -100,19 +100,19 @@ export default function ProductManagement() {
   ) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
+
     const productData = {
-      name: formData.get('name') as string,
+      product_name: formData.get('name') as string,
       description: formData.get('description') as string,
       price: Number(formData.get('price')),
       categoryId: Number(formData.get('categoryId')),
       weight: Number(formData.get('weight')),
-      images: currentProduct ? [...currentProduct.images] : [],
     };
 
     if (
       products.some(
         (product) =>
-          product.name === productData.name &&
+          product.name === productData.product_name &&
           (!currentProduct || currentProduct.id !== product.id),
       )
     ) {
@@ -120,34 +120,81 @@ export default function ProductManagement() {
       return;
     }
 
-    const newImageUrls = newImages.map((file) => URL.createObjectURL(file));
-    productData.images = [...productData.images, ...newImageUrls];
-
     const headers = {
       Authorization: `Bearer ${sessionData?.user?.access_token}`,
+      'Content-Type': 'multipart/form-data',
     };
 
     try {
       if (currentProduct) {
-        await api.put(`/product/${currentProduct.id}`, productData, {
+        const updateFormData = new FormData();
+        Object.entries(productData).forEach(([key, value]) => {
+          updateFormData.append(key, value.toString());
+        });
+        newImages.forEach((file) => {
+          updateFormData.append('image', file);
+        });
+
+        const response = await api.put(
+          `/product/${currentProduct.id}`,
+          updateFormData,
+          {
+            headers,
+          },
+        );
+
+        if (response.data && response.data.success) {
+          setProducts(
+            products.map((p) =>
+              p.id === currentProduct.id ? { ...p, ...productData } : p,
+            ),
+          );
+          setIsProductDialogOpen(false);
+          setNewImages([]);
+          setPreviewImages([]);
+          fetchProducts();
+        } else {
+          throw new Error(response.data.message || 'Failed to update product');
+        }
+      } else {
+        const createFormData = new FormData();
+        Object.entries(productData).forEach(([key, value]) => {
+          createFormData.append(key, value.toString());
+        });
+        newImages.forEach((file) => {
+          createFormData.append('image', file);
+        });
+
+        console.log(
+          'Creating product with data:',
+          Object.fromEntries(createFormData),
+        );
+
+        const response = await api.post('/product', createFormData, {
           headers,
         });
-        setProducts(
-          products.map((p) =>
-            p.id === currentProduct.id ? { ...productData, id: p.id } : p,
-          ),
-        );
-      } else {
-        const response = await api.post('/product', productData, { headers });
-        setProducts([...products, { ...productData, id: response.data.id }]);
+
+        if (response.data && response.data.success) {
+          setProducts([
+            ...products,
+            {
+              ...productData,
+              id: response.data.id,
+              name: '',
+              images: [],
+            },
+          ]);
+          setIsProductDialogOpen(false);
+          setNewImages([]);
+          setPreviewImages([]);
+          fetchProducts(); // Refresh the product list
+        } else {
+          throw new Error(response.data.message || 'Failed to create product');
+        }
       }
-      console.log(productData);
-      setIsProductDialogOpen(false);
-      setNewImages([]);
-      setPreviewImages([]);
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        console.error('Axios error:', error.message);
+        console.error('Axios error:', error.response?.data || error.message);
         setError(
           `Error saving product: ${error.response?.data?.message || error.message}`,
         );
@@ -198,14 +245,30 @@ export default function ProductManagement() {
     if (!confirm('Are you sure you want to delete this product?')) return;
 
     try {
-      await api.delete(`/product/${productId}`, {
+      const response = await api.delete(`/product/delete/${productId}`, {
         headers: {
           Authorization: `Bearer ${sessionData?.user?.access_token}`,
         },
       });
-      setProducts(products.filter((prod) => prod.id !== productId));
+
+      if (response.data?.message === 'Product deleted successfully') {
+        setProducts(products.filter((prod) => prod.id !== productId));
+      } else {
+        throw new Error(response.data?.message || 'Failed to delete product');
+      }
     } catch (error) {
-      console.error('Error deleting product:', error);
+      if (axios.isAxiosError(error)) {
+        console.error(
+          'Error deleting product:',
+          error.response?.data || error.message,
+        );
+        setError(
+          `Failed to delete product: ${error.response?.data?.message || error.message}`,
+        );
+      } else {
+        console.error('Unexpected error deleting product:', error);
+        setError('An unexpected error occurred while deleting the product.');
+      }
     }
   };
 
@@ -220,7 +283,18 @@ export default function ProductManagement() {
       });
       setCategories(categories.filter((cat) => cat.id !== categoryId));
     } catch (error) {
-      console.error('Error deleting category:', error);
+      if (axios.isAxiosError(error)) {
+        console.error(
+          'Error deleting category:',
+          error.response?.data || error.message,
+        );
+        setError(
+          `Failed to delete category: ${error.response?.data?.message || error.message}`,
+        );
+      } else {
+        console.error('Unexpected error deleting category:', error);
+        setError('An unexpected error occurred while deleting the category.');
+      }
     }
   };
 
@@ -290,7 +364,7 @@ export default function ProductManagement() {
                   </TableHead>
                   <TableHead>Price</TableHead>
                   <TableHead>Weight (kg)</TableHead>
-                  <TableHead className="w-[150px]">Actions</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
 
@@ -302,7 +376,9 @@ export default function ProductManagement() {
                       {product.description}
                     </TableCell>
                     <TableCell>{`Rp ${product.price.toLocaleString()}`}</TableCell>
-                    <TableCell>{product.weight}</TableCell>{' '}
+                    <TableCell className="font-medium">
+                      {product.weight} kg
+                    </TableCell>
                     <TableCell>
                       <Button
                         variant="outline"

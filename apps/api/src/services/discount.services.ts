@@ -133,11 +133,6 @@ export class DiscountService {
     try {
       const branchId = req.query.branchId;
       const productId = req.query.productId;
-      // const branchId = req.query.branchId;
-      // const productId,  = req.query.productId;
-
-      console.log(productId, branchId, 'bakekok');
-      console.log(new Date(new Date().getTime() + 7 * 60 * 60 * 1000));
 
       return await prisma.discount.findMany({
         where: {

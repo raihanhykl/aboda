@@ -63,14 +63,6 @@ export class OrderRouter {
       validateToken,
       this.orderController.confirmOrder,
     );
-
-    // this.router.patch('/update', validateToken, this.cartController.updateCart);
-    // this.router.patch('/delete', validateToken, this.cartController.deleteCart);
-    // this.router.patch(
-    //   '/delete-all',
-    //   validateToken,
-    //   this.cartController.deleteAllCart,
-    // );
   }
   public getRouter() {
     return this.router;

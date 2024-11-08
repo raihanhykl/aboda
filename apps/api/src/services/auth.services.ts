@@ -60,8 +60,6 @@ export class AuthService {
     if (!user) throw new ErrorHandler('User not found', 400);
     delete user.password;
 
-    console.log(user, 'ini user');
-
     return generateToken(user);
   }
   static async register(req: Request) {

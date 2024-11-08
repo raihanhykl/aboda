@@ -6,11 +6,6 @@ import { RAJA_ONGKIR, RAJA_ONGKIR_KEY } from '@/config';
 export async function POST(request: Request) {
   try {
     const { origin, destination, weight, courier } = await request.json();
-
-    // Logging data yang diterima dari frontend
-    // console.log('Received data:', { origin, destination, weight, courier });
-
-    // Validasi data sebelum mengirim ke Raja Ongkir
     if (!origin || !destination || !weight || !courier) {
       return NextResponse.json(
         {
@@ -35,10 +30,6 @@ export async function POST(request: Request) {
         },
       },
     );
-
-    // Logging respons dari Raja Ongkir
-    // console.log('Raja Ongkir response:', response.data);
-    // console.log(weight);
 
     return NextResponse.json(response.data);
   } catch (error: any) {

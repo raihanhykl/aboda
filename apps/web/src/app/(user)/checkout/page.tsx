@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useDispatch } from 'react-redux';
@@ -43,27 +43,12 @@ export default function CheckoutPage() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
 
-  useEffect(() => {
-    if (session.status === 'authenticated') {
-      fetchInitialData();
-    }
-  }, [session]);
-
-  useEffect(() => {
-    fetchShippingCost(
-      formData.courier,
-      formData.selectedCity,
-      weight,
-      origin,
-      setShippingOptions,
-    );
-  }, [formData.courier, formData.selectedCity, weight, origin]);
-
-  useEffect(() => {
-    setWeight(calculateTotalWeight(carts));
-  }, [carts]);
-
-  const fetchInitialData = async () => {
+  // useEffect(() => {
+  //   if (session.status === 'authenticated') {
+  //     fetchInitialData();
+  //   }
+  // }, [session]);
+  const fetchInitialData = useCallback(async () => {
     try {
       const [resAddress, resVouchers, resCart] = await Promise.all([
         api.get(`/address/get-user-address-branch`, {
@@ -99,7 +84,65 @@ export default function CheckoutPage() {
     } catch (error) {
       console.error('Error fetching data:', error);
     }
-  };
+  }, [session]);
+
+  useEffect(() => {
+    if (session.status === 'authenticated') {
+      fetchInitialData();
+    }
+  }, [session, fetchInitialData]);
+
+  useEffect(() => {
+    fetchShippingCost(
+      formData.courier,
+      formData.selectedCity,
+      weight,
+      origin,
+      setShippingOptions,
+    );
+  }, [formData.courier, formData.selectedCity, weight, origin]);
+
+  useEffect(() => {
+    setWeight(calculateTotalWeight(carts));
+  }, [carts]);
+
+  // const fetchInitialData = async () => {
+  //   try {
+  //     const [resAddress, resVouchers, resCart] = await Promise.all([
+  //       api.get(`/address/get-user-address-branch`, {
+  //         headers: {
+  //           Authorization: 'Bearer ' + session?.data?.user.access_token,
+  //         },
+  //       }),
+  //       api.get(`/user/get-all-user-vouchers`, {
+  //         headers: {
+  //           Authorization: 'Bearer ' + session?.data?.user.access_token,
+  //         },
+  //       }),
+  //       api.get(`/cart/get`, {
+  //         headers: {
+  //           Authorization: 'Bearer ' + session?.data?.user.access_token,
+  //         },
+  //       }),
+  //     ]);
+
+  //     setAddress(resAddress.data.data);
+  //     setVoucher(resVouchers.data.data);
+  //     setCarts(resCart.data.data);
+
+  //     const discountedItems = await applyDiscounts(
+  //       resCart.data.data,
+  //       session?.data?.user.access_token,
+  //     );
+  //     setDiscountedCarts(discountedItems);
+
+  //     if (resCart.data.success && resCart.data.data.length > 0) {
+  //       setOrigin(resCart.data.data[0].ProductStock.Branch.address.cityId);
+  //     }
+  //   } catch (error) {
+  //     console.error('Error fetching data:', error);
+  //   }
+  // };
 
   const handleFormChange = (name: string, value: any) => {
     setFormData((prev) => ({ ...prev, [name]: value }));

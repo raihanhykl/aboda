@@ -85,8 +85,8 @@ export default function SignIn() {
             </h2>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <label htmlFor="email" className="text-gray-600 text-sm">
-                Enter your email address below, and we'll send you a link to
-                reset your password.
+                Enter your email address below, and we&apos;ll send you a link
+                to reset your password.
               </label>
               <Input
                 type="email"

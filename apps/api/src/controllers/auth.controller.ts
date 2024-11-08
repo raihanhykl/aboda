@@ -17,8 +17,6 @@ export class AuthController {
       const data = await AuthService.refreshToken(req);
       return res.send(responseHandle('Refresh Token Success', data));
     } catch (error) {
-      console.log(error, 'ini error');
-
       next(error);
     }
   }

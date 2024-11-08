@@ -32,7 +32,7 @@ export class ProductRouter {
       this.productController.updateProduct,
     );
     this.router.delete(
-      '/:id',
+      '/delete/:id',
       validateToken,
       this.productController.deleteProduct,
     );

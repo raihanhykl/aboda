@@ -21,7 +21,7 @@ import { RenderPaginationButtons } from '../components/pagination';
 
 interface Product {
   id: number;
-  categoryId: number; // Keep if needed for mapping
+  categoryId: number;
   product_name: string;
   description: string;
   price: number;
@@ -29,8 +29,8 @@ interface Product {
   storeAdminId: number;
   createdAt: string;
   updatedAt: string;
-  image: Image[]; // Add this
-  category?: string; // Add this if you have a mapping for categoryId
+  image: Image[];
+  category?: string;
 }
 
 interface Image {
@@ -76,7 +76,7 @@ export default function ShopPage() {
   const [products, setProducts] = useState([]);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
-  const [searchQuery, setSearchQuery] = useState<string>(''); // State for search input
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const itemsPerPage = 3;
   const { debounce } = useDebounce();
   const { longitude, latitude } = useSelector(
@@ -90,7 +90,6 @@ export default function ShopPage() {
         const res = await api.get(
           `/product?page=${currentPage}&limit=${itemsPerPage}&lat=${latitude}&long=${longitude}&name=${searchQuery}`,
         );
-        console.log(res.data.data.total, 'ini ressss.data', searchQuery);
         const allProducts = res.data.data.data.flatMap((branch: Branch) =>
           branch.ProductStocks.map((stock) => ({
             id: stock.Product.id,
@@ -104,7 +103,6 @@ export default function ShopPage() {
             category: stock.Product.categoryId,
           })),
         );
-        console.log(allProducts, 'ini all products');
         setProducts(allProducts);
         setTotalPages(Math.ceil(Number(res.data.data.total) / itemsPerPage));
       } catch (error) {
@@ -119,7 +117,7 @@ export default function ShopPage() {
 
   useEffect(() => {
     debouncedSearch();
-  }, [currentPage, longitude, latitude, searchQuery]);
+  }, [currentPage, longitude, latitude, searchQuery, debouncedSearch]);
 
   const handlePageChange = (newPage: number) => {
     if (newPage > 0 && newPage <= totalPages) {

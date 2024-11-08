@@ -16,6 +16,7 @@ import { Upload } from 'lucide-react';
 import { api } from '@/config/axios.config';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 type Props = {
   params: {
@@ -170,9 +171,11 @@ export default function PaymentPage({ params }: Props) {
                   <Label htmlFor="file" className="cursor-pointer">
                     <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors">
                       {previewUrl ? (
-                        <img
+                        <Image
                           src={previewUrl}
                           alt="Preview"
+                          width={200}
+                          height={200}
                           className="mx-auto max-h-48 object-contain"
                         />
                       ) : (

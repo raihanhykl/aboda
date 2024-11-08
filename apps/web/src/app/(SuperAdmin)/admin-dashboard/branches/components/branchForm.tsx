@@ -4,7 +4,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { IBranch } from '@/interfaces/branch';
 import RenderSelect from '@/components/cityProvince/renderSelect';
-import MapComponent from './mapComponent';
+import dynamic from 'next/dynamic';
+// import MapComponent from './mapComponent';
+
+const MapComponent = dynamic(() => import('./mapComponent'), {
+  ssr: false,
+});
 
 interface BranchFormProps {
   branch: IBranch;

@@ -78,7 +78,7 @@ export default function Component() {
       setProvinces,
       session.data.user.access_token,
     );
-  }, [session.data?.user]);
+  }, [session.data?.user, reset]);
 
   useEffect(() => {
     if (!session.data?.user) return;
@@ -88,7 +88,7 @@ export default function Component() {
         setCities,
         session.data.user?.access_token,
       );
-  }, [selectedProvince]);
+  }, [selectedProvince, session.data?.user]);
 
   const handleAddAddress = () => {
     const newAddress: UserAddress = {

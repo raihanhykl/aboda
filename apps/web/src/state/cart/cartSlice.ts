@@ -1,28 +1,6 @@
-// import { PayloadAction, createSlice } from '@reduxjs/toolkit';
-
-// export interface CartState {
-//   total: number;
-// }
-
-// const initialCartState: CartState = {
-//   total: 0,
-// };
-// const cartSlice = createSlice({
-//   name: 'cart',
-//   initialState: initialCartState,
-//   reducers: {
-//     addCartByNumber: (state, action: PayloadAction<CartState>) => {
-//       state.total = action.payload.total;
-//     },
-//   },
-// });
-
-// export const { addCartByNumber } = cartSlice.actions;
-// export default cartSlice.reducer;
-
 import { PayloadAction, createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { api } from '@/config/axios.config';
-import { RootState } from '../store'; // Adjust the import based on your store setup
+import { RootState } from '../store';
 import { useSession } from 'next-auth/react';
 
 interface CartState {
@@ -35,7 +13,6 @@ const initialCartState: CartState = {
   branch: '',
 };
 
-// Async thunk to fetch cart data
 export const fetchCart = createAsyncThunk(
   'cart/fetchCart',
   async (accessToken: string, { rejectWithValue }) => {
@@ -45,7 +22,6 @@ export const fetchCart = createAsyncThunk(
           Authorization: `Bearer ${accessToken}`,
         },
       });
-      console.log(res.data.data.count, 'jumlah item dari API'); // Tambahkan log di sini
 
       if (res.data.data.count === 0) {
         return {
@@ -85,5 +61,4 @@ const cartSlice = createSlice({
 export const { setCartTotal } = cartSlice.actions;
 export default cartSlice.reducer;
 
-// Selector to get cart state
 export const selectCart = (state: RootState) => state.cart;

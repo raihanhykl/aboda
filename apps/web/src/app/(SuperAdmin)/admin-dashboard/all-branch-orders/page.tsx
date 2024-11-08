@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useSession } from 'next-auth/react';
 import { useToast } from '@/hooks/use-toast';
@@ -59,11 +59,7 @@ export default function AdminOrderList() {
   const { toast } = useToast();
   const ordersPerPage = 5;
 
-  useEffect(() => {
-    fetchOrders();
-  }, [session, currentPage, filters]);
-
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     try {
       const response = await api.get(`/order/get-branch`, {
         headers: {
@@ -92,7 +88,11 @@ export default function AdminOrderList() {
     } catch (error) {
       console.error('Error fetching orders:', error);
     }
-  };
+  }, [session, currentPage, filters]);
+
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
 
   const formatOrders = (rawOrders: any[]): Order[] => {
     return rawOrders.map((order) => ({

@@ -32,23 +32,23 @@ export function OrderFilters({ filters, setFilters }: OrderFiltersProps) {
   const session = useSession();
 
   useEffect(() => {
+    const fetchBranches = async () => {
+      try {
+        const response = await api.get('/branch/get-all-branch', {
+          headers: {
+            Authorization: 'Bearer ' + session?.data?.user.access_token,
+          },
+        });
+        if (response.data && response.data.data) {
+          setBranches(response.data.data);
+        }
+      } catch (error) {
+        console.error('Error fetching branches:', error);
+      }
+    };
+
     fetchBranches();
   }, [session]);
-
-  const fetchBranches = async () => {
-    try {
-      const response = await api.get('/branch/get-all-branch', {
-        headers: {
-          Authorization: 'Bearer ' + session?.data?.user.access_token,
-        },
-      });
-      if (response.data && response.data.data) {
-        setBranches(response.data.data);
-      }
-    } catch (error) {
-      console.error('Error fetching branches:', error);
-    }
-  };
 
   return (
     <div className="flex flex-wrap justify-between items-center gap-4">
